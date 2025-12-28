@@ -1,0 +1,1 @@
+Para o almoço, o barbeiro cria um agendamento recorrente chamado "Almoço" na agenda dele, o que naturalmente bloqueia o horário para clientes. Isso simplifica muito o código.

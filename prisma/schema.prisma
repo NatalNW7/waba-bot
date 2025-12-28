@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql" // Recomendado para SaaS. Mude para sqlite se for apenas dev local.
+}
+
+// Enums deixam o código mais limpo e evitam erros de digitação ("PENDING" vs "pending")
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  COMPLETED
+}
+
+enum CalendarProvider {
+  GOOGLE
+  APPLE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE // Pagamento atrasado
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String   // Removi @unique (Dois salões podem ter nomes iguais, o ID que importa)
+  
+  // WhatsApp Info
+  wabaId      String   @unique
+  phoneId     String   @unique 
+  accessToken String   // Token da Meta
+
+  // Dados de contato do Estabelecimento
+  phone       String?  
+  email       String   @unique
+
+  // Relacionamentos
+  calendar        Calendar?      // Relação 1:1 Opcional (O salão pode não ter conectado ainda)
+  services        Service[]
+  appointments    Appointment[]
+  customers       Customer[]
+  plans           Plan[]         // Planos que este salão oferece
+  operatingHours  OperatingHour[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model OperatingHour {
+  id        String    @id @default(uuid())
+  day       DayOfWeek
+  
+  startTime String    // Ex: "08:00"
+  endTime   String    // Ex: "20:00"
+  
+  isClosed            Boolean   @default(false) // Se true, o salão não abre nesse dia
+  
+  // A Mágica para o seu caso do Domingo:
+  onlyForSubscribers Boolean @default(false) 
+
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  @@index([tenantId, day])
+}
+
+model Calendar {
+  id           String           @id @default(uuid())
+  provider     CalendarProvider // GOOGLE ou APPLE
+  email        String           // Email da conta conectada (ex: salao@gmail.com)
+  
+  // OAuth2 Tokens
+  accessToken  String           // Token temporário
+  refreshToken String           // O token vitalício (O SEGREDO ESTÁ AQUI)
+  tokenExpiry  DateTime?        // Quando o accessToken expira
+
+  tenantId     String           @unique // @unique garante que 1 Tenant só tenha 1 Calendar
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  price       Decimal  @db.Decimal(10, 2) // Melhor precisão para dinheiro
+  duration    Int      // Minutos
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  appointments Appointment[]
+  includedInPlans Plan[]
+}
+
+model Plan {
+  id          String          @id @default(uuid())
+  name        String          // Ex: "Clube do Corte"
+  description String?
+  price       Decimal         @db.Decimal(10, 2)
+  interval    PaymentInterval @default(MONTHLY) // Mensal, Anual...
+
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+
+  subscriptions Subscription[] // Quem assina este plano?
+  includedServices Service[]
+}
+
+# TODO: Trabalhar em um painel de habilitação/desabilitação mais robusto
+model Customer {
+  id                String   @id @default(uuid())
+  phone             String   // Número do WhatsApp (Formatado E.164 ex: 551199999999)
+  name              String?
+  email             String?  // Nem todo cliente dá o email no WhatsApp
+  offerNotification Boolean @default(true)
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+
+  appointments      Appointment[]
+  subscription      Subscription? // Relação 1:1 Opcional. Cliente só pode ter 1 assinatura ativa.
+
+  @@unique([tenantId, phone]) // Garante unicidade do cliente DENTRO do salão
+}
+
+model Subscription {
+  id           String             @id @default(uuid())
+  status       SubscriptionStatus @default(ACTIVE)
+  startDate    DateTime           @default(now())
+  nextBilling  DateTime           // Data da próxima cobrança
+  
+  // Relacionamento com o Plano (O que ele comprou?)
+  planId       String
+  plan         Plan               @relation(fields: [planId], references: [id])
+
+  // Relacionamento com o Cliente (Quem comprou?)
+  customerId   String             @unique // @unique Garante que o cliente só tenha UMA assinatura
+  customer     Customer           @relation(fields: [customerId], references: [id])
+
+  // NOVO: Histórico de agendamentos que usaram essa assinatura
+  appointments Appointment[]
+
+  @@index([status]) // Para o Cron Job achar rápido quem precisa cobrar
+}
+
+model Appointment {
+  id            String            @id @default(uuid())
+  date          DateTime
+  status        AppointmentStatus @default(PENDING)
+  
+  // Integração Calendário Externo
+  externalEventId String?         // ID do evento no Google/Apple Calendar (para poder atualizar/deletar depois)
+
+  tenantId      String
+  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+
+  customerId    String
+  customer      Customer          @relation(fields: [customerId], references: [id])
+  
+  serviceId     String
+  service       Service           @relation(fields: [serviceId], references: [id])
+
+  // Se estiver preenchido, significa que foi "pago" pela assinatura X
+  usedSubscriptionId String? 
+  usedSubscription   Subscription? @relation(fields: [usedSubscriptionId], references: [id])
+}
