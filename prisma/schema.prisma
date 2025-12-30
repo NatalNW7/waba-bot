@@ -13,7 +13,10 @@ datasource db {
   provider = "postgresql" // Recomendado para SaaS. Mude para sqlite se for apenas dev local.
 }
 
-// Enums deixam o código mais limpo e evitam erros de digitação ("PENDING" vs "pending")
+// --------------------------------------
+// ENUMS
+// --------------------------------------
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -28,7 +31,7 @@ enum CalendarProvider {
 
 enum SubscriptionStatus {
   ACTIVE
-  PAST_DUE // Pagamento atrasado
+  PAST_DUE
   CANCELED
   EXPIRED
 }
@@ -49,143 +52,264 @@ enum DayOfWeek {
   SUNDAY
 }
 
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  FAILED
+}
+
+enum PaymentType {
+  APPOINTMENT      // Cliente pagando agendamento
+  SUBSCRIPTION     // Cliente pagando plano do salão
+  SAAS_FEE         // Salão pagando a plataforma (SaaS)
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+}
+
+// --------------------------------------
+// MODELS
+// --------------------------------------
+
+// 1. Tabela de Planos do SEU SaaS (Normalização)
+// Isso evita repetir o preço "99.00" em cada linha de Tenant
+model SaasPlan {
+  id          String   @id @default(uuid())
+  name        String   // Ex: "Basic", "Pro"
+  price       Decimal  @db.Decimal(10, 2)
+  description String?
+  
+  tenants     Tenant[] // Quem assina este plano?
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("saas_plans") // Nome da tabela no Postgres
+}
+
 model Tenant {
   id          String   @id @default(uuid())
-  name        String   // Removi @unique (Dois salões podem ter nomes iguais, o ID que importa)
+  name        String
   
-  // WhatsApp Info
-  wabaId      String   @unique
-  phoneId     String   @unique 
-  accessToken String   // Token da Meta
+  // WhatsApp Info (Metadados da API)
+  wabaId      String   @unique @map("waba_id")
+  phoneId     String   @unique @map("phone_id")
+  accessToken String   @map("access_token") // Token Meta
 
-  // Dados de contato do Estabelecimento
-  phone       String?  
+  // Contato
+  phone       String?
   email       String   @unique
 
-  // Relacionamentos
-  calendar        Calendar?      // Relação 1:1 Opcional (O salão pode não ter conectado ainda)
-  services        Service[]
-  appointments    Appointment[]
-  customers       Customer[]
-  plans           Plan[]         // Planos que este salão oferece
-  operatingHours  OperatingHour[]
+  // Integração Mercado Pago (Credentials)
+  mpAccessToken String? @map("mp_access_token")
+  mpPublicKey   String? @map("mp_public_key")
+  mpRefToken    String? @map("mp_ref_token")
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  // Gestão da Assinatura do SaaS (Relacionamento com SaasPlan)
+  saasStatus          SubscriptionStatus @default(ACTIVE) @map("saas_status")
+  saasNextBilling     DateTime?          @map("saas_next_billing")
+  saasPaymentMethodId String?            @map("saas_payment_method_id")
+  
+  saasPlanId          String?            @map("saas_plan_id")
+  saasPlan            SaasPlan?          @relation(fields: [saasPlanId], references: [id])
+
+  // Relacionamentos do Negócio
+  calendar       Calendar?
+  services       Service[]
+  appointments   Appointment[]
+  customers      Customer[]
+  plans          Plan[]
+  operatingHours OperatingHour[]
+  payments       Payment[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("tenants")
 }
 
 model OperatingHour {
   id        String    @id @default(uuid())
   day       DayOfWeek
   
-  startTime String    // Ex: "08:00"
-  endTime   String    // Ex: "20:00"
+  startTime String    @map("start_time") // "HH:mm"
+  endTime   String    @map("end_time")   // "HH:mm"
   
-  isClosed            Boolean   @default(false) // Se true, o salão não abre nesse dia
-  
-  // A Mágica para o seu caso do Domingo:
-  onlyForSubscribers Boolean @default(false) 
+  isClosed           Boolean @default(false) @map("is_closed")
+  onlyForSubscribers Boolean @default(false) @map("only_for_subscribers")
 
-  tenantId  String
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId  String    @map("tenant_id")
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Index para performance nas queries de disponibilidade
   @@index([tenantId, day])
+  @@map("operating_hours")
 }
 
 model Calendar {
   id           String           @id @default(uuid())
-  provider     CalendarProvider // GOOGLE ou APPLE
-  email        String           // Email da conta conectada (ex: salao@gmail.com)
+  provider     CalendarProvider
+  email        String
   
-  // OAuth2 Tokens
-  accessToken  String           // Token temporário
-  refreshToken String           // O token vitalício (O SEGREDO ESTÁ AQUI)
-  tokenExpiry  DateTime?        // Quando o accessToken expira
+  accessToken  String    @map("access_token")
+  refreshToken String    @map("refresh_token")
+  tokenExpiry  DateTime? @map("token_expiry")
 
-  tenantId     String           @unique // @unique garante que 1 Tenant só tenha 1 Calendar
-  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String    @unique @map("tenant_id")
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("calendars")
 }
 
 model Service {
-  id          String   @id @default(uuid())
-  name        String
-  price       Decimal  @db.Decimal(10, 2) // Melhor precisão para dinheiro
-  duration    Int      // Minutos
+  id        String   @id @default(uuid())
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  duration  Int      // Minutos
 
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
   
   appointments Appointment[]
-  includedInPlans Plan[]
+  
+  // Relacionamento N:N implícito com Plan
+  plans        Plan[] 
+
+  @@map("services")
 }
 
 model Plan {
   id          String          @id @default(uuid())
-  name        String          // Ex: "Clube do Corte"
+  name        String
   description String?
   price       Decimal         @db.Decimal(10, 2)
-  interval    PaymentInterval @default(MONTHLY) // Mensal, Anual...
+  interval    PaymentInterval @default(MONTHLY)
 
-  tenantId    String
+  tenantId    String          @map("tenant_id")
   tenant      Tenant          @relation(fields: [tenantId], references: [id])
 
-  subscriptions Subscription[] // Quem assina este plano?
-  includedServices Service[]
+  subscriptions Subscription[]
+  services      Service[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("plans")
 }
 
-# TODO: Trabalhar em um painel de habilitação/desabilitação mais robusto
 model Customer {
   id                String   @id @default(uuid())
-  phone             String   // Número do WhatsApp (Formatado E.164 ex: 551199999999)
+  phone             String
   name              String?
-  email             String?  // Nem todo cliente dá o email no WhatsApp
-  offerNotification Boolean @default(true)
-  tenantId          String
+  email             String?
+  offerNotification Boolean  @default(true) @map("offer_notification")
+
+  tenantId          String   @map("tenant_id")
   tenant            Tenant   @relation(fields: [tenantId], references: [id])
 
-  appointments      Appointment[]
-  subscription      Subscription? // Relação 1:1 Opcional. Cliente só pode ter 1 assinatura ativa.
+  mpCustomerId      String?  @map("mp_customer_id")
 
-  @@unique([tenantId, phone]) // Garante unicidade do cliente DENTRO do salão
+  appointments      Appointment[]
+  subscription      Subscription?
+  payments          Payment[]
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, phone])
+  @@map("customers")
 }
 
 model Subscription {
   id           String             @id @default(uuid())
   status       SubscriptionStatus @default(ACTIVE)
-  startDate    DateTime           @default(now())
-  nextBilling  DateTime           // Data da próxima cobrança
+  startDate    DateTime           @default(now()) @map("start_date")
+  nextBilling  DateTime           @map("next_billing")
+
+  cardTokenId  String?            @map("card_token_id")
   
-  // Relacionamento com o Plano (O que ele comprou?)
-  planId       String
+  planId       String             @map("plan_id")
   plan         Plan               @relation(fields: [planId], references: [id])
 
-  // Relacionamento com o Cliente (Quem comprou?)
-  customerId   String             @unique // @unique Garante que o cliente só tenha UMA assinatura
+  customerId   String             @unique @map("customer_id")
   customer     Customer           @relation(fields: [customerId], references: [id])
 
-  // NOVO: Histórico de agendamentos que usaram essa assinatura
   appointments Appointment[]
+  payments     Payment[] // Faturas
 
-  @@index([status]) // Para o Cron Job achar rápido quem precisa cobrar
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("subscriptions")
 }
 
 model Appointment {
-  id            String            @id @default(uuid())
-  date          DateTime
-  status        AppointmentStatus @default(PENDING)
+  id                 String            @id @default(uuid())
+  date               DateTime
+  status             AppointmentStatus @default(PENDING)
+
+  cancellationReason String?           @map("cancellation_reason")
+  canceledAt         DateTime?         @map("canceled_at")
+
+  // Snapshot do preço (Importante para histórico financeiro)
+  price              Decimal           @db.Decimal(10, 2)
   
-  // Integração Calendário Externo
-  externalEventId String?         // ID do evento no Google/Apple Calendar (para poder atualizar/deletar depois)
+  paymentId          String?           @unique @map("payment_id")
+  payment            Payment?          @relation(fields: [paymentId], references: [id])
 
-  tenantId      String
-  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+  externalEventId    String?           @map("external_event_id")
 
-  customerId    String
-  customer      Customer          @relation(fields: [customerId], references: [id])
+  tenantId           String            @map("tenant_id")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id])
+
+  customerId         String            @map("customer_id")
+  customer           Customer          @relation(fields: [customerId], references: [id])
   
-  serviceId     String
-  service       Service           @relation(fields: [serviceId], references: [id])
+  serviceId          String            @map("service_id")
+  service            Service           @relation(fields: [serviceId], references: [id])
 
-  // Se estiver preenchido, significa que foi "pago" pela assinatura X
-  usedSubscriptionId String? 
-  usedSubscription   Subscription? @relation(fields: [usedSubscriptionId], references: [id])
+  usedSubscriptionId String?           @map("used_subscription_id")
+  usedSubscription   Subscription?     @relation(fields: [usedSubscriptionId], references: [id])
+
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  @@map("appointments")
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  externalId     String        @unique @map("external_id") // ID do MP
+  
+  amount         Decimal       @db.Decimal(10, 2)
+  netAmount      Decimal?      @db.Decimal(10, 2) @map("net_amount")
+  fee            Decimal?      @db.Decimal(10, 2)
+  
+  status         PaymentStatus @default(PENDING)
+  type           PaymentType
+  method         PaymentMethod
+  
+  tenantId       String        @map("tenant_id")
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+
+  customerId     String?       @map("customer_id")
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+
+  appointment    Appointment?
+  
+  subscriptionId String?       @map("subscription_id")
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  @@map("payments")
 }
