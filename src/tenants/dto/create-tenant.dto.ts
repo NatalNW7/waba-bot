@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+} from 'class-validator';
+import { SubscriptionStatus } from '@prisma/client';
 
 /**
  * Data required to create a new tenant (WhatsApp Business account holder)
@@ -51,4 +59,60 @@ export class CreateTenantDto {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  /**
+   * Mercado Pago Access Token
+   * @example "APP_USR-..."
+   */
+  @IsString()
+  @IsOptional()
+  mpAccessToken?: string;
+
+  /**
+   * Mercado Pago Public Key
+   * @example "APP_USR-..."
+   */
+  @IsString()
+  @IsOptional()
+  mpPublicKey?: string;
+
+  /**
+   * Mercado Pago Refresh Token
+   * @example "TG-..."
+   */
+  @IsString()
+  @IsOptional()
+  mpRefToken?: string;
+
+  /**
+   * SaaS subscription status
+   * @example "ACTIVE"
+   */
+  @IsEnum(SubscriptionStatus)
+  @IsOptional()
+  saasStatus?: SubscriptionStatus;
+
+  /**
+   * Next SaaS billing date
+   * @example "2025-01-31T00:00:00Z"
+   */
+  @IsDateString()
+  @IsOptional()
+  saasNextBilling?: string;
+
+  /**
+   * SaaS payment method ID
+   * @example "pm_123"
+   */
+  @IsString()
+  @IsOptional()
+  saasPaymentMethodId?: string;
+
+  /**
+   * SaaS Plan ID
+   * @example "550e8400-e29b-41d4-a716-446655440003"
+   */
+  @IsString()
+  @IsOptional()
+  saasPlanId?: string;
 }
