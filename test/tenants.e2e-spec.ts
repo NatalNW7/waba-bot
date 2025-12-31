@@ -24,7 +24,7 @@ describe('TenantsController (e2e)', () => {
     await app.close();
   });
 
-  it('/tenants (POST)', async () => {
+  it('/tenants (POST) - Success', async () => {
     return request(app.getHttpServer())
       .post('/tenants')
       .send({
@@ -38,6 +38,23 @@ describe('TenantsController (e2e)', () => {
       .expect((res) => {
         expect(res.body.name).toEqual('My Waba Store');
         expect(res.body.wabaId).toEqual('waba_123');
+      });
+  });
+
+  it('/tenants (POST) - Failure (Plan not found)', async () => {
+    return request(app.getHttpServer())
+      .post('/tenants')
+      .send({
+        name: 'Failed Tenant',
+        wabaId: 'waba_fail',
+        phoneId: 'phone_fail',
+        accessToken: 'EAAG...',
+        email: 'fail@example.com',
+        saasPlanId: '99999999-9999-9999-9999-999999999999',
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.message).toEqual('this saas plan does not exists');
       });
   });
 

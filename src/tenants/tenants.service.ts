@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,7 +7,17 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TenantsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createTenantDto: CreateTenantDto) {
+  async create(createTenantDto: CreateTenantDto) {
+    if (createTenantDto.saasPlanId) {
+      const plan = await this.prisma.saasPlan.findUnique({
+        where: { id: createTenantDto.saasPlanId },
+      });
+
+      if (!plan) {
+        throw new BadRequestException('this saas plan does not exists');
+      }
+    }
+
     return this.prisma.tenant.create({
       data: createTenantDto,
     });

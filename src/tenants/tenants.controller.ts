@@ -32,7 +32,9 @@ export class TenantsController {
     type: TenantEntity,
     description: 'Tenant created successfully',
   })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data or SaaS plan does not exist',
+  })
   create(@Body() createTenantDto: CreateTenantDto) {
     return this.tenantsService.create(createTenantDto);
   }
