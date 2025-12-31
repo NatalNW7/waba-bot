@@ -1,0 +1,57 @@
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import { CustomersService } from './customers.service';
+import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { CustomerEntity } from './entities/customer.entity';
+
+@ApiTags('Customers')
+@Controller('customers')
+export class CustomersController {
+  constructor(private readonly customersService: CustomersService) {}
+
+  /** Create a new customer */
+  @Post()
+  @ApiOperation({ summary: 'Create customer' })
+  @ApiCreatedResponse({ type: CustomerEntity, description: 'Customer created successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  create(@Body() createCustomerDto: CreateCustomerDto) {
+    return this.customersService.create(createCustomerDto);
+  }
+
+  /** Get all customers */
+  @Get()
+  @ApiOperation({ summary: 'List all customers' })
+  @ApiOkResponse({ type: [CustomerEntity], description: 'List of customers' })
+  findAll() {
+    return this.customersService.findAll();
+  }
+
+  /** Get a customer by ID */
+  @Get(':id')
+  @ApiOperation({ summary: 'Get customer by ID' })
+  @ApiOkResponse({ type: CustomerEntity, description: 'Customer found' })
+  @ApiNotFoundResponse({ description: 'Customer not found' })
+  findOne(@Param('id') id: string) {
+    return this.customersService.findOne(id);
+  }
+
+  /** Update a customer */
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update customer' })
+  @ApiOkResponse({ type: CustomerEntity, description: 'Customer updated successfully' })
+  @ApiNotFoundResponse({ description: 'Customer not found' })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
+    return this.customersService.update(id, updateCustomerDto);
+  }
+
+  /** Delete a customer */
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete customer' })
+  @ApiOkResponse({ type: CustomerEntity, description: 'Customer deleted successfully' })
+  @ApiNotFoundResponse({ description: 'Customer not found' })
+  remove(@Param('id') id: string) {
+    return this.customersService.remove(id);
+  }
+}
