@@ -57,18 +57,37 @@ NestJS uses **Jest** by default. Follow these rules to ensure the agent writes m
 * **Cleanup:** Ensure the database is cleared before or after each test suite.
 * **Supertest:** Use `supertest` to make actual HTTP requests to the app instance and verify the full request-response lifecycle.
 
+### 🚀 Common Commands
+* `pnpm run start:dev` - Start development server.
+* `pnpm run migrate:make <description>` - Create/apply migrations.
+* `pnpm run prisma studio` - Open DB GUI.
+* `pnpm run nest g mo/s/co <name>` - Generate Nest components.
+
 ### 🤖 Agent Testing Instructions
 * When generating a new service, always generate a corresponding `.spec.ts` file with at least one "happy path" and one "error path" test.
 * If a feature involves a complex Prisma query, suggest an integration test over a unit test to verify the SQL logic.
 
-## 🚀 Testing Commands
+### 🚀 Testing Commands
 * `pnpm run test` - Run all unit tests.
 * `pnpm run test:watch` - Run tests in watch mode.
 * `pnpm run test:cov` - Generate test coverage report.
 * `pnpm run test:e2e` - Run end-to-end tests.
 
-## 🚀 Common Commands
-* `pnpm run start:dev` - Start development server.
-* `pnpm run migrate:make <description>` - Create/apply migrations.
-* `pnpm run prisma studio` - Open DB GUI.
-* `pnpm run nest g mo/s/co <name>` - Generate Nest components.
+## 📝 Swagger & Documentation Enforcement
+Documentation is part of the "Definition of Done." When creating or modifying endpoints, the agent must:
+
+### 1. Automatic Metadata (CLI Plugin)
+* **Leverage JSDoc:** Use rich JSDoc comments (`/** ... */`) on DTO properties and Controller methods. The CLI plugin will convert these into Swagger descriptions.
+* **Validation Sync:** Ensure `class-validator` decorators (like `@IsEmail()`, `@Min(1)`) are used in DTOs; the plugin will automatically reflect these constraints in the Swagger UI.
+
+### 2. Manual Enhancements
+* **Realistic Examples:** Always provide a realistic `example` value in the `@ApiProperty()` or JSDoc for every DTO field.
+* **Operation Summaries:** Every controller method must have an `@ApiOperation({ summary: '...' })`.
+* **Response Codes:** Explicitly document expected status codes:
+    * `@ApiOkResponse` / `@ApiCreatedResponse` for success.
+    * `@ApiNotFoundResponse` / `@ApiBadRequestResponse` for common failures.
+* **Security Tags:** If a route is protected by a Guard, ensure `@ApiBearerAuth()` is applied at the class or method level.
+
+### 3. Change Management
+* **Schema Changes:** If a field is added to `schema.prisma`, immediately update the corresponding DTOs and their Swagger metadata.
+* **Contract First:** Before writing the logic in the Service, ensure the Controller's Swagger contract reflects the required input and output.
