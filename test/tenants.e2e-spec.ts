@@ -58,6 +58,30 @@ describe('TenantsController (e2e)', () => {
       });
   });
 
+  it('/tenants/:id (GET) - Success with inclusions', async () => {
+    // Create a tenant first to get an ID
+    const createRes = await request(app.getHttpServer())
+      .post('/tenants')
+      .send({
+        name: 'Include Tenant',
+        wabaId: 'waba_inc',
+        phoneId: 'phone_inc',
+        accessToken: 'EAAG...',
+        email: 'inc@example.com',
+      });
+
+    const tenantId = createRes.body.id;
+
+    return request(app.getHttpServer())
+      .get(`/tenants/${tenantId}?include=services,saasPlan`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.id).toEqual(tenantId);
+        expect(res.body.services).toBeDefined();
+        expect(Array.isArray(res.body.services)).toBe(true);
+      });
+  });
+
   it('/tenants (GET)', () => {
     return request(app.getHttpServer())
       .get('/tenants')

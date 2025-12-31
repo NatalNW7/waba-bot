@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +20,7 @@ import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { TenantEntity } from './entities/tenant.entity';
+import { FindTenantQueryDto } from './dto/find-tenant-query.dto';
 
 @ApiTags('Tenants')
 @Controller('tenants')
@@ -52,8 +54,8 @@ export class TenantsController {
   @ApiOperation({ summary: 'Get tenant by ID' })
   @ApiOkResponse({ type: TenantEntity, description: 'Tenant found' })
   @ApiNotFoundResponse({ description: 'Tenant not found' })
-  findOne(@Param('id') id: string) {
-    return this.tenantsService.findOne(id);
+  findOne(@Param('id') id: string, @Query() query: FindTenantQueryDto) {
+    return this.tenantsService.findOne(id, query.include);
   }
 
   /** Update a tenant */

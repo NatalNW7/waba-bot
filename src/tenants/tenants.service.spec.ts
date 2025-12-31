@@ -19,6 +19,7 @@ describe('TenantsService', () => {
             },
             tenant: {
               create: jest.fn(),
+              findUnique: jest.fn(),
             },
           },
         },
@@ -68,6 +69,41 @@ describe('TenantsService', () => {
       expect(result).toBeDefined();
       expect(prisma.saasPlan.findUnique).not.toHaveBeenCalled();
       expect(prisma.tenant.create).toHaveBeenCalledWith({ data: dtoNoPlan });
+    });
+  });
+
+  describe('findOne', () => {
+    it('should find tenant without inclusions if none provided', async () => {
+      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant123', name: 'Test' } as any);
+
+      const result = await service.findOne('tenant123');
+      expect(result).toBeDefined();
+      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
+        where: { id: 'tenant123' },
+        include: undefined,
+      });
+    });
+
+    it('should find tenant with valid inclusions', async () => {
+      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant123', services: [] } as any);
+
+      const result = await service.findOne('tenant123', 'services,saasPlan');
+      expect(result).toBeDefined();
+      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
+        where: { id: 'tenant123' },
+        include: { services: true, saasPlan: true },
+      });
+    });
+
+    it('should ignore invalid inclusions', async () => {
+      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant123' } as any);
+
+      const result = await service.findOne('tenant123', 'services,invalidRel');
+      expect(result).toBeDefined();
+      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
+        where: { id: 'tenant123' },
+        include: { services: true },
+      });
     });
   });
 });

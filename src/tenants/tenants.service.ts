@@ -27,10 +27,38 @@ export class TenantsService {
     return this.prisma.tenant.findMany();
   }
 
-  findOne(id: string) {
+  findOne(id: string, include?: string) {
+    const includeObj = this.parseInclude(include);
     return this.prisma.tenant.findUnique({
       where: { id },
+      include: Object.keys(includeObj).length > 0 ? includeObj : undefined,
     });
+  }
+
+  private parseInclude(includeStr?: string) {
+    const includeObj: any = {};
+    if (!includeStr) return includeObj;
+
+    const validRelations = [
+      'saasPlan',
+      'calendar',
+      'services',
+      'appointments',
+      'customers',
+      'plans',
+      'operatingHours',
+      'payments',
+    ];
+
+    const requestedRelations = includeStr.split(',').map((r) => r.trim());
+
+    requestedRelations.forEach((rel) => {
+      if (validRelations.includes(rel)) {
+        includeObj[rel] = true;
+      }
+    });
+
+    return includeObj;
   }
 
   update(id: string, updateTenantDto: UpdateTenantDto) {

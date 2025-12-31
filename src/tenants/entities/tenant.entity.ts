@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SubscriptionStatus } from '@prisma/client';
+import { SaasPlanEntity } from '../../saas-plans/entities/saas-plan.entity';
+import { CalendarEntity } from '../../calendars/entities/calendar.entity';
+import { ServiceEntity } from '../../services/entities/service.entity';
+import { AppointmentEntity } from '../../appointments/entities/appointment.entity';
+import { CustomerEntity } from '../../customers/entities/customer.entity';
+import { PlanEntity } from '../../plans/entities/plan.entity';
+import { OperatingHourEntity } from '../../operating-hours/entities/operating-hour.entity';
+import { PaymentEntity } from '../../payments/entities/payment.entity';
 
 /**
  * Tenant entity representing a WhatsApp Business account holder
@@ -58,8 +66,43 @@ export class TenantEntity {
   saasPaymentMethodId?: string;
 
   /** SaaS Plan ID */
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440003', required: false })
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440003',
+    required: false,
+  })
   saasPlanId?: string;
+
+  /** SaaS Plan relation */
+  @ApiProperty({ type: () => SaasPlanEntity, required: false })
+  saasPlan?: SaasPlanEntity;
+
+  /** Calendar integration */
+  @ApiProperty({ type: () => CalendarEntity, required: false })
+  calendar?: CalendarEntity;
+
+  /** List of services */
+  @ApiProperty({ type: () => [ServiceEntity], required: false })
+  services?: ServiceEntity[];
+
+  /** List of appointments */
+  @ApiProperty({ type: () => [AppointmentEntity], required: false })
+  appointments?: AppointmentEntity[];
+
+  /** List of customers */
+  @ApiProperty({ type: () => [CustomerEntity], required: false })
+  customers?: CustomerEntity[];
+
+  /** Business plans for customers */
+  @ApiProperty({ type: () => [PlanEntity], required: false })
+  plans?: PlanEntity[];
+
+  /** Business operating hours */
+  @ApiProperty({ type: () => [OperatingHourEntity], required: false })
+  operatingHours?: OperatingHourEntity[];
+
+  /** Payments received */
+  @ApiProperty({ type: () => [PaymentEntity], required: false })
+  payments?: PaymentEntity[];
 
   /** Creation timestamp */
   @ApiProperty()
