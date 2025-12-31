@@ -7,7 +7,9 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Waba Bot API')
-    .setDescription('WhatsApp Business API integration for SaaS appointment scheduling')
+    .setDescription(
+      'WhatsApp Business API integration for SaaS appointment scheduling',
+    )
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);

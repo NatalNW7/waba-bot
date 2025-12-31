@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SaasPlansController } from './saas-plans.controller';
 import { SaasPlansService } from './saas-plans.service';
-import { Prisma } from '../../prisma/generated/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('SaasPlansController', () => {

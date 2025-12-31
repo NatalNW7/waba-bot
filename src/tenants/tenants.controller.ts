@@ -1,5 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
+} from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
@@ -13,7 +28,10 @@ export class TenantsController {
   /** Create a new tenant */
   @Post()
   @ApiOperation({ summary: 'Create tenant' })
-  @ApiCreatedResponse({ type: TenantEntity, description: 'Tenant created successfully' })
+  @ApiCreatedResponse({
+    type: TenantEntity,
+    description: 'Tenant created successfully',
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   create(@Body() createTenantDto: CreateTenantDto) {
     return this.tenantsService.create(createTenantDto);
@@ -39,7 +57,10 @@ export class TenantsController {
   /** Update a tenant */
   @Patch(':id')
   @ApiOperation({ summary: 'Update tenant' })
-  @ApiOkResponse({ type: TenantEntity, description: 'Tenant updated successfully' })
+  @ApiOkResponse({
+    type: TenantEntity,
+    description: 'Tenant updated successfully',
+  })
   @ApiNotFoundResponse({ description: 'Tenant not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   update(@Param('id') id: string, @Body() updateTenantDto: UpdateTenantDto) {
@@ -49,7 +70,10 @@ export class TenantsController {
   /** Delete a tenant */
   @Delete(':id')
   @ApiOperation({ summary: 'Delete tenant' })
-  @ApiOkResponse({ type: TenantEntity, description: 'Tenant deleted successfully' })
+  @ApiOkResponse({
+    type: TenantEntity,
+    description: 'Tenant deleted successfully',
+  })
   @ApiNotFoundResponse({ description: 'Tenant not found' })
   remove(@Param('id') id: string) {
     return this.tenantsService.remove(id);

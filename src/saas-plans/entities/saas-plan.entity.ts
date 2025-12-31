@@ -13,7 +13,10 @@ export class SaasPlanEntity {
   name: string;
 
   /** Monthly price in BRL */
-  @ApiProperty({ example: '99.00', description: 'Monthly price in BRL (Decimal)' })
+  @ApiProperty({
+    example: '99.00',
+    description: 'Monthly price in BRL (Decimal)',
+  })
   price: string;
 
   /** Plan description */

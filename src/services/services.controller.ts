@@ -1,5 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
+} from '@nestjs/swagger';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -13,7 +28,10 @@ export class ServicesController {
   /** Create a new service */
   @Post()
   @ApiOperation({ summary: 'Create service' })
-  @ApiCreatedResponse({ type: ServiceEntity, description: 'Service created successfully' })
+  @ApiCreatedResponse({
+    type: ServiceEntity,
+    description: 'Service created successfully',
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   create(@Body() createServiceDto: CreateServiceDto) {
     return this.servicesService.create(createServiceDto);
@@ -39,7 +57,10 @@ export class ServicesController {
   /** Update a service */
   @Patch(':id')
   @ApiOperation({ summary: 'Update service' })
-  @ApiOkResponse({ type: ServiceEntity, description: 'Service updated successfully' })
+  @ApiOkResponse({
+    type: ServiceEntity,
+    description: 'Service updated successfully',
+  })
   @ApiNotFoundResponse({ description: 'Service not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
@@ -49,7 +70,10 @@ export class ServicesController {
   /** Delete a service */
   @Delete(':id')
   @ApiOperation({ summary: 'Delete service' })
-  @ApiOkResponse({ type: ServiceEntity, description: 'Service deleted successfully' })
+  @ApiOkResponse({
+    type: ServiceEntity,
+    description: 'Service deleted successfully',
+  })
   @ApiNotFoundResponse({ description: 'Service not found' })
   remove(@Param('id') id: string) {
     return this.servicesService.remove(id);

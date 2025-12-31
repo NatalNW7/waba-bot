@@ -1,5 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
+} from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -13,7 +28,10 @@ export class CustomersController {
   /** Create a new customer */
   @Post()
   @ApiOperation({ summary: 'Create customer' })
-  @ApiCreatedResponse({ type: CustomerEntity, description: 'Customer created successfully' })
+  @ApiCreatedResponse({
+    type: CustomerEntity,
+    description: 'Customer created successfully',
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   create(@Body() createCustomerDto: CreateCustomerDto) {
     return this.customersService.create(createCustomerDto);
@@ -39,17 +57,26 @@ export class CustomersController {
   /** Update a customer */
   @Patch(':id')
   @ApiOperation({ summary: 'Update customer' })
-  @ApiOkResponse({ type: CustomerEntity, description: 'Customer updated successfully' })
+  @ApiOkResponse({
+    type: CustomerEntity,
+    description: 'Customer updated successfully',
+  })
   @ApiNotFoundResponse({ description: 'Customer not found' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateCustomerDto: UpdateCustomerDto,
+  ) {
     return this.customersService.update(id, updateCustomerDto);
   }
 
   /** Delete a customer */
   @Delete(':id')
   @ApiOperation({ summary: 'Delete customer' })
-  @ApiOkResponse({ type: CustomerEntity, description: 'Customer deleted successfully' })
+  @ApiOkResponse({
+    type: CustomerEntity,
+    description: 'Customer deleted successfully',
+  })
   @ApiNotFoundResponse({ description: 'Customer not found' })
   remove(@Param('id') id: string) {
     return this.customersService.remove(id);

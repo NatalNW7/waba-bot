@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
-import { Prisma } from '../../prisma/generated/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('CustomersController', () => {
