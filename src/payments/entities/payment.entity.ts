@@ -18,11 +18,19 @@ export class PaymentEntity {
   amount: string;
 
   /** Net amount after fees */
-  @ApiProperty({ example: '28.50', description: 'Net amount in BRL (Decimal)', required: false })
+  @ApiProperty({
+    example: '28.50',
+    description: 'Net amount in BRL (Decimal)',
+    required: false,
+  })
   netAmount?: string;
 
   /** Gateway fee */
-  @ApiProperty({ example: '1.50', description: 'Fee in BRL (Decimal)', required: false })
+  @ApiProperty({
+    example: '1.50',
+    description: 'Fee in BRL (Decimal)',
+    required: false,
+  })
   fee?: string;
 
   /** Payment status */
@@ -42,11 +50,17 @@ export class PaymentEntity {
   tenantId: string;
 
   /** Customer ID */
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001', required: false })
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440001',
+    required: false,
+  })
   customerId?: string;
 
   /** Subscription ID */
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440007', required: false })
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440007',
+    required: false,
+  })
   subscriptionId?: string;
 
   /** Creation timestamp */

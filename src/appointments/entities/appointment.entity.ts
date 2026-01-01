@@ -46,11 +46,17 @@ export class AppointmentEntity {
   serviceId: string;
 
   /** Payment ID */
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440008', required: false })
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440008',
+    required: false,
+  })
   paymentId?: string;
 
   /** Used subscription ID */
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440007', required: false })
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440007',
+    required: false,
+  })
   usedSubscriptionId?: string;
 
   /** Creation timestamp */

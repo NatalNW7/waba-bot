@@ -53,8 +53,12 @@ describe('TenantsService', () => {
     });
 
     it('should create tenant if saasPlan exists', async () => {
-      jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue({ id: 'plan123' } as any);
-      jest.spyOn(prisma.tenant, 'create').mockResolvedValue({ id: 'tenant123', ...createDto } as any);
+      jest
+        .spyOn(prisma.saasPlan, 'findUnique')
+        .mockResolvedValue({ id: 'plan123' } as any);
+      jest
+        .spyOn(prisma.tenant, 'create')
+        .mockResolvedValue({ id: 'tenant123', ...createDto } as any);
 
       const result = await service.create(createDto);
       expect(result).toBeDefined();
@@ -63,7 +67,9 @@ describe('TenantsService', () => {
 
     it('should create tenant if no saasPlanId is provided', async () => {
       const dtoNoPlan = { ...createDto, saasPlanId: undefined };
-      jest.spyOn(prisma.tenant, 'create').mockResolvedValue({ id: 'tenant123', ...dtoNoPlan } as any);
+      jest
+        .spyOn(prisma.tenant, 'create')
+        .mockResolvedValue({ id: 'tenant123', ...dtoNoPlan } as any);
 
       const result = await service.create(dtoNoPlan);
       expect(result).toBeDefined();
@@ -74,7 +80,9 @@ describe('TenantsService', () => {
 
   describe('findOne', () => {
     it('should find tenant without inclusions if none provided', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant123', name: 'Test' } as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant123', name: 'Test' } as any);
 
       const result = await service.findOne('tenant123');
       expect(result).toBeDefined();
@@ -85,7 +93,9 @@ describe('TenantsService', () => {
     });
 
     it('should find tenant with valid inclusions', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant123', services: [] } as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant123', services: [] } as any);
 
       const result = await service.findOne('tenant123', 'services,saasPlan');
       expect(result).toBeDefined();
@@ -96,7 +106,9 @@ describe('TenantsService', () => {
     });
 
     it('should ignore invalid inclusions', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant123' } as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant123' } as any);
 
       const result = await service.findOne('tenant123', 'services,invalidRel');
       expect(result).toBeDefined();

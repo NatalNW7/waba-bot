@@ -1,4 +1,11 @@
-import { IsEnum, IsString, IsNotEmpty, IsEmail, IsOptional, IsDateString } from 'class-validator';
+import {
+  IsEnum,
+  IsString,
+  IsNotEmpty,
+  IsEmail,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
 import { CalendarProvider } from '@prisma/client';
 
 /**

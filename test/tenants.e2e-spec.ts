@@ -60,15 +60,13 @@ describe('TenantsController (e2e)', () => {
 
   it('/tenants/:id (GET) - Success with inclusions', async () => {
     // Create a tenant first to get an ID
-    const createRes = await request(app.getHttpServer())
-      .post('/tenants')
-      .send({
-        name: 'Include Tenant',
-        wabaId: 'waba_inc',
-        phoneId: 'phone_inc',
-        accessToken: 'EAAG...',
-        email: 'inc@example.com',
-      });
+    const createRes = await request(app.getHttpServer()).post('/tenants').send({
+      name: 'Include Tenant',
+      wabaId: 'waba_inc',
+      phoneId: 'phone_inc',
+      accessToken: 'EAAG...',
+      email: 'inc@example.com',
+    });
 
     const tenantId = createRes.body.id;
 

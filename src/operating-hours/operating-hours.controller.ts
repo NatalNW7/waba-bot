@@ -51,7 +51,10 @@ export class OperatingHoursController {
   /** Get an operating hour by ID */
   @Get(':id')
   @ApiOperation({ summary: 'Get operating hour by ID' })
-  @ApiOkResponse({ type: OperatingHourEntity, description: 'Operating hour found' })
+  @ApiOkResponse({
+    type: OperatingHourEntity,
+    description: 'Operating hour found',
+  })
   @ApiNotFoundResponse({ description: 'Operating hour not found' })
   findOne(@Param('id') id: string) {
     return this.operatingHoursService.findOne(id);

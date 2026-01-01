@@ -51,7 +51,10 @@ export class SubscriptionsController {
   /** Get a subscription by ID */
   @Get(':id')
   @ApiOperation({ summary: 'Get subscription by ID' })
-  @ApiOkResponse({ type: SubscriptionEntity, description: 'Subscription found' })
+  @ApiOkResponse({
+    type: SubscriptionEntity,
+    description: 'Subscription found',
+  })
   @ApiNotFoundResponse({ description: 'Subscription not found' })
   findOne(@Param('id') id: string) {
     return this.subscriptionsService.findOne(id);

@@ -14,7 +14,10 @@ export class PlanEntity {
   name: string;
 
   /** Plan description */
-  @ApiProperty({ example: 'Acesso ilimitado a barba por um mês', required: false })
+  @ApiProperty({
+    example: 'Acesso ilimitado a barba por um mês',
+    required: false,
+  })
   description?: string;
 
   /** Plan price */

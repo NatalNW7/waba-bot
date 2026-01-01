@@ -1,4 +1,10 @@
-import { IsEnum, IsString, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
+import {
+  IsEnum,
+  IsString,
+  IsNotEmpty,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
 import { DayOfWeek } from '@prisma/client';
 
 /**
