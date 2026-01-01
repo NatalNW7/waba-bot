@@ -95,12 +95,12 @@ model Tenant {
   name        String
   
   // WhatsApp Info (Metadados da API)
-  wabaId      String   @unique @map("waba_id")
-  phoneId     String   @unique @map("phone_id")
-  accessToken String   @map("access_token") // Token Meta
+  wabaId      String?   @unique @map("waba_id")
+  phoneId     String?   @unique @map("phone_id")
+  accessToken String?   @map("access_token") // Token Meta
 
   // Contato
-  phone       String?
+  phone       String
   email       String   @unique
 
   // Integração Mercado Pago (Credentials)
@@ -109,18 +109,19 @@ model Tenant {
   mpRefToken    String? @map("mp_ref_token")
 
   // Gestão da Assinatura do SaaS (Relacionamento com SaasPlan)
-  saasStatus          SubscriptionStatus @default(ACTIVE) @map("saas_status")
-  saasNextBilling     DateTime?          @map("saas_next_billing")
-  saasPaymentMethodId String?            @map("saas_payment_method_id")
+  saasStatus          SubscriptionStatus  @default(ACTIVE) @map("saas_status")
+  saasNextBilling     DateTime            @map("saas_next_billing")
+  saasPaymentMethodId String              @map("saas_payment_method_id")
   
-  saasPlanId          String?            @map("saas_plan_id")
-  saasPlan            SaasPlan?          @relation(fields: [saasPlanId], references: [id])
+  saasPlanId          String              @map("saas_plan_id")
+  saasPlan            SaasPlan            @relation(fields: [saasPlanId], references: [id])
 
   // Relacionamentos do Negócio
+  // Agora aponta para a tabela de vínculo
+  customerLinks   TenantCustomer[]
   calendar       Calendar?
   services       Service[]
   appointments   Appointment[]
-  customers      Customer[]
   plans          Plan[]
   operatingHours OperatingHour[]
   payments       Payment[]
@@ -179,7 +180,7 @@ model Service {
   appointments Appointment[]
   
   // Relacionamento N:N implícito com Plan
-  plans        Plan[] 
+  plans        Plan[]
 
   @@map("services")
 }
@@ -203,26 +204,45 @@ model Plan {
   @@map("plans")
 }
 
+// ESTA É A TABELA DE VÍNCULO (N:N Explícito)
+model TenantCustomer {
+  id                String   @id @default(uuid())
+  
+  // Configurações específicas deste cliente NESTE salão
+  offerNotification Boolean  @default(true) @map("offer_notification")
+  mpCustomerId      String?  @map("mp_customer_id") // ID do cliente na conta MP do dono do salão
+
+  tenantId          String   @map("tenant_id")
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  customerId        String   @map("customer_id")
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // A assinatura é vinculada ao relacionamento Salão <-> Cliente
+  subscription      Subscription?
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  @@unique([tenantId, customerId]) // Garante que não haja duplicidade de vínculo
+  @@map("tenant_customers")
+}
+
 model Customer {
   id                String   @id @default(uuid())
   phone             String
   name              String?
   email             String?
-  offerNotification Boolean  @default(true) @map("offer_notification")
 
-  tenantId          String   @map("tenant_id")
-  tenant            Tenant   @relation(fields: [tenantId], references: [id])
-
-  mpCustomerId      String?  @map("mp_customer_id")
-
+  // Um cliente pode estar em vários salões
+  tenantLinks       TenantCustomer[]
+  
   appointments      Appointment[]
-  subscription      Subscription?
   payments          Payment[]
 
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  @@unique([tenantId, phone])
+  @@unique([phone])
   @@map("customers")
 }
 
@@ -232,13 +252,14 @@ model Subscription {
   startDate    DateTime           @default(now()) @map("start_date")
   nextBilling  DateTime           @map("next_billing")
 
-  cardTokenId  String?            @map("card_token_id")
+  cardTokenId  String             @map("card_token_id")
   
   planId       String             @map("plan_id")
   plan         Plan               @relation(fields: [planId], references: [id])
 
-  customerId   String             @unique @map("customer_id")
-  customer     Customer           @relation(fields: [customerId], references: [id])
+// Agora a assinatura pertence ao Vínculo Salão-Cliente
+  tenantCustomerId String         @unique @map("tenant_customer_id")
+  tenantCustomer   TenantCustomer @relation(fields: [tenantCustomerId], references: [id])
 
   appointments Appointment[]
   payments     Payment[] // Faturas

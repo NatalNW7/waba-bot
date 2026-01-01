@@ -18,6 +18,14 @@ describe('CustomersController (e2e)', () => {
     prisma = app.get(PrismaService);
     await app.init();
 
+    // Create a dummy SaasPlan
+    const plan = await prisma.saasPlan.create({
+      data: {
+        name: 'Customer Test Plan',
+        price: 100,
+      },
+    });
+
     // Create a dummy tenant
     const tenant = await prisma.tenant.create({
       data: {
@@ -26,6 +34,10 @@ describe('CustomersController (e2e)', () => {
         phoneId: 'phone_cust_test',
         accessToken: 'token',
         email: 'cust_test@example.com',
+        phone: '+1234567890',
+        saasNextBilling: new Date(),
+        saasPaymentMethodId: 'pm_123',
+        saasPlanId: plan.id,
       },
     });
     tenantId = tenant.id;

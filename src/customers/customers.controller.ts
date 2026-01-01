@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +15,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -33,8 +35,16 @@ export class CustomersController {
     description: 'Customer created successfully',
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  create(@Body() createCustomerDto: CreateCustomerDto) {
-    return this.customersService.create(createCustomerDto);
+  @ApiQuery({
+    name: 'tenantId',
+    required: true,
+    description: 'ID of the tenant',
+  })
+  create(
+    @Query('tenantId') tenantId: string,
+    @Body() createCustomerDto: CreateCustomerDto,
+  ) {
+    return this.customersService.create(tenantId, createCustomerDto);
   }
 
   /** Get all customers */

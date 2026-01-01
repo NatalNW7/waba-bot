@@ -33,28 +33,4 @@ export class CreateCustomerDto {
   @IsEmail()
   @IsOptional()
   email?: string;
-
-  /**
-   * Whether customer opted in for promotional notifications
-   * @example true
-   */
-  @IsBoolean()
-  @IsOptional()
-  offerNotification?: boolean;
-
-  /**
-   * ID of the tenant this customer belongs to
-   * @example "550e8400-e29b-41d4-a716-446655440000"
-   */
-  @IsString()
-  @IsNotEmpty()
-  tenantId: string;
-
-  /**
-   * Mercado Pago customer ID (optional)
-   * @example "mp_cust_123"
-   */
-  @IsString()
-  @IsOptional()
-  mpCustomerId?: string;
 }

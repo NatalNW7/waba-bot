@@ -25,24 +25,24 @@ export class CreateTenantDto {
    * @example "waba_123456789"
    */
   @IsString()
-  @IsNotEmpty()
-  wabaId: string;
+  @IsOptional()
+  wabaId?: string;
 
   /**
    * WhatsApp phone number ID from Meta
    * @example "phone_987654321"
    */
   @IsString()
-  @IsNotEmpty()
-  phoneId: string;
+  @IsOptional()
+  phoneId?: string;
 
   /**
    * Meta API access token for sending messages
    * @example "EAAG..."
    */
   @IsString()
-  @IsNotEmpty()
-  accessToken: string;
+  @IsOptional()
+  accessToken?: string;
 
   /**
    * Business email address
@@ -53,12 +53,12 @@ export class CreateTenantDto {
   email: string;
 
   /**
-   * Contact phone number (optional)
+   * Contact phone number
    * @example "+5511999999999"
    */
   @IsString()
-  @IsOptional()
-  phone?: string;
+  @IsNotEmpty()
+  phone: string;
 
   /**
    * Mercado Pago Access Token
@@ -97,22 +97,22 @@ export class CreateTenantDto {
    * @example "2025-01-31T00:00:00Z"
    */
   @IsDateString()
-  @IsOptional()
-  saasNextBilling?: string;
+  @IsNotEmpty()
+  saasNextBilling: string;
 
   /**
    * SaaS payment method ID
    * @example "pm_123"
    */
   @IsString()
-  @IsOptional()
-  saasPaymentMethodId?: string;
+  @IsNotEmpty()
+  saasPaymentMethodId: string;
 
   /**
    * SaaS Plan ID
    * @example "550e8400-e29b-41d4-a716-446655440003"
    */
   @IsString()
-  @IsOptional()
-  saasPlanId?: string;
+  @IsNotEmpty()
+  saasPlanId: string;
 }

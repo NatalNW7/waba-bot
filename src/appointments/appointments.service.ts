@@ -59,7 +59,9 @@ export class AppointmentsService {
         where: { id: dto.customerId },
       });
       if (!customer) {
-        throw new BadRequestException('The provided customerId does not exist.');
+        throw new BadRequestException(
+          'The provided customerId does not exist.',
+        );
       }
     }
 
@@ -89,11 +91,24 @@ export class AppointmentsService {
     if (dto.usedSubscriptionId) {
       const subscription = await this.prisma.subscription.findUnique({
         where: { id: dto.usedSubscriptionId },
+        include: { tenantCustomer: true },
       });
       if (!subscription) {
         throw new BadRequestException(
           'The provided usedSubscriptionId does not exist.',
         );
+      }
+
+      // Ensure the subscription belongs to the provided Tenant and Customer
+      if (dto.tenantId && dto.customerId) {
+        if (
+          subscription.tenantCustomer.tenantId !== dto.tenantId ||
+          subscription.tenantCustomer.customerId !== dto.customerId
+        ) {
+          throw new BadRequestException(
+            'The provided subscription does not belong to the specified Tenant and Customer.',
+          );
+        }
       }
     }
   }

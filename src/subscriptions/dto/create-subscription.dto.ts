@@ -40,8 +40,8 @@ export class CreateSubscriptionDto {
    * @example "card_123..."
    */
   @IsString()
-  @IsOptional()
-  cardTokenId?: string;
+  @IsNotEmpty()
+  cardTokenId: string;
 
   /**
    * ID of the plan for this subscription
@@ -52,10 +52,10 @@ export class CreateSubscriptionDto {
   planId: string;
 
   /**
-   * ID of the customer subscribing
+   * ID of the tenant-customer link
    * @example "550e8400-e29b-41d4-a716-446655440001"
    */
   @IsString()
   @IsNotEmpty()
-  customerId: string;
+  tenantCustomerId: string;
 }

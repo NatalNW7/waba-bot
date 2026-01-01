@@ -7,9 +7,42 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createCustomerDto: CreateCustomerDto) {
-    return this.prisma.customer.create({
-      data: createCustomerDto,
+  async create(tenantId: string, createCustomerDto: CreateCustomerDto) {
+    const { phone, email, name } = createCustomerDto;
+
+    return this.prisma.$transaction(async (tx) => {
+      let customer = await tx.customer.findUnique({
+        where: { phone },
+      });
+
+      if (!customer) {
+        customer = await tx.customer.create({
+          data: { phone, email, name },
+        });
+      }
+
+      // Link to tenant if provided (it should be required technically based on new logic)
+      if (tenantId) {
+        const link = await tx.tenantCustomer.findUnique({
+          where: {
+            tenantId_customerId: {
+              tenantId,
+              customerId: customer.id,
+            },
+          },
+        });
+
+        if (!link) {
+          await tx.tenantCustomer.create({
+            data: {
+              tenantId,
+              customerId: customer.id,
+            },
+          });
+        }
+      }
+
+      return customer;
     });
   }
 
