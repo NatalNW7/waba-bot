@@ -222,6 +222,7 @@ model TenantCustomer {
   subscription      Subscription?
 
   createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
   
   @@unique([tenantId, customerId]) // Garante que não haja duplicidade de vínculo
   @@map("tenant_customers")
@@ -307,7 +308,7 @@ model Appointment {
 
 model Payment {
   id             String        @id @default(uuid())
-  externalId     String        @unique @map("external_id") // ID do MP
+  externalId     String?       @unique @map("external_id") // ID do MP
   
   amount         Decimal       @db.Decimal(10, 2)
   netAmount      Decimal?      @db.Decimal(10, 2) @map("net_amount")

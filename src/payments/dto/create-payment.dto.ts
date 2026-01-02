@@ -16,8 +16,8 @@ export class CreatePaymentDto {
    * @example "mp_123456789"
    */
   @IsString()
-  @IsNotEmpty()
-  externalId: string;
+  @IsOptional()
+  externalId?: string;
 
   /**
    * Total payment amount
