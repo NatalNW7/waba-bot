@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider      = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -60,9 +60,9 @@ enum PaymentStatus {
 }
 
 enum PaymentType {
-  APPOINTMENT      // Cliente pagando agendamento
-  SUBSCRIPTION     // Cliente pagando plano do salão
-  SAAS_FEE         // Salão pagando a plataforma (SaaS)
+  APPOINTMENT // Cliente pagando agendamento
+  SUBSCRIPTION // Cliente pagando plano do salão
+  SAAS_FEE // Salão pagando a plataforma (SaaS)
 }
 
 enum PaymentMethod {
@@ -77,31 +77,31 @@ enum PaymentMethod {
 // 1. Tabela de Planos do SEU SaaS (Normalização)
 // Isso evita repetir o preço "99.00" em cada linha de Tenant
 model SaasPlan {
-  id          String   @id @default(uuid())
-  name        String   // Ex: "Basic", "Pro"
-  price       Decimal  @db.Decimal(10, 2)
+  id          String  @id @default(uuid())
+  name        String // Ex: "Basic", "Pro"
+  price       Decimal @db.Decimal(10, 2)
   description String?
-  
-  tenants     Tenant[] // Quem assina este plano?
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  tenants Tenant[] // Quem assina este plano?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("saas_plans") // Nome da tabela no Postgres
 }
 
 model Tenant {
-  id          String   @id @default(uuid())
-  name        String
-  
+  id   String @id @default(uuid())
+  name String
+
   // WhatsApp Info (Metadados da API)
-  wabaId      String?   @unique @map("waba_id")
-  phoneId     String?   @unique @map("phone_id")
-  accessToken String?   @map("access_token") // Token Meta
+  wabaId      String? @unique @map("waba_id")
+  phoneId     String? @unique @map("phone_id")
+  accessToken String? @map("access_token") // Token Meta
 
   // Contato
-  phone       String
-  email       String   @unique
+  phone String
+  email String @unique
 
   // Integração Mercado Pago (Credentials)
   mpAccessToken String? @map("mp_access_token")
@@ -109,16 +109,16 @@ model Tenant {
   mpRefToken    String? @map("mp_ref_token")
 
   // Gestão da Assinatura do SaaS (Relacionamento com SaasPlan)
-  saasStatus          SubscriptionStatus  @default(ACTIVE) @map("saas_status")
-  saasNextBilling     DateTime            @map("saas_next_billing")
-  saasPaymentMethodId String              @map("saas_payment_method_id")
-  
-  saasPlanId          String              @map("saas_plan_id")
-  saasPlan            SaasPlan            @relation(fields: [saasPlanId], references: [id])
+  saasStatus          SubscriptionStatus @default(ACTIVE) @map("saas_status")
+  saasNextBilling     DateTime           @map("saas_next_billing")
+  saasPaymentMethodId String             @map("saas_payment_method_id")
+
+  saasPlanId String   @map("saas_plan_id")
+  saasPlan   SaasPlan @relation(fields: [saasPlanId], references: [id])
 
   // Relacionamentos do Negócio
   // Agora aponta para a tabela de vínculo
-  customerLinks   TenantCustomer[]
+  customerLinks  TenantCustomer[]
   calendar       Calendar?
   services       Service[]
   appointments   Appointment[]
@@ -126,24 +126,24 @@ model Tenant {
   operatingHours OperatingHour[]
   payments       Payment[]
 
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("tenants")
 }
 
 model OperatingHour {
-  id        String    @id @default(uuid())
-  day       DayOfWeek
-  
-  startTime String    @map("start_time") // "HH:mm"
-  endTime   String    @map("end_time")   // "HH:mm"
-  
+  id  String    @id @default(uuid())
+  day DayOfWeek
+
+  startTime String @map("start_time") // "HH:mm"
+  endTime   String @map("end_time") // "HH:mm"
+
   isClosed           Boolean @default(false) @map("is_closed")
   onlyForSubscribers Boolean @default(false) @map("only_for_subscribers")
 
-  tenantId  String    @map("tenant_id")
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Index para performance nas queries de disponibilidade
   @@index([tenantId, day])
@@ -151,186 +151,187 @@ model OperatingHour {
 }
 
 model Calendar {
-  id           String           @id @default(uuid())
-  provider     CalendarProvider
-  email        String
-  
+  id       String           @id @default(uuid())
+  provider CalendarProvider
+  email    String
+
   accessToken  String    @map("access_token")
   refreshToken String    @map("refresh_token")
   tokenExpiry  DateTime? @map("token_expiry")
 
-  tenantId     String    @unique @map("tenant_id")
-  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String @unique @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("calendars")
 }
 
 model Service {
-  id        String   @id @default(uuid())
-  name      String
-  price     Decimal  @db.Decimal(10, 2)
-  duration  Int      // Minutos
+  id       String  @id @default(uuid())
+  name     String
+  price    Decimal @db.Decimal(10, 2)
+  duration Int // Minutos
 
-  tenantId  String   @map("tenant_id")
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
   appointments Appointment[]
-  
+
   // Relacionamento N:N implícito com Plan
-  plans        Plan[]
+  plans Plan[]
 
   @@map("services")
 }
 
 model Plan {
-  id          String          @id @default(uuid())
-  name        String
-  description String?
-  price       Decimal         @db.Decimal(10, 2)
-  interval    PaymentInterval @default(MONTHLY)
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  price           Decimal         @db.Decimal(10, 2)
+  interval        PaymentInterval @default(MONTHLY)
+  maxAppointments Int             @default(-1) @map("max_appointments")
 
-  tenantId    String          @map("tenant_id")
-  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   subscriptions Subscription[]
   services      Service[]
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("plans")
 }
 
 // ESTA É A TABELA DE VÍNCULO (N:N Explícito)
 model TenantCustomer {
-  id                String   @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Configurações específicas deste cliente NESTE salão
-  offerNotification Boolean  @default(true) @map("offer_notification")
-  mpCustomerId      String?  @map("mp_customer_id") // ID do cliente na conta MP do dono do salão
+  offerNotification Boolean @default(true) @map("offer_notification")
+  mpCustomerId      String? @map("mp_customer_id") // ID do cliente na conta MP do dono do salão
 
-  tenantId          String   @map("tenant_id")
-  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  customerId        String   @map("customer_id")
-  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   // A assinatura é vinculada ao relacionamento Salão <-> Cliente
-  subscription      Subscription?
+  subscription Subscription?
 
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
   @@unique([tenantId, customerId]) // Garante que não haja duplicidade de vínculo
   @@map("tenant_customers")
 }
 
 model Customer {
-  id                String   @id @default(uuid())
-  phone             String
-  name              String?
-  email             String?
+  id    String  @id @default(uuid())
+  phone String
+  name  String?
+  email String?
 
   // Um cliente pode estar em vários salões
-  tenantLinks       TenantCustomer[]
-  
-  appointments      Appointment[]
-  payments          Payment[]
+  tenantLinks TenantCustomer[]
 
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  appointments Appointment[]
+  payments     Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([phone])
   @@map("customers")
 }
 
 model Subscription {
-  id           String             @id @default(uuid())
-  status       SubscriptionStatus @default(ACTIVE)
-  startDate    DateTime           @default(now()) @map("start_date")
-  nextBilling  DateTime           @map("next_billing")
+  id          String             @id @default(uuid())
+  status      SubscriptionStatus @default(ACTIVE)
+  startDate   DateTime           @default(now()) @map("start_date")
+  nextBilling DateTime           @map("next_billing")
 
-  cardTokenId  String             @map("card_token_id")
-  
-  planId       String             @map("plan_id")
-  plan         Plan               @relation(fields: [planId], references: [id])
+  cardTokenId String @map("card_token_id")
 
-// Agora a assinatura pertence ao Vínculo Salão-Cliente
+  planId String @map("plan_id")
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  // Agora a assinatura pertence ao Vínculo Salão-Cliente
   tenantCustomerId String         @unique @map("tenant_customer_id")
   tenantCustomer   TenantCustomer @relation(fields: [tenantCustomerId], references: [id])
 
   appointments Appointment[]
   payments     Payment[] // Faturas
 
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([status])
   @@map("subscriptions")
 }
 
 model Appointment {
-  id                 String            @id @default(uuid())
-  date               DateTime
-  status             AppointmentStatus @default(PENDING)
+  id     String            @id @default(uuid())
+  date   DateTime
+  status AppointmentStatus @default(PENDING)
 
-  cancellationReason String?           @map("cancellation_reason")
-  canceledAt         DateTime?         @map("canceled_at")
+  cancellationReason String?   @map("cancellation_reason")
+  canceledAt         DateTime? @map("canceled_at")
 
   // Snapshot do preço (Importante para histórico financeiro)
-  price              Decimal           @db.Decimal(10, 2)
-  
-  paymentId          String?           @unique @map("payment_id")
-  payment            Payment?          @relation(fields: [paymentId], references: [id])
+  price Decimal @db.Decimal(10, 2)
 
-  externalEventId    String?           @map("external_event_id")
+  paymentId String?  @unique @map("payment_id")
+  payment   Payment? @relation(fields: [paymentId], references: [id])
 
-  tenantId           String            @map("tenant_id")
-  tenant             Tenant            @relation(fields: [tenantId], references: [id])
+  externalEventId String? @map("external_event_id")
 
-  customerId         String            @map("customer_id")
-  customer           Customer          @relation(fields: [customerId], references: [id])
-  
-  serviceId          String            @map("service_id")
-  service            Service           @relation(fields: [serviceId], references: [id])
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
-  usedSubscriptionId String?           @map("used_subscription_id")
-  usedSubscription   Subscription?     @relation(fields: [usedSubscriptionId], references: [id])
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id])
 
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
+  serviceId String  @map("service_id")
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  usedSubscriptionId String?       @map("used_subscription_id")
+  usedSubscription   Subscription? @relation(fields: [usedSubscriptionId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("appointments")
 }
 
 model Payment {
-  id             String        @id @default(uuid())
-  externalId     String?       @unique @map("external_id") // ID do MP
-  
-  amount         Decimal       @db.Decimal(10, 2)
-  netAmount      Decimal?      @db.Decimal(10, 2) @map("net_amount")
-  fee            Decimal?      @db.Decimal(10, 2)
-  
-  status         PaymentStatus @default(PENDING)
-  type           PaymentType
-  method         PaymentMethod
-  
-  tenantId       String        @map("tenant_id")
-  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  id         String  @id @default(uuid())
+  externalId String? @unique @map("external_id") // ID do MP
 
-  customerId     String?       @map("customer_id")
-  customer       Customer?     @relation(fields: [customerId], references: [id])
+  amount    Decimal  @db.Decimal(10, 2)
+  netAmount Decimal? @map("net_amount") @db.Decimal(10, 2)
+  fee       Decimal? @db.Decimal(10, 2)
 
-  appointment    Appointment?
-  
+  status PaymentStatus @default(PENDING)
+  type   PaymentType
+  method PaymentMethod
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  appointment Appointment?
+
   subscriptionId String?       @map("subscription_id")
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-  
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("payments")
 }

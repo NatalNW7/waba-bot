@@ -32,6 +32,10 @@ export class PlanEntity {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
   tenantId: string;
 
+  /** Maximum appointments allowed per cycle */
+  @ApiProperty({ example: 4, description: 'Max appointments per interval' })
+  maxAppointments: number;
+
   /** Creation timestamp */
   @ApiProperty()
   createdAt: Date;

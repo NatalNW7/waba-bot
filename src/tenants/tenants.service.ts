@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -34,7 +38,9 @@ export class TenantsService {
       include: Object.keys(includeObj).length > 0 ? includeObj : undefined,
     });
 
-    if (!tenant) return null;
+    if (!tenant) {
+      throw new NotFoundException('The provided tenantId does not exist.');
+    }
 
     // Se incluiu customerLinks, vamos achatar para "customers" para manter a compatibilidade da API
     if (tenant['customerLinks']) {

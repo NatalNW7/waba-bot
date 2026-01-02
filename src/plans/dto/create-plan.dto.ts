@@ -50,4 +50,12 @@ export class CreatePlanDto {
   @IsString()
   @IsNotEmpty()
   tenantId: string;
+
+  /**
+   * Maximum appointments allowed per cycle (-1 for unlimited)
+   * @example 4
+   */
+  @IsNumber()
+  @IsNotEmpty()
+  maxAppointments: number;
 }

@@ -24,8 +24,8 @@ export class AppointmentsService {
       const payment = await this.prisma.payment.findUnique({
         where: { id: paymentId },
       });
-      if (!payment) {
-        throw new BadRequestException('The provided paymentId does not exist.');
+      if (payment?.status === 'APPROVED') {
+        createAppointmentDto.status = 'CONFIRMED';
       }
     }
 
@@ -143,7 +143,7 @@ export class AppointmentsService {
           where: { id: appointment.id },
           data: {
             status: 'CANCELED',
-            cancellationReason: 'payment not failed',
+            cancellationReason: 'payment not approved',
           },
         });
       }
@@ -196,6 +196,67 @@ export class AppointmentsService {
     }
   }
 
+  private async validateSubscriptionUsage(subscription: any) {
+    // 1. Check if subscription is active
+    if (subscription.status !== 'ACTIVE') {
+      throw new BadRequestException('The subscription is not active.');
+    }
+
+    // 2. Fetch Plan to check limits
+    const plan = await this.prisma.plan.findUnique({
+      where: { id: subscription.planId },
+    });
+
+    if (!plan) {
+      // Should not happen if foreign key integrity is maintained
+      throw new BadRequestException('Associated plan not found.');
+    }
+
+    // 3. Check maxAppointments limit (if > -1)
+    if (plan.maxAppointments > -1) {
+      // Calculate current cycle start date
+      // Based on: [nextBilling - interval, nextBilling]
+      // Assuming intervals are standard (MONTHLY=1 month, QUARTERLY=3 months, YEARLY=12 months)
+      const nextBilling = new Date(subscription.nextBilling);
+      const startOfCycle = new Date(nextBilling);
+
+      switch (plan.interval) {
+        case 'MONTHLY':
+          startOfCycle.setMonth(startOfCycle.getMonth() - 1);
+          break;
+        case 'QUARTERLY':
+          startOfCycle.setMonth(startOfCycle.getMonth() - 3);
+          break;
+        case 'YEARLY':
+          startOfCycle.setFullYear(startOfCycle.getFullYear() - 1);
+          break;
+      }
+
+      // Count appointments in this cycle for this subscription
+      // We only count non-CANCELED appointments to be fair?
+      // User didn't specify, but usually CANCELED shouldn't count.
+      // Let's assume CONFIRMED or PENDING count.
+      const usageCount = await this.prisma.appointment.count({
+        where: {
+          usedSubscriptionId: subscription.id,
+          date: {
+            gte: startOfCycle,
+            lt: nextBilling, // Strictly less than next billing? Or lte? Usually billing happens at 00:00.
+          },
+          status: {
+            not: 'CANCELED',
+          },
+        },
+      });
+
+      if (usageCount >= plan.maxAppointments) {
+        throw new BadRequestException(
+          `You have reached the limit of ${plan.maxAppointments} appointments for this cycle.`,
+        );
+      }
+    }
+  }
+
   private async validateRelatedEntities(
     dto: CreateAppointmentDto | UpdateAppointmentDto,
   ) {
@@ -241,6 +302,15 @@ export class AppointmentsService {
           'The provided paymentId does not exist. Ensure you are providing the internal database payment ID (UUID), not the external provider ID.',
         );
       }
+
+      const existingAppointment = await this.prisma.appointment.findFirst({
+        where: { paymentId: dto.paymentId },
+      });
+      if (existingAppointment) {
+        throw new BadRequestException(
+          'The provided paymentId is already associated with another appointment.',
+        );
+      }
     }
 
     // 5. Validate Subscription
@@ -266,6 +336,8 @@ export class AppointmentsService {
           );
         }
       }
+
+      await this.validateSubscriptionUsage(subscription);
     }
   }
 }
