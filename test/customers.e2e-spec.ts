@@ -49,19 +49,33 @@ describe('CustomersController (e2e)', () => {
     await app.close();
   });
 
-  it('/customers (POST)', async () => {
+  it('/customers (POST) - With tenantId', async () => {
     return request(app.getHttpServer())
-      .post('/customers')
+      .post(`/customers?tenantId=${tenantId}`)
       .send({
         phone: '5511999999999',
         name: 'John Doe',
         email: 'john@example.com',
-        tenantId: tenantId,
       })
       .expect(201)
       .expect((res) => {
         expect(res.body.phone).toEqual('5511999999999');
         expect(res.body.name).toEqual('John Doe');
+      });
+  });
+
+  it('/customers (POST) - Without tenantId', async () => {
+    return request(app.getHttpServer())
+      .post('/customers')
+      .send({
+        phone: '5511888888888',
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+      })
+      .expect(201)
+      .expect((res) => {
+        expect(res.body.phone).toEqual('5511888888888');
+        expect(res.body.name).toEqual('Jane Doe');
       });
   });
 

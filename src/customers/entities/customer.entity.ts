@@ -20,17 +20,8 @@ export class CustomerEntity {
   @ApiProperty({ example: 'joao@email.com', required: false })
   email?: string;
 
-  /** Whether customer opted in for promotional notifications */
-  @ApiProperty({ example: true })
-  offerNotification: boolean;
-
-  /** ID of the tenant this customer belongs to */
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
-  tenantId: string;
-
-  /** Mercado Pago customer ID for payments */
-  @ApiProperty({ example: 'mp_cust_123', required: false })
-  mpCustomerId?: string;
+  // Note: offerNotification, mpCustomerId, and tenantId are now part of the TenantCustomer join table
+  // but flattened in the Tenant response for convenience.
 
   /** Creation timestamp */
   @ApiProperty()

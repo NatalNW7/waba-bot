@@ -37,12 +37,12 @@ export class CustomersController {
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiQuery({
     name: 'tenantId',
-    required: true,
+    required: false,
     description: 'ID of the tenant',
   })
   create(
-    @Query('tenantId') tenantId: string,
     @Body() createCustomerDto: CreateCustomerDto,
+    @Query('tenantId') tenantId?: string,
   ) {
     return this.customersService.create(tenantId, createCustomerDto);
   }

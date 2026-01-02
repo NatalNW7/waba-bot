@@ -102,6 +102,48 @@ describe('TenantsController (e2e)', () => {
       });
   });
 
+  it('/tenants/:id (GET) - Success with customers inclusion', async () => {
+    // Create a tenant
+    const createRes = await request(app.getHttpServer()).post('/tenants').send({
+      name: 'Customer Test Tenant',
+      wabaId: 'waba_cust',
+      phoneId: 'phone_cust',
+      accessToken: 'EAAG...',
+      email: 'cust_test@example.com',
+      phone: '+1234567893',
+      saasNextBilling: new Date().toISOString(),
+      saasPaymentMethodId: 'pm_789',
+      saasPlanId: saasPlanId,
+    });
+
+    const tenantId = createRes.body.id;
+
+    // Create a customer and link them
+    const customer = await prisma.customer.create({
+      data: {
+        phone: '+5511988887777',
+        name: 'John Doe',
+      },
+    });
+
+    await prisma.tenantCustomer.create({
+      data: {
+        tenantId,
+        customerId: customer.id,
+      },
+    });
+
+    return request(app.getHttpServer())
+      .get(`/tenants/${tenantId}?include=customers`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.id).toEqual(tenantId);
+        expect(res.body.customers).toBeDefined();
+        expect(res.body.customers.length).toBeGreaterThan(0);
+        expect(res.body.customers[0].name).toEqual('John Doe');
+      });
+  });
+
   it('/tenants (GET)', () => {
     return request(app.getHttpServer())
       .get('/tenants')

@@ -137,5 +137,27 @@ describe('CustomersService', () => {
 
       expect((prisma as any).tenantCustomer.create).not.toHaveBeenCalled();
     });
+
+    it('should create customer without tenant link if tenantId is not provided', async () => {
+      // Mock transaction
+      (prisma as any).$transaction = jest
+        .fn()
+        .mockImplementation((cb) => cb(prisma));
+
+      const createdCustomer = { id: 'cust-1', ...createCustomerDto };
+      (prisma as any).customer.findUnique = jest.fn().mockResolvedValue(null);
+      (prisma as any).customer.create = jest
+        .fn()
+        .mockResolvedValue(createdCustomer);
+
+      (prisma as any).tenantCustomer.findUnique = jest.fn();
+      (prisma as any).tenantCustomer.create = jest.fn();
+
+      const result = await service.create(undefined, createCustomerDto);
+
+      expect((prisma as any).customer.create).toHaveBeenCalled();
+      expect((prisma as any).tenantCustomer.create).not.toHaveBeenCalled();
+      expect(result).toEqual(createdCustomer);
+    });
   });
 });

@@ -41,6 +41,9 @@ describe('TenantsService', () => {
       phoneId: 'phone123',
       accessToken: 'token123',
       email: 'test@tenant.com',
+      phone: '+1234567890',
+      saasNextBilling: new Date().toISOString(),
+      saasPaymentMethodId: 'pm_123',
       saasPlanId: 'plan123',
     };
 
@@ -103,6 +106,39 @@ describe('TenantsService', () => {
         where: { id: 'tenant123' },
         include: { services: true, saasPlan: true },
       });
+    });
+
+    it('should find tenant with valid inclusions including customers', async () => {
+      const mockTenant = {
+        id: 'tenant123',
+        customerLinks: [
+          {
+            offerNotification: true,
+            tenantId: 'tenant123',
+            customer: {
+              id: 'cust123',
+              name: 'Customer 1',
+            },
+          },
+        ],
+      };
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue(mockTenant as any);
+
+      const result = await service.findOne('tenant123', 'customers');
+      expect(result).toBeDefined();
+      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
+        where: { id: 'tenant123' },
+        include: {
+          customerLinks: {
+            include: { customer: true },
+          },
+        },
+      });
+      expect((result as any).customers).toBeDefined();
+      expect((result as any).customers[0].name).toBe('Customer 1');
+      expect((result as any).customerLinks).toBeUndefined();
     });
 
     it('should ignore invalid inclusions', async () => {

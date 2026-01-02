@@ -27,12 +27,29 @@ export class TenantsService {
     return this.prisma.tenant.findMany();
   }
 
-  findOne(id: string, include?: string) {
+  async findOne(id: string, include?: string) {
     const includeObj = this.parseInclude(include);
-    return this.prisma.tenant.findUnique({
+    const tenant = await this.prisma.tenant.findUnique({
       where: { id },
       include: Object.keys(includeObj).length > 0 ? includeObj : undefined,
     });
+
+    if (!tenant) return null;
+
+    // Se incluiu customerLinks, vamos achatar para "customers" para manter a compatibilidade da API
+    if (tenant['customerLinks']) {
+      (tenant as any).customers = (tenant as any).customerLinks.map(
+        (link: any) => ({
+          ...link.customer,
+          offerNotification: link.offerNotification,
+          mpCustomerId: link.mpCustomerId,
+          tenantId: link.tenantId,
+        }),
+      );
+      delete (tenant as any).customerLinks;
+    }
+
+    return tenant;
   }
 
   private parseInclude(includeStr?: string) {
@@ -54,7 +71,15 @@ export class TenantsService {
 
     requestedRelations.forEach((rel) => {
       if (validRelations.includes(rel)) {
-        includeObj[rel] = true;
+        if (rel === 'customers') {
+          includeObj['customerLinks'] = {
+            include: {
+              customer: true,
+            },
+          };
+        } else {
+          includeObj[rel] = true;
+        }
       }
     });
 
