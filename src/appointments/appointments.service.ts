@@ -16,10 +16,20 @@ export class AppointmentsService {
       throw new BadRequestException('The appointment date is in the past.');
     }
 
-    // 2. Validate Related Entities (Tenant, Customer, Service, Subscription)
+    // 2. Ensure at least one of serviceId or usedSubscriptionId is provided
+    if (
+      !createAppointmentDto.serviceId &&
+      !createAppointmentDto.usedSubscriptionId
+    ) {
+      throw new BadRequestException(
+        'At least one of serviceId or usedSubscriptionId must be provided.',
+      );
+    }
+
+    // 3. Validate Related Entities (Tenant, Customer, Service, Subscription)
     await this.validateRelatedEntities(createAppointmentDto);
 
-    // 3. Payment ID validation (existence only, status checked on update/confirmation)
+    // 4. Payment ID validation (existence only, status checked on update/confirmation)
     if (paymentId) {
       const payment = await this.prisma.payment.findUnique({
         where: { id: paymentId },
@@ -29,10 +39,10 @@ export class AppointmentsService {
       }
     }
 
-    // 4. Operating Hours Check
+    // 5. Operating Hours Check
     await this.validateOperatingHours(tenantId, appointmentDate);
 
-    // 5. Conflict Check (Same date/time for same tenant)
+    // 6. Conflict Check (Same date/time for same tenant)
     const existingAppointment = await this.prisma.appointment.findFirst({
       where: {
         tenantId,
@@ -45,7 +55,7 @@ export class AppointmentsService {
       );
     }
 
-    // 6. Create Appointment and TenantCustomer relation in a transaction
+    // 7. Create Appointment and TenantCustomer relation in a transaction
     return this.prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.create({
         data: createAppointmentDto,
@@ -203,9 +213,9 @@ export class AppointmentsService {
     }
 
     // 2. Fetch Plan to check limits
-    const plan = await this.prisma.plan.findUnique({
+    const plan = (await this.prisma.plan.findUnique({
       where: { id: subscription.planId },
-    });
+    })) as any;
 
     if (!plan) {
       // Should not happen if foreign key integrity is maintained
@@ -233,15 +243,12 @@ export class AppointmentsService {
       }
 
       // Count appointments in this cycle for this subscription
-      // We only count non-CANCELED appointments to be fair?
-      // User didn't specify, but usually CANCELED shouldn't count.
-      // Let's assume CONFIRMED or PENDING count.
       const usageCount = await this.prisma.appointment.count({
         where: {
           usedSubscriptionId: subscription.id,
           date: {
             gte: startOfCycle,
-            lt: nextBilling, // Strictly less than next billing? Or lte? Usually billing happens at 00:00.
+            lt: nextBilling,
           },
           status: {
             not: 'CANCELED',

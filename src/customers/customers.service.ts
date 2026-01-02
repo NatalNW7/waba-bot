@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,35 +14,41 @@ export class CustomersService {
     const { phone, email, name } = createCustomerDto;
 
     return this.prisma.$transaction(async (tx) => {
-      let customer = await tx.customer.findUnique({
-        where: { phone },
+      // 1. Check if customer already exists by phone or email
+      const existing = await tx.customer.findFirst({
+        where: {
+          OR: [{ phone }, ...(email ? [{ email }] : [])],
+        },
       });
 
-      if (!customer) {
-        customer = await tx.customer.create({
-          data: { phone, email, name },
-        });
+      if (existing) {
+        if (existing.phone === phone) {
+          throw new BadRequestException(
+            `A customer with phone ${phone} already exists.`,
+          );
+        }
+        if (email && existing.email === email) {
+          throw new BadRequestException(
+            `A customer with email ${email} already exists.`,
+          );
+        }
       }
 
-      // Link to tenant if provided (it should be required technically based on new logic)
+      // 2. Create new customer
+      const customer = await tx.customer.create({
+        data: { phone, email, name },
+      });
+
+      // 3. Link to tenant if provided
       if (tenantId) {
-        const link = await tx.tenantCustomer.findUnique({
-          where: {
-            tenantId_customerId: {
-              tenantId,
-              customerId: customer.id,
-            },
+        // Since it's a new customer, we don't strictly need to check for existing link,
+        // but it's safer to keep the transaction logic robust.
+        await tx.tenantCustomer.create({
+          data: {
+            tenantId,
+            customerId: customer.id,
           },
         });
-
-        if (!link) {
-          await tx.tenantCustomer.create({
-            data: {
-              tenantId,
-              customerId: customer.id,
-            },
-          });
-        }
       }
 
       return customer;

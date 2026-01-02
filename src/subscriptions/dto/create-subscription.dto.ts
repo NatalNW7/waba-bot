@@ -28,12 +28,12 @@ export class CreateSubscriptionDto {
   startDate?: string;
 
   /**
-   * Next billing date
+   * Next billing date (calculated automatically based on plan interval if not provided)
    * @example "2025-02-01T00:00:00Z"
    */
   @IsDateString()
-  @IsNotEmpty()
-  nextBilling: string;
+  @IsOptional()
+  nextBilling?: string;
 
   /**
    * Mercado Pago card token ID for automatic billing
@@ -52,10 +52,10 @@ export class CreateSubscriptionDto {
   planId: string;
 
   /**
-   * ID of the tenant-customer link
+   * ID of the customer
    * @example "550e8400-e29b-41d4-a716-446655440001"
    */
   @IsString()
   @IsNotEmpty()
-  tenantCustomerId: string;
+  customerId: string;
 }

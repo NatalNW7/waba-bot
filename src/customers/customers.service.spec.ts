@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomersService } from './customers.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException } from '@nestjs/common';
 
 describe('CustomersService', () => {
   let service: CustomersService;
@@ -16,6 +17,7 @@ describe('CustomersService', () => {
             $transaction: jest.fn(),
             customer: {
               findUnique: jest.fn(),
+              findFirst: jest.fn(),
               create: jest.fn(),
             },
             tenantCustomer: {
@@ -45,18 +47,14 @@ describe('CustomersService', () => {
         .fn()
         .mockImplementation((cb) => cb(prisma));
 
-      // Mock customer findUnique (not found)
-      (prisma as any).customer.findUnique = jest.fn().mockResolvedValue(null);
+      // Mock customer findFirst (not found)
+      (prisma as any).customer.findFirst = jest.fn().mockResolvedValue(null);
       // Mock customer create
       const createdCustomer = { id: 'cust-1', ...createCustomerDto };
       (prisma as any).customer.create = jest
         .fn()
         .mockResolvedValue(createdCustomer);
 
-      // Mock tenantCustomer findUnique (not found)
-      (prisma as any).tenantCustomer.findUnique = jest
-        .fn()
-        .mockResolvedValue(null);
       // Mock tenantCustomer create
       (prisma as any).tenantCustomer.create = jest.fn().mockResolvedValue({
         id: 'link-1',
@@ -78,64 +76,47 @@ describe('CustomersService', () => {
       expect(result).toEqual(createdCustomer);
     });
 
-    it('should use existing customer and link to tenant', async () => {
+    it('should throw BadRequestException if customer with same phone exists', async () => {
       // Mock transaction
       (prisma as any).$transaction = jest
         .fn()
         .mockImplementation((cb) => cb(prisma));
 
       const existingCustomer = { id: 'cust-1', ...createCustomerDto };
-      // Mock customer findUnique (found)
-      (prisma as any).customer.findUnique = jest
+      // Mock customer findFirst (found by phone)
+      (prisma as any).customer.findFirst = jest
         .fn()
         .mockResolvedValue(existingCustomer);
-      (prisma as any).customer.create = jest.fn(); // Should not be called
 
-      // Mock tenantCustomer findUnique (not found)
-      (prisma as any).tenantCustomer.findUnique = jest
-        .fn()
-        .mockResolvedValue(null);
-      (prisma as any).tenantCustomer.create = jest.fn().mockResolvedValue({
-        id: 'link-1',
-        tenantId,
-        customerId: existingCustomer.id,
-      });
-
-      const result = await service.create(tenantId, createCustomerDto);
-
-      expect((prisma as any).customer.create).not.toHaveBeenCalled();
-      expect((prisma as any).tenantCustomer.create).toHaveBeenCalledWith({
-        data: {
-          tenantId,
-          customerId: existingCustomer.id,
-        },
-      });
-      expect(result).toEqual(existingCustomer);
+      await expect(service.create(tenantId, createCustomerDto)).rejects.toThrow(
+        new BadRequestException(
+          `A customer with phone ${createCustomerDto.phone} already exists.`,
+        ),
+      );
     });
 
-    it('should not create link if already linked', async () => {
+    it('should throw BadRequestException if customer with same email exists', async () => {
       // Mock transaction
       (prisma as any).$transaction = jest
         .fn()
         .mockImplementation((cb) => cb(prisma));
 
-      const existingCustomer = { id: 'cust-1', ...createCustomerDto };
-      // Mock customer findUnique (found)
-      (prisma as any).customer.findUnique = jest
+      const existingCustomer = {
+        id: 'cust-2',
+        phone: '+9999999999',
+        email: createCustomerDto.email,
+        name: 'Another',
+      };
+      // Mock customer findFirst (found by email)
+      (prisma as any).customer.findFirst = jest
         .fn()
         .mockResolvedValue(existingCustomer);
 
-      // Mock tenantCustomer findUnique (found)
-      (prisma as any).tenantCustomer.findUnique = jest.fn().mockResolvedValue({
-        id: 'link-1',
-        tenantId,
-        customerId: existingCustomer.id,
-      });
-      (prisma as any).tenantCustomer.create = jest.fn();
-
-      await service.create(tenantId, createCustomerDto);
-
-      expect((prisma as any).tenantCustomer.create).not.toHaveBeenCalled();
+      await expect(service.create(tenantId, createCustomerDto)).rejects.toThrow(
+        new BadRequestException(
+          `A customer with email ${createCustomerDto.email} already exists.`,
+        ),
+      );
     });
 
     it('should create customer without tenant link if tenantId is not provided', async () => {
@@ -145,12 +126,11 @@ describe('CustomersService', () => {
         .mockImplementation((cb) => cb(prisma));
 
       const createdCustomer = { id: 'cust-1', ...createCustomerDto };
-      (prisma as any).customer.findUnique = jest.fn().mockResolvedValue(null);
+      (prisma as any).customer.findFirst = jest.fn().mockResolvedValue(null);
       (prisma as any).customer.create = jest
         .fn()
         .mockResolvedValue(createdCustomer);
 
-      (prisma as any).tenantCustomer.findUnique = jest.fn();
       (prisma as any).tenantCustomer.create = jest.fn();
 
       const result = await service.create(undefined, createCustomerDto);

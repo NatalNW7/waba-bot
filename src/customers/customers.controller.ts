@@ -34,7 +34,9 @@ export class CustomersController {
     type: CustomerEntity,
     description: 'Customer created successfully',
   })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data or customer already exists',
+  })
   @ApiQuery({
     name: 'tenantId',
     required: false,

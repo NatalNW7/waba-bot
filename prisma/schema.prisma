@@ -295,8 +295,8 @@ model Appointment {
   customerId String   @map("customer_id")
   customer   Customer @relation(fields: [customerId], references: [id])
 
-  serviceId String  @map("service_id")
-  service   Service @relation(fields: [serviceId], references: [id])
+  serviceId String?  @map("service_id")
+  service   Service? @relation(fields: [serviceId], references: [id])
 
   usedSubscriptionId String?       @map("used_subscription_id")
   usedSubscription   Subscription? @relation(fields: [usedSubscriptionId], references: [id])

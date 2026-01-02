@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppointmentsService } from './appointments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException } from '@nestjs/common';
-import { AppointmentStatus, DayOfWeek, PaymentStatus } from '@prisma/client';
+import { AppointmentStatus, PaymentStatus } from '@prisma/client';
 
 describe('AppointmentsService', () => {
   let service: AppointmentsService;
@@ -104,14 +104,65 @@ describe('AppointmentsService', () => {
       jest
         .spyOn(prisma.appointment, 'create')
         .mockResolvedValue({ id: 'app-1', ...createDto } as any);
-      jest
-        .spyOn(prisma.tenantCustomer, 'findUnique')
-        .mockResolvedValue({ id: 'link-1' } as any);
+      jest.spyOn(prisma.tenantCustomer, 'findUnique').mockResolvedValue({
+        id: 'link-1',
+      } as any);
 
       const result = await service.create(createDto);
 
-      expect(result).toBeDefined();
+      expect(result.id).toBe('app-1');
       expect(prisma.appointment.create).toHaveBeenCalled();
+    });
+
+    it('should throw if both serviceId and usedSubscriptionId are missing', async () => {
+      await expect(
+        service.create({
+          ...createDto,
+          serviceId: undefined,
+          usedSubscriptionId: undefined,
+        }),
+      ).rejects.toThrow(
+        new BadRequestException(
+          'At least one of serviceId or usedSubscriptionId must be provided.',
+        ),
+      );
+    });
+
+    it('should create successfully if serviceId is missing but usedSubscriptionId is present', async () => {
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant-1' } as any);
+      jest
+        .spyOn(prisma.customer, 'findUnique')
+        .mockResolvedValue({ id: 'customer-1' } as any);
+      jest.spyOn(prisma.subscription, 'findUnique').mockResolvedValue({
+        id: 'sub-1',
+        status: 'ACTIVE',
+        planId: 'plan-1',
+        nextBilling: new Date(),
+        tenantCustomer: { tenantId: 'tenant-1', customerId: 'customer-1' },
+      } as any);
+      jest
+        .spyOn(prisma.plan, 'findUnique')
+        .mockResolvedValue({ id: 'plan-1', maxAppointments: -1 } as any);
+      jest
+        .spyOn(prisma.operatingHour, 'findFirst')
+        .mockResolvedValue(mockOperatingHour as any);
+      jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prisma.appointment, 'create')
+        .mockResolvedValue({ id: 'app-1' } as any);
+      jest
+        .spyOn(prisma.tenantCustomer, 'findUnique')
+        .mockResolvedValue({ id: 'tc-1' } as any);
+
+      const result = await service.create({
+        ...createDto,
+        serviceId: undefined,
+        usedSubscriptionId: 'sub-1',
+        paymentId: undefined,
+      });
+      expect(result.id).toBe('app-1');
     });
 
     it('should throw if date is in the past', async () => {
@@ -143,19 +194,16 @@ describe('AppointmentsService', () => {
         .spyOn(prisma.operatingHour, 'findFirst')
         .mockResolvedValue(mockOperatingHour as any);
       jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.appointment, 'create').mockResolvedValue({
-        id: 'app-1',
-        ...createDto,
-        status: 'PENDING',
-      } as any);
+      jest
+        .spyOn(prisma.appointment, 'create')
+        .mockResolvedValue({ id: 'app-1', ...createDto } as any);
       jest
         .spyOn(prisma.tenantCustomer, 'findUnique')
-        .mockResolvedValue({ id: 'link-1' } as any);
+        .mockResolvedValue({ id: 'tc-1' } as any);
 
       const result = await service.create(createDto);
 
-      expect(result).toBeDefined();
-      expect(prisma.appointment.create).toHaveBeenCalled();
+      expect(result.id).toBe('app-1');
     });
 
     it('should throw if business is closed on that day', async () => {
@@ -172,7 +220,9 @@ describe('AppointmentsService', () => {
         id: 'payment-1',
         status: PaymentStatus.APPROVED,
       } as any);
-      jest.spyOn(prisma.operatingHour, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prisma.operatingHour, 'findFirst')
+        .mockResolvedValue({ ...mockOperatingHour, isClosed: true } as any);
 
       await expect(service.create(createDto)).rejects.toThrow(
         new BadRequestException('The business is closed on the chosen date.'),
@@ -181,7 +231,7 @@ describe('AppointmentsService', () => {
 
     it('should throw if time is outside operating hours', async () => {
       const earlyDate = new Date(futureDate);
-      earlyDate.setUTCHours(5, 0); // 05:00 AM
+      earlyDate.setUTCHours(6, 0, 0, 0);
 
       jest
         .spyOn(prisma.tenant, 'findUnique')
@@ -312,7 +362,7 @@ describe('AppointmentsService', () => {
   describe('checkPendingAppointments', () => {
     it('should cancel stale pending appointments with unapproved payments', async () => {
       const staleAppointment = {
-        id: 'stale-1',
+        id: 'app-1',
         status: 'PENDING',
         payment: { status: 'PENDING' },
       };
@@ -322,12 +372,12 @@ describe('AppointmentsService', () => {
         .mockResolvedValue([staleAppointment] as any);
       jest
         .spyOn(prisma.appointment, 'update')
-        .mockResolvedValue({ id: 'stale-1' } as any);
+        .mockResolvedValue({ id: 'app-1' } as any);
 
       await service.checkPendingAppointments();
 
       expect(prisma.appointment.update).toHaveBeenCalledWith({
-        where: { id: 'stale-1' },
+        where: { id: 'app-1' },
         data: {
           status: 'CANCELED',
           cancellationReason: 'payment not approved',
@@ -337,136 +387,51 @@ describe('AppointmentsService', () => {
   });
 
   describe('validateSubscriptionUsage', () => {
+    const mockSubscription = {
+      id: 'sub-1',
+      status: 'ACTIVE',
+      planId: 'plan-1',
+      nextBilling: new Date(Date.now() + 86400000), // tomorrow
+    };
+
     it('should allow appointment if within limit', async () => {
-      const subscription = {
-        id: 'sub-1',
-        status: 'ACTIVE',
-        planId: 'plan-1',
-        nextBilling: new Date('2024-02-01T00:00:00Z'),
-        tenantCustomer: { tenantId: 'tenant-1', customerId: 'customer-1' },
-      };
+      jest.spyOn(prisma.plan, 'findUnique').mockResolvedValue({
+        id: 'plan-1',
+        maxAppointments: 10,
+        interval: 'MONTHLY',
+      } as any);
+      jest.spyOn(prisma.appointment, 'count').mockResolvedValue(5);
 
-      const plan = { id: 'plan-1', maxAppointments: 4, interval: 'MONTHLY' };
-
-      jest
-        .spyOn(prisma.subscription, 'findUnique')
-        .mockResolvedValue(subscription as any);
-      jest.spyOn(prisma.plan, 'findUnique').mockResolvedValue(plan as any);
-      jest.spyOn(prisma.appointment, 'count').mockResolvedValue(3); // Usage is 3, limit 4
-
-      // Mock other related entity checks
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant-1' } as any);
-      jest
-        .spyOn(prisma.customer, 'findUnique')
-        .mockResolvedValue({ id: 'customer-1' } as any);
-      jest
-        .spyOn(prisma.service, 'findUnique')
-        .mockResolvedValue({ id: 'service-1' } as any);
-      jest
-        .spyOn(prisma.payment, 'findUnique')
-        .mockResolvedValue({ id: 'payment-1' } as any);
-      jest
-        .spyOn(prisma.operatingHour, 'findFirst')
-        .mockResolvedValue(mockOperatingHour as any);
-      jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue(null);
-      jest
-        .spyOn(prisma.appointment, 'create')
-        .mockResolvedValue({ id: 'app-limit-ok' } as any);
-      jest
-        .spyOn(prisma.tenantCustomer, 'findUnique')
-        .mockResolvedValue({ id: 'tc-1' } as any);
-
-      const dtoWithSub = { ...createDto, usedSubscriptionId: 'sub-1' };
-      await service.create(dtoWithSub);
-
+      // We need to call a private method, so we cast to any
+      await (service as any).validateSubscriptionUsage(mockSubscription);
       expect(prisma.appointment.count).toHaveBeenCalled();
     });
 
     it('should throw if limit exceeded', async () => {
-      const subscription = {
-        id: 'sub-1',
-        status: 'ACTIVE',
-        planId: 'plan-1',
-        nextBilling: new Date('2024-02-01T00:00:00Z'),
-        tenantCustomer: { tenantId: 'tenant-1', customerId: 'customer-1' },
-      };
+      jest.spyOn(prisma.plan, 'findUnique').mockResolvedValue({
+        id: 'plan-1',
+        maxAppointments: 5,
+        interval: 'MONTHLY',
+      } as any);
+      jest.spyOn(prisma.appointment, 'count').mockResolvedValue(5);
 
-      const plan = { id: 'plan-1', maxAppointments: 4, interval: 'MONTHLY' };
-
-      jest
-        .spyOn(prisma.subscription, 'findUnique')
-        .mockResolvedValue(subscription as any);
-      jest.spyOn(prisma.plan, 'findUnique').mockResolvedValue(plan as any);
-      jest.spyOn(prisma.appointment, 'count').mockResolvedValue(4); // Usage is 4, limit 4 (>=)
-
-      // Mock basic entity checks
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant-1' } as any);
-      jest
-        .spyOn(prisma.customer, 'findUnique')
-        .mockResolvedValue({ id: 'customer-1' } as any);
-      jest
-        .spyOn(prisma.service, 'findUnique')
-        .mockResolvedValue({ id: 'service-1' } as any);
-      jest
-        .spyOn(prisma.payment, 'findUnique')
-        .mockResolvedValue({ id: 'payment-1' } as any);
-
-      const dtoWithSub = { ...createDto, usedSubscriptionId: 'sub-1' };
-
-      await expect(service.create(dtoWithSub)).rejects.toThrow(
+      await expect(
+        (service as any).validateSubscriptionUsage(mockSubscription),
+      ).rejects.toThrow(
         new BadRequestException(
-          'You have reached the limit of 4 appointments for this cycle.',
+          'You have reached the limit of 5 appointments for this cycle.',
         ),
       );
     });
 
     it('should allow if maxAppointments is -1 (unlimited)', async () => {
-      const subscription = {
-        id: 'sub-1',
-        status: 'ACTIVE',
-        planId: 'plan-1',
-        nextBilling: new Date('2024-02-01T00:00:00Z'),
-        tenantCustomer: { tenantId: 'tenant-1', customerId: 'customer-1' },
-      };
+      jest.spyOn(prisma.plan, 'findUnique').mockResolvedValue({
+        id: 'plan-1',
+        maxAppointments: -1,
+        interval: 'MONTHLY',
+      } as any);
 
-      const plan = { id: 'plan-1', maxAppointments: -1, interval: 'MONTHLY' };
-
-      jest
-        .spyOn(prisma.subscription, 'findUnique')
-        .mockResolvedValue(subscription as any);
-      jest.spyOn(prisma.plan, 'findUnique').mockResolvedValue(plan as any);
-
-      // Mock other related entity checks
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant-1' } as any);
-      jest
-        .spyOn(prisma.customer, 'findUnique')
-        .mockResolvedValue({ id: 'customer-1' } as any);
-      jest
-        .spyOn(prisma.service, 'findUnique')
-        .mockResolvedValue({ id: 'service-1' } as any);
-      jest
-        .spyOn(prisma.payment, 'findUnique')
-        .mockResolvedValue({ id: 'payment-1' } as any);
-      jest
-        .spyOn(prisma.operatingHour, 'findFirst')
-        .mockResolvedValue(mockOperatingHour as any);
-      jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue(null);
-      jest
-        .spyOn(prisma.appointment, 'create')
-        .mockResolvedValue({ id: 'app-unlimited' } as any);
-      jest
-        .spyOn(prisma.tenantCustomer, 'findUnique')
-        .mockResolvedValue({ id: 'tc-1' } as any);
-
-      const dtoWithSub = { ...createDto, usedSubscriptionId: 'sub-1' };
-      await service.create(dtoWithSub);
-
+      await (service as any).validateSubscriptionUsage(mockSubscription);
       expect(prisma.appointment.count).not.toHaveBeenCalled();
     });
   });
