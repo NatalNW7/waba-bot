@@ -37,12 +37,12 @@ export class CreateAppointmentDto {
   cancellationReason?: string;
 
   /**
-   * Price snapshot at the time of booking
+   * Price snapshot at the time of booking. If not provided, it will be automatically populated from the Service or set to 0 if a Subscription is used.
    * @example 30.00
    */
   @IsNumber()
-  @IsNotEmpty()
-  price: number;
+  @IsOptional()
+  price?: number;
 
   /**
    * External calendar event ID

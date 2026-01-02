@@ -26,10 +26,27 @@ export class AppointmentsService {
       );
     }
 
-    // 3. Validate Related Entities (Tenant, Customer, Service, Subscription)
-    await this.validateRelatedEntities(createAppointmentDto);
+    // 3. Validate Related Entities and fetch details
+    const { service, subscription } =
+      await this.validateRelatedEntities(createAppointmentDto);
 
-    // 4. Payment ID validation (existence only, status checked on update/confirmation)
+    // 4. Automate Price calculation if not provided
+    if (
+      createAppointmentDto.price === undefined ||
+      createAppointmentDto.price === null
+    ) {
+      if (createAppointmentDto.usedSubscriptionId) {
+        // Covered by subscription
+        createAppointmentDto.price = 0;
+      } else if (service) {
+        createAppointmentDto.price = Number(service.price);
+      } else {
+        // This case should be caught by step 2, but safety first
+        throw new BadRequestException('Price could not be determined.');
+      }
+    }
+
+    // 5. Payment ID validation
     if (paymentId) {
       const payment = await this.prisma.payment.findUnique({
         where: { id: paymentId },
@@ -39,26 +56,90 @@ export class AppointmentsService {
       }
     }
 
-    // 5. Operating Hours Check
+    // 6. Operating Hours Check
     await this.validateOperatingHours(tenantId, appointmentDate);
 
-    // 6. Conflict Check (Same date/time for same tenant)
-    const existingAppointment = await this.prisma.appointment.findFirst({
+    // 7. Conflict Check & Overlap validation
+    // Duration is 30 mins by default if not specified in service
+    const durationMinutes = service?.duration || 30;
+    const appointmentEnd = new Date(
+      appointmentDate.getTime() + durationMinutes * 60000,
+    );
+
+    // Find overlapping appointments for the same tenant
+    // An overlap occurs if (start1 < end2) AND (start2 < end1)
+    const overlapping = await this.prisma.appointment.findFirst({
       where: {
         tenantId,
-        date: appointmentDate,
+        status: { not: 'CANCELED' },
+        AND: [
+          { date: { lt: appointmentEnd } },
+          {
+            OR: [
+              // For existing appointments, we need to consider their own durations.
+              // Since duration is in Service, we'll fetch today's appointments and check in-memory
+              // or perform a more complex query. For simplicity and correctness with varying durations:
+              { date: { gte: appointmentDate } }, // Starts during or after new one, but before its end
+            ],
+          },
+        ],
       },
+      include: { service: true },
     });
-    if (existingAppointment) {
-      throw new BadRequestException(
-        'Already exists an appointment in the chosen date.',
-      );
+
+    // To be 100% accurate with varying service durations, we fetch all non-cancelled appointments for the tenant on that day
+    // To be 100% accurate with varying service durations, we fetch all non-cancelled appointments for the tenant on that day
+    const dayStart = new Date(
+      Date.UTC(
+        appointmentDate.getUTCFullYear(),
+        appointmentDate.getUTCMonth(),
+        appointmentDate.getUTCDate(),
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
+    const dayEnd = new Date(
+      Date.UTC(
+        appointmentDate.getUTCFullYear(),
+        appointmentDate.getUTCMonth(),
+        appointmentDate.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
+
+    const dayAppointments = await this.prisma.appointment.findMany({
+      where: {
+        tenantId,
+        status: { not: 'CANCELED' },
+        date: {
+          gte: dayStart,
+          lte: dayEnd,
+        },
+      },
+      include: { service: true },
+    });
+
+    for (const app of dayAppointments) {
+      const appStart = new Date(app.date);
+      const appDuration = app.service?.duration || 30;
+      const appEnd = new Date(appStart.getTime() + appDuration * 60000);
+
+      if (appointmentDate < appEnd && appStart < appointmentEnd) {
+        throw new BadRequestException(
+          `Time slot conflict: an appointment already exists from ${appStart.getUTCHours().toString().padStart(2, '0')}:${appStart.getUTCMinutes().toString().padStart(2, '0')} to ${appEnd.getUTCHours().toString().padStart(2, '0')}:${appEnd.getUTCMinutes().toString().padStart(2, '0')}.`,
+        );
+      }
     }
 
-    // 7. Create Appointment and TenantCustomer relation in a transaction
+    // 8. Create Appointment and TenantCustomer relation in a transaction
     return this.prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.create({
-        data: createAppointmentDto,
+        data: createAppointmentDto as any, // Cast due to price being optional in DTO but required in DB
       });
 
       // Ensure TenantCustomer relation exists
@@ -267,9 +348,14 @@ export class AppointmentsService {
   private async validateRelatedEntities(
     dto: CreateAppointmentDto | UpdateAppointmentDto,
   ) {
+    let tenant: any = null;
+    let customer: any = null;
+    let service: any = null;
+    let subscription: any = null;
+
     // 1. Validate Tenant
     if (dto.tenantId) {
-      const tenant = await this.prisma.tenant.findUnique({
+      tenant = await this.prisma.tenant.findUnique({
         where: { id: dto.tenantId },
       });
       if (!tenant) {
@@ -279,7 +365,7 @@ export class AppointmentsService {
 
     // 2. Validate Customer
     if (dto.customerId) {
-      const customer = await this.prisma.customer.findUnique({
+      customer = await this.prisma.customer.findUnique({
         where: { id: dto.customerId },
       });
       if (!customer) {
@@ -291,7 +377,7 @@ export class AppointmentsService {
 
     // 3. Validate Service
     if (dto.serviceId) {
-      const service = await this.prisma.service.findUnique({
+      service = await this.prisma.service.findUnique({
         where: { id: dto.serviceId },
       });
       if (!service) {
@@ -313,7 +399,10 @@ export class AppointmentsService {
       const existingAppointment = await this.prisma.appointment.findFirst({
         where: { paymentId: dto.paymentId },
       });
-      if (existingAppointment) {
+      if (
+        existingAppointment &&
+        (!('id' in dto) || existingAppointment.id !== (dto as any).id)
+      ) {
         throw new BadRequestException(
           'The provided paymentId is already associated with another appointment.',
         );
@@ -322,7 +411,7 @@ export class AppointmentsService {
 
     // 5. Validate Subscription
     if (dto.usedSubscriptionId) {
-      const subscription = await this.prisma.subscription.findUnique({
+      subscription = await this.prisma.subscription.findUnique({
         where: { id: dto.usedSubscriptionId },
         include: { tenantCustomer: true },
       });
@@ -346,5 +435,7 @@ export class AppointmentsService {
 
       await this.validateSubscriptionUsage(subscription);
     }
+
+    return { tenant, customer, service, subscription };
   }
 }
