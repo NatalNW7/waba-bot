@@ -70,10 +70,10 @@ describe('TenantsController (e2e)', () => {
         saasPaymentMethodId: 'pm_123',
         saasPlanId: '99999999-9999-9999-9999-999999999999',
       })
-      .expect(400) // Expect 400 because service will likely fail to find plan or throw error
-      // The exact error message might vary depending on how service handles it (not captured in plan)
-      // Assuming it stays the same or verify response structure? 
-      // Current test checked message, preserving that logic.
+      .expect(400); // Expect 400 because service will likely fail to find plan or throw error
+    // The exact error message might vary depending on how service handles it (not captured in plan)
+    // Assuming it stays the same or verify response structure?
+    // Current test checked message, preserving that logic.
   });
 
   it('/tenants/:id (GET) - Success with inclusions', async () => {

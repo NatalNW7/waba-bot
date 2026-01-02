@@ -7,7 +7,10 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(tenantId: string | undefined, createCustomerDto: CreateCustomerDto) {
+  async create(
+    tenantId: string | undefined,
+    createCustomerDto: CreateCustomerDto,
+  ) {
     const { phone, email, name } = createCustomerDto;
 
     return this.prisma.$transaction(async (tx) => {

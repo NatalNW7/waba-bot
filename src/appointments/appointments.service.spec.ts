@@ -54,7 +54,9 @@ describe('AppointmentsService', () => {
     prisma = module.get<PrismaService>(PrismaService);
 
     // Default mock for transaction
-    (prisma as any).$transaction = jest.fn().mockImplementation((cb) => cb(prisma));
+    (prisma as any).$transaction = jest
+      .fn()
+      .mockImplementation((cb) => cb(prisma));
   });
 
   describe('create', () => {
@@ -78,14 +80,29 @@ describe('AppointmentsService', () => {
     };
 
     it('should create an appointment successfully', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant-1' } as any);
-      jest.spyOn(prisma.customer, 'findUnique').mockResolvedValue({ id: 'customer-1' } as any);
-      jest.spyOn(prisma.service, 'findUnique').mockResolvedValue({ id: 'service-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.APPROVED } as any);
-      jest.spyOn(prisma.operatingHour, 'findFirst').mockResolvedValue(mockOperatingHour as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant-1' } as any);
+      jest
+        .spyOn(prisma.customer, 'findUnique')
+        .mockResolvedValue({ id: 'customer-1' } as any);
+      jest
+        .spyOn(prisma.service, 'findUnique')
+        .mockResolvedValue({ id: 'service-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.APPROVED,
+      } as any);
+      jest
+        .spyOn(prisma.operatingHour, 'findFirst')
+        .mockResolvedValue(mockOperatingHour as any);
       jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.appointment, 'create').mockResolvedValue({ id: 'app-1', ...createDto } as any);
-      jest.spyOn(prisma.tenantCustomer, 'findUnique').mockResolvedValue({ id: 'link-1' } as any);
+      jest
+        .spyOn(prisma.appointment, 'create')
+        .mockResolvedValue({ id: 'app-1', ...createDto } as any);
+      jest
+        .spyOn(prisma.tenantCustomer, 'findUnique')
+        .mockResolvedValue({ id: 'link-1' } as any);
 
       const result = await service.create(createDto);
 
@@ -96,20 +113,40 @@ describe('AppointmentsService', () => {
     it('should throw if date is in the past', async () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 1);
-      
-      await expect(service.create({ ...createDto, date: pastDate.toISOString() }))
-        .rejects.toThrow(new BadRequestException('The appointment date is in the past.'));
+
+      await expect(
+        service.create({ ...createDto, date: pastDate.toISOString() }),
+      ).rejects.toThrow(
+        new BadRequestException('The appointment date is in the past.'),
+      );
     });
 
     it('should create an appointment even if payment is pending', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant-1' } as any);
-      jest.spyOn(prisma.customer, 'findUnique').mockResolvedValue({ id: 'customer-1' } as any);
-      jest.spyOn(prisma.service, 'findUnique').mockResolvedValue({ id: 'service-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.PENDING } as any);
-      jest.spyOn(prisma.operatingHour, 'findFirst').mockResolvedValue(mockOperatingHour as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant-1' } as any);
+      jest
+        .spyOn(prisma.customer, 'findUnique')
+        .mockResolvedValue({ id: 'customer-1' } as any);
+      jest
+        .spyOn(prisma.service, 'findUnique')
+        .mockResolvedValue({ id: 'service-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.PENDING,
+      } as any);
+      jest
+        .spyOn(prisma.operatingHour, 'findFirst')
+        .mockResolvedValue(mockOperatingHour as any);
       jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.appointment, 'create').mockResolvedValue({ id: 'app-1', ...createDto, status: 'PENDING' } as any);
-      jest.spyOn(prisma.tenantCustomer, 'findUnique').mockResolvedValue({ id: 'link-1' } as any);
+      jest.spyOn(prisma.appointment, 'create').mockResolvedValue({
+        id: 'app-1',
+        ...createDto,
+        status: 'PENDING',
+      } as any);
+      jest
+        .spyOn(prisma.tenantCustomer, 'findUnique')
+        .mockResolvedValue({ id: 'link-1' } as any);
 
       const result = await service.create(createDto);
 
@@ -118,52 +155,109 @@ describe('AppointmentsService', () => {
     });
 
     it('should throw if business is closed on that day', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant-1' } as any);
-      jest.spyOn(prisma.customer, 'findUnique').mockResolvedValue({ id: 'customer-1' } as any);
-      jest.spyOn(prisma.service, 'findUnique').mockResolvedValue({ id: 'service-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.APPROVED } as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant-1' } as any);
+      jest
+        .spyOn(prisma.customer, 'findUnique')
+        .mockResolvedValue({ id: 'customer-1' } as any);
+      jest
+        .spyOn(prisma.service, 'findUnique')
+        .mockResolvedValue({ id: 'service-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.APPROVED,
+      } as any);
       jest.spyOn(prisma.operatingHour, 'findFirst').mockResolvedValue(null);
 
-      await expect(service.create(createDto))
-        .rejects.toThrow(new BadRequestException('The business is closed on the chosen date.'));
+      await expect(service.create(createDto)).rejects.toThrow(
+        new BadRequestException('The business is closed on the chosen date.'),
+      );
     });
 
     it('should throw if time is outside operating hours', async () => {
       const earlyDate = new Date(futureDate);
       earlyDate.setUTCHours(5, 0); // 05:00 AM
 
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant-1' } as any);
-      jest.spyOn(prisma.customer, 'findUnique').mockResolvedValue({ id: 'customer-1' } as any);
-      jest.spyOn(prisma.service, 'findUnique').mockResolvedValue({ id: 'service-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.APPROVED } as any);
-      jest.spyOn(prisma.operatingHour, 'findFirst').mockResolvedValue(mockOperatingHour as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant-1' } as any);
+      jest
+        .spyOn(prisma.customer, 'findUnique')
+        .mockResolvedValue({ id: 'customer-1' } as any);
+      jest
+        .spyOn(prisma.service, 'findUnique')
+        .mockResolvedValue({ id: 'service-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.APPROVED,
+      } as any);
+      jest
+        .spyOn(prisma.operatingHour, 'findFirst')
+        .mockResolvedValue(mockOperatingHour as any);
 
-      await expect(service.create({ ...createDto, date: earlyDate.toISOString() }))
-        .rejects.toThrow(new BadRequestException('The chosen time is outside of operating hours.'));
+      await expect(
+        service.create({ ...createDto, date: earlyDate.toISOString() }),
+      ).rejects.toThrow(
+        new BadRequestException(
+          'The chosen time is outside of operating hours.',
+        ),
+      );
     });
 
     it('should throw if appointment conflict exists', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant-1' } as any);
-      jest.spyOn(prisma.customer, 'findUnique').mockResolvedValue({ id: 'customer-1' } as any);
-      jest.spyOn(prisma.service, 'findUnique').mockResolvedValue({ id: 'service-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.APPROVED } as any);
-      jest.spyOn(prisma.operatingHour, 'findFirst').mockResolvedValue(mockOperatingHour as any);
-      jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue({ id: 'existing' } as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant-1' } as any);
+      jest
+        .spyOn(prisma.customer, 'findUnique')
+        .mockResolvedValue({ id: 'customer-1' } as any);
+      jest
+        .spyOn(prisma.service, 'findUnique')
+        .mockResolvedValue({ id: 'service-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.APPROVED,
+      } as any);
+      jest
+        .spyOn(prisma.operatingHour, 'findFirst')
+        .mockResolvedValue(mockOperatingHour as any);
+      jest
+        .spyOn(prisma.appointment, 'findFirst')
+        .mockResolvedValue({ id: 'existing' } as any);
 
-      await expect(service.create(createDto))
-        .rejects.toThrow(new BadRequestException('Already exists an appointment in the chosen date.'));
+      await expect(service.create(createDto)).rejects.toThrow(
+        new BadRequestException(
+          'Already exists an appointment in the chosen date.',
+        ),
+      );
     });
 
     it('should create TenantCustomer link if it does not exist', async () => {
-      jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue({ id: 'tenant-1' } as any);
-      jest.spyOn(prisma.customer, 'findUnique').mockResolvedValue({ id: 'customer-1' } as any);
-      jest.spyOn(prisma.service, 'findUnique').mockResolvedValue({ id: 'service-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.APPROVED } as any);
-      jest.spyOn(prisma.operatingHour, 'findFirst').mockResolvedValue(mockOperatingHour as any);
+      jest
+        .spyOn(prisma.tenant, 'findUnique')
+        .mockResolvedValue({ id: 'tenant-1' } as any);
+      jest
+        .spyOn(prisma.customer, 'findUnique')
+        .mockResolvedValue({ id: 'customer-1' } as any);
+      jest
+        .spyOn(prisma.service, 'findUnique')
+        .mockResolvedValue({ id: 'service-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.APPROVED,
+      } as any);
+      jest
+        .spyOn(prisma.operatingHour, 'findFirst')
+        .mockResolvedValue(mockOperatingHour as any);
       jest.spyOn(prisma.appointment, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.appointment, 'create').mockResolvedValue({ id: 'app-1', ...createDto } as any);
+      jest
+        .spyOn(prisma.appointment, 'create')
+        .mockResolvedValue({ id: 'app-1', ...createDto } as any);
       jest.spyOn(prisma.tenantCustomer, 'findUnique').mockResolvedValue(null);
-      jest.spyOn(prisma.tenantCustomer, 'create').mockResolvedValue({ id: 'new-link' } as any);
+      jest
+        .spyOn(prisma.tenantCustomer, 'create')
+        .mockResolvedValue({ id: 'new-link' } as any);
 
       await service.create(createDto);
 
@@ -173,20 +267,39 @@ describe('AppointmentsService', () => {
 
   describe('update', () => {
     it('should allow confirming an appointment if payment is approved', async () => {
-      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue({ id: 'app-1', paymentId: 'payment-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.APPROVED } as any);
-      jest.spyOn(prisma.appointment, 'update').mockResolvedValue({ id: 'app-1', status: 'CONFIRMED' } as any);
+      jest
+        .spyOn(prisma.appointment, 'findUnique')
+        .mockResolvedValue({ id: 'app-1', paymentId: 'payment-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.APPROVED,
+      } as any);
+      jest
+        .spyOn(prisma.appointment, 'update')
+        .mockResolvedValue({ id: 'app-1', status: 'CONFIRMED' } as any);
 
-      const result = await service.update('app-1', { status: AppointmentStatus.CONFIRMED });
+      const result = await service.update('app-1', {
+        status: AppointmentStatus.CONFIRMED,
+      });
       expect(result.status).toBe('CONFIRMED');
     });
 
     it('should throw if confirming an appointment with unapproved payment', async () => {
-      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue({ id: 'app-1', paymentId: 'payment-1' } as any);
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({ id: 'payment-1', status: PaymentStatus.PENDING } as any);
+      jest
+        .spyOn(prisma.appointment, 'findUnique')
+        .mockResolvedValue({ id: 'app-1', paymentId: 'payment-1' } as any);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.PENDING,
+      } as any);
 
-      await expect(service.update('app-1', { status: AppointmentStatus.CONFIRMED }))
-        .rejects.toThrow(new BadRequestException('The appointment can only be confirmed if the payment is approved.'));
+      await expect(
+        service.update('app-1', { status: AppointmentStatus.CONFIRMED }),
+      ).rejects.toThrow(
+        new BadRequestException(
+          'The appointment can only be confirmed if the payment is approved.',
+        ),
+      );
     });
   });
 
@@ -198,8 +311,12 @@ describe('AppointmentsService', () => {
         payment: { status: 'PENDING' },
       };
 
-      jest.spyOn(prisma.appointment, 'findMany').mockResolvedValue([staleAppointment] as any);
-      jest.spyOn(prisma.appointment, 'update').mockResolvedValue({ id: 'stale-1' } as any);
+      jest
+        .spyOn(prisma.appointment, 'findMany')
+        .mockResolvedValue([staleAppointment] as any);
+      jest
+        .spyOn(prisma.appointment, 'update')
+        .mockResolvedValue({ id: 'stale-1' } as any);
 
       await service.checkPendingAppointments();
 
