@@ -6,6 +6,7 @@ import {
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { parseInclude } from '../common/utils/prisma-include.util';
 
 @Injectable()
 export class TenantsService {
@@ -32,10 +33,29 @@ export class TenantsService {
   }
 
   async findOne(id: string, include?: string) {
-    const includeObj = this.parseInclude(include);
+    const includeObj = parseInclude(
+      include,
+      [
+        'saasPlan',
+        'calendar',
+        'services',
+        'appointments',
+        'customers',
+        'plans',
+        'operatingHours',
+        'payments',
+      ],
+      {
+        customers: {
+          key: 'customerLinks',
+          value: { include: { customer: true } },
+        },
+      },
+    );
+
     const tenant = await this.prisma.tenant.findUnique({
       where: { id },
-      include: Object.keys(includeObj).length > 0 ? includeObj : undefined,
+      include: includeObj,
     });
 
     if (!tenant) {
@@ -56,40 +76,6 @@ export class TenantsService {
     }
 
     return tenant;
-  }
-
-  private parseInclude(includeStr?: string) {
-    const includeObj: any = {};
-    if (!includeStr) return includeObj;
-
-    const validRelations = [
-      'saasPlan',
-      'calendar',
-      'services',
-      'appointments',
-      'customers',
-      'plans',
-      'operatingHours',
-      'payments',
-    ];
-
-    const requestedRelations = includeStr.split(',').map((r) => r.trim());
-
-    requestedRelations.forEach((rel) => {
-      if (validRelations.includes(rel)) {
-        if (rel === 'customers') {
-          includeObj['customerLinks'] = {
-            include: {
-              customer: true,
-            },
-          };
-        } else {
-          includeObj[rel] = true;
-        }
-      }
-    });
-
-    return includeObj;
   }
 
   update(id: string, updateTenantDto: UpdateTenantDto) {

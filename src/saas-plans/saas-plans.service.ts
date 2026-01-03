@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateSaasPlanDto } from './dto/create-saas-plan.dto';
 import { UpdateSaasPlanDto } from './dto/update-saas-plan.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { parseInclude } from '../common/utils/prisma-include.util';
 
 @Injectable()
 export class SaasPlansService {
@@ -17,9 +18,11 @@ export class SaasPlansService {
     return this.prisma.saasPlan.findMany();
   }
 
-  findOne(id: string) {
+  findOne(id: string, include?: string) {
+    const includeObj = parseInclude(include, ['tenants']);
     return this.prisma.saasPlan.findUnique({
       where: { id },
+      include: includeObj,
     });
   }
 

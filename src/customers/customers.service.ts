@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { parseInclude } from '../common/utils/prisma-include.util';
 
 @Injectable()
 export class CustomersService {
@@ -59,10 +60,35 @@ export class CustomersService {
     return this.prisma.customer.findMany();
   }
 
-  findOne(id: string) {
-    return this.prisma.customer.findUnique({
+  async findOne(id: string, include?: string) {
+    const includeObj = parseInclude(
+      include,
+      ['tenants', 'appointments', 'payments'],
+      {
+        tenants: {
+          key: 'tenantLinks',
+          value: { include: { tenant: true } },
+        },
+      },
+    );
+
+    const customer = await this.prisma.customer.findUnique({
       where: { id },
+      include: includeObj,
     });
+
+    if (customer && customer['tenantLinks']) {
+      (customer as any).tenants = (customer as any).tenantLinks.map(
+        (link: any) => ({
+          ...link.tenant,
+          offerNotification: link.offerNotification,
+          mpCustomerId: link.mpCustomerId,
+        }),
+      );
+      delete (customer as any).tenantLinks;
+    }
+
+    return customer;
   }
 
   update(id: string, updateCustomerDto: UpdateCustomerDto) {

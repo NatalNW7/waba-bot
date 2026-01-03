@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { parseInclude } from '../common/utils/prisma-include.util';
 
 @Injectable()
 export class ServicesService {
@@ -32,9 +33,15 @@ export class ServicesService {
     return this.prisma.service.findMany();
   }
 
-  findOne(id: string) {
+  findOne(id: string, include?: string) {
+    const includeObj = parseInclude(include, [
+      'tenant',
+      'appointments',
+      'plans',
+    ]);
     return this.prisma.service.findUnique({
       where: { id },
+      include: includeObj,
     });
   }
 

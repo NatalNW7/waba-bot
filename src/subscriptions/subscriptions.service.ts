@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { parseInclude } from '../common/utils/prisma-include.util';
 
 @Injectable()
 export class SubscriptionsService {
@@ -83,9 +84,16 @@ export class SubscriptionsService {
     return this.prisma.subscription.findMany();
   }
 
-  findOne(id: string) {
+  findOne(id: string, include?: string) {
+    const includeObj = parseInclude(include, [
+      'plan',
+      'tenantCustomer',
+      'appointments',
+      'payments',
+    ]);
     return this.prisma.subscription.findUnique({
       where: { id },
+      include: includeObj,
     });
   }
 

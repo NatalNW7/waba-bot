@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +15,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -50,8 +52,14 @@ export class ServicesController {
   @ApiOperation({ summary: 'Get service by ID' })
   @ApiOkResponse({ type: ServiceEntity, description: 'Service found' })
   @ApiNotFoundResponse({ description: 'Service not found' })
-  findOne(@Param('id') id: string) {
-    return this.servicesService.findOne(id);
+  @ApiQuery({
+    name: 'include',
+    required: false,
+    description: 'Comma-separated list of relations to include',
+    example: 'tenant,appointments,plans',
+  })
+  findOne(@Param('id') id: string, @Query('include') include?: string) {
+    return this.servicesService.findOne(id, include);
   }
 
   /** Update a service */

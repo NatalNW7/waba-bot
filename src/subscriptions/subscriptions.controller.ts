@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +15,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -56,8 +58,14 @@ export class SubscriptionsController {
     description: 'Subscription found',
   })
   @ApiNotFoundResponse({ description: 'Subscription not found' })
-  findOne(@Param('id') id: string) {
-    return this.subscriptionsService.findOne(id);
+  @ApiQuery({
+    name: 'include',
+    required: false,
+    description: 'Comma-separated list of relations to include',
+    example: 'plan,appointments,payments',
+  })
+  findOne(@Param('id') id: string, @Query('include') include?: string) {
+    return this.subscriptionsService.findOne(id, include);
   }
 
   /** Update a subscription */

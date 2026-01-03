@@ -62,8 +62,14 @@ export class CustomersController {
   @ApiOperation({ summary: 'Get customer by ID' })
   @ApiOkResponse({ type: CustomerEntity, description: 'Customer found' })
   @ApiNotFoundResponse({ description: 'Customer not found' })
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(id);
+  @ApiQuery({
+    name: 'include',
+    required: false,
+    description: 'Comma-separated list of relations to include',
+    example: 'tenants,appointments,payments',
+  })
+  findOne(@Param('id') id: string, @Query('include') include?: string) {
+    return this.customersService.findOne(id, include);
   }
 
   /** Update a customer */

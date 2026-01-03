@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +15,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { SaasPlansService } from './saas-plans.service';
 import { CreateSaasPlanDto } from './dto/create-saas-plan.dto';
@@ -50,8 +52,14 @@ export class SaasPlansController {
   @ApiOperation({ summary: 'Get SaaS plan by ID' })
   @ApiOkResponse({ type: SaasPlanEntity, description: 'SaaS plan found' })
   @ApiNotFoundResponse({ description: 'SaaS plan not found' })
-  findOne(@Param('id') id: string) {
-    return this.saasPlansService.findOne(id);
+  @ApiQuery({
+    name: 'include',
+    required: false,
+    description: 'Comma-separated list of relations to include',
+    example: 'tenants',
+  })
+  findOne(@Param('id') id: string, @Query('include') include?: string) {
+    return this.saasPlansService.findOne(id, include);
   }
 
   /** Update a SaaS plan */
