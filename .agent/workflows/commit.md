@@ -1,5 +1,5 @@
 ---
-description: Git Commit and Push (Conventional Commits): Stages changes, generates a Conventional Commit message, and pushes to the remote.
+description: # Git Commit and Push (Conventional Commits): Stages changes, generates a Conventional Commit message, and pushes to the remote.
 ---
 
 ## Steps

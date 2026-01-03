@@ -1,5 +1,5 @@
 ---
-description: Prisma-to-Swagger Sync: Synchronizes DTOs and Swagger documentation after a Prisma schema change
+description: # Sync Prisma to Swagger: Synchronizes DTOs and Swagger documentation after a Prisma schema change.
 ---
 
 ## Steps
@@ -12,4 +12,4 @@ description: Prisma-to-Swagger Sync: Synchronizes DTOs and Swagger documentation
     - Apply JSDoc comments to all updated fields.
     - Add realistic `example` values to `@ApiProperty()` or JSDoc.
     - Update `@ApiOkResponse` types in the relevant Controllers.
-5. **Verify Types:** Ensure the project compiles and that the custom Prisma output path (`prisma/generated`) is correctly imported.
+5. **Verify Types:** Ensure the project compiles and that the custom Prisma output path (`prisma/generated/client`) is correctly imported.

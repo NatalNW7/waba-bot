@@ -1,441 +1,217 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { AppointmentRepository } from './appointment-repository.service';
+import { RelatedEntitiesValidator } from './related-entities-validator.service';
+import { AppointmentOperatingHoursValidator } from './appointment-operating-hours.service';
+import {
+  SchedulingService,
+  DEFAULT_SERVICE_DURATION_MINUTES,
+} from './scheduling.service';
+import { AppointmentPaymentValidator } from './appointment-payment.service';
+import { TenantCustomerService } from './tenant-customer.service';
+import { DateTimeUtils } from './utils/date-time.utils';
+import { AppointmentStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AppointmentsService.name);
 
-  async create(createAppointmentDto: CreateAppointmentDto) {
-    const { tenantId, customerId, date, paymentId } = createAppointmentDto;
-    const appointmentDate = new Date(date);
+  constructor(
+    private readonly repo: AppointmentRepository,
+    private readonly validator: RelatedEntitiesValidator,
+    private readonly operatingHours: AppointmentOperatingHoursValidator,
+    private readonly scheduling: SchedulingService,
+    private readonly paymentService: AppointmentPaymentValidator,
+    private readonly tenantCustomerService: TenantCustomerService,
+  ) {}
+
+  async create(dto: CreateAppointmentDto) {
+    const dateUtc = DateTimeUtils.toUtcDate(dto.date);
 
     // 1. Check if date is in the past
-    if (appointmentDate < new Date()) {
+    if (dateUtc < DateTimeUtils.now()) {
       throw new BadRequestException('The appointment date is in the past.');
     }
 
     // 2. Ensure at least one of serviceId or usedSubscriptionId is provided
-    if (
-      !createAppointmentDto.serviceId &&
-      !createAppointmentDto.usedSubscriptionId
-    ) {
+    if (!dto.serviceId && !dto.usedSubscriptionId) {
       throw new BadRequestException(
         'At least one of serviceId or usedSubscriptionId must be provided.',
       );
     }
 
-    // 3. Validate Related Entities and fetch details
-    const { service, subscription } =
-      await this.validateRelatedEntities(createAppointmentDto);
+    // 3. Validate Related Entities
+    const related = await this.validator.validateForCreate(dto);
+    const { service, subscription } = related;
 
-    // 4. Automate Price calculation if not provided
-    if (
-      createAppointmentDto.price === undefined ||
-      createAppointmentDto.price === null
-    ) {
-      if (createAppointmentDto.usedSubscriptionId) {
-        // Covered by subscription
-        createAppointmentDto.price = 0;
-      } else if (service) {
-        createAppointmentDto.price = Number(service.price);
-      } else {
-        // This case should be caught by step 2, but safety first
-        throw new BadRequestException('Price could not be determined.');
-      }
-    }
+    // 4. Determine Price
+    const price = this.determinePrice(dto.price, subscription, service);
 
-    // 5. Payment ID validation
-    if (paymentId) {
-      const payment = await this.prisma.payment.findUnique({
-        where: { id: paymentId },
-      });
-      if (payment?.status === 'APPROVED') {
-        createAppointmentDto.status = 'CONFIRMED';
-      }
-    }
+    // 5. Determine Status based on Payment
+    const status = await this.determineStatus(dto.paymentId);
 
     // 6. Operating Hours Check
-    await this.validateOperatingHours(tenantId, appointmentDate);
+    await this.operatingHours.assertWithinOperatingHours(dto.tenantId, dateUtc);
 
-    // 7. Conflict Check & Overlap validation
-    // Duration is 30 mins by default if not specified in service
-    const durationMinutes = service?.duration || 30;
-    const appointmentEnd = new Date(
-      appointmentDate.getTime() + durationMinutes * 60000,
+    // 7. Conflict Check
+    const durationMinutes =
+      service?.duration || DEFAULT_SERVICE_DURATION_MINUTES;
+    await this.scheduling.assertNoConflict(
+      dto.tenantId,
+      dateUtc,
+      durationMinutes,
     );
 
-    // Find overlapping appointments for the same tenant
-    // An overlap occurs if (start1 < end2) AND (start2 < end1)
-    const overlapping = await this.prisma.appointment.findFirst({
-      where: {
-        tenantId,
-        status: { not: 'CANCELED' },
-        AND: [
-          { date: { lt: appointmentEnd } },
-          {
-            OR: [
-              // For existing appointments, we need to consider their own durations.
-              // Since duration is in Service, we'll fetch today's appointments and check in-memory
-              // or perform a more complex query. For simplicity and correctness with varying durations:
-              { date: { gte: appointmentDate } }, // Starts during or after new one, but before its end
-            ],
-          },
-        ],
-      },
-      include: { service: true },
-    });
+    // 8. Create Appointment and TenantCustomer link in a transaction
+    const appointmentData: Prisma.AppointmentUncheckedCreateInput = {
+      date: dateUtc,
+      status: status as AppointmentStatus,
+      price,
+      tenantId: dto.tenantId,
+      customerId: dto.customerId,
+      serviceId: dto.serviceId,
+      usedSubscriptionId: dto.usedSubscriptionId,
+      paymentId: dto.paymentId,
+      externalEventId: dto.externalEventId,
+    };
 
-    // To be 100% accurate with varying service durations, we fetch all non-cancelled appointments for the tenant on that day
-    // To be 100% accurate with varying service durations, we fetch all non-cancelled appointments for the tenant on that day
-    const dayStart = new Date(
-      Date.UTC(
-        appointmentDate.getUTCFullYear(),
-        appointmentDate.getUTCMonth(),
-        appointmentDate.getUTCDate(),
-        0,
-        0,
-        0,
-        0,
-      ),
-    );
-    const dayEnd = new Date(
-      Date.UTC(
-        appointmentDate.getUTCFullYear(),
-        appointmentDate.getUTCMonth(),
-        appointmentDate.getUTCDate(),
-        23,
-        59,
-        59,
-        999,
-      ),
-    );
-
-    const dayAppointments = await this.prisma.appointment.findMany({
-      where: {
-        tenantId,
-        status: { not: 'CANCELED' },
-        date: {
-          gte: dayStart,
-          lte: dayEnd,
-        },
-      },
-      include: { service: true },
-    });
-
-    for (const app of dayAppointments) {
-      const appStart = new Date(app.date);
-      const appDuration = app.service?.duration || 30;
-      const appEnd = new Date(appStart.getTime() + appDuration * 60000);
-
-      if (appointmentDate < appEnd && appStart < appointmentEnd) {
-        throw new BadRequestException(
-          `Time slot conflict: an appointment already exists from ${appStart.getUTCHours().toString().padStart(2, '0')}:${appStart.getUTCMinutes().toString().padStart(2, '0')} to ${appEnd.getUTCHours().toString().padStart(2, '0')}:${appEnd.getUTCMinutes().toString().padStart(2, '0')}.`,
-        );
-      }
-    }
-
-    // 8. Create Appointment and TenantCustomer relation in a transaction
-    return this.prisma.$transaction(async (tx) => {
-      const appointment = await tx.appointment.create({
-        data: createAppointmentDto as any, // Cast due to price being optional in DTO but required in DB
-      });
-
-      // Ensure TenantCustomer relation exists
-      const link = await tx.tenantCustomer.findUnique({
-        where: {
-          tenantId_customerId: {
-            tenantId,
-            customerId,
-          },
-        },
-      });
-
-      if (!link) {
-        await tx.tenantCustomer.create({
-          data: {
-            tenantId,
-            customerId,
-          },
-        });
-      }
-
+    return this.repo.withTransaction(async (tx) => {
+      const appointment = await this.repo.create(appointmentData, tx);
+      await this.tenantCustomerService.ensureTenantCustomerLink(
+        tx,
+        dto.tenantId,
+        dto.customerId,
+      );
       return appointment;
     });
   }
 
   findAll() {
-    return this.prisma.appointment.findMany();
+    return this.repo.findMany({});
   }
 
   findOne(id: string) {
-    return this.prisma.appointment.findUnique({
-      where: { id },
-    });
+    return this.repo.findOne(id);
   }
 
-  async update(id: string, updateAppointmentDto: UpdateAppointmentDto) {
-    const { status, paymentId } = updateAppointmentDto;
-
+  async update(id: string, dto: UpdateAppointmentDto) {
     // 1. Validate Related Entities
-    await this.validateRelatedEntities(updateAppointmentDto);
+    await this.validator.validateForUpdate(dto);
 
     // 2. If status is changing to CONFIRMED, check payment
-    if (status === 'CONFIRMED') {
-      // Find the appointment to get its paymentId if not provided in DTO
-      const current = await this.prisma.appointment.findUnique({
-        where: { id },
-      });
-
-      const effectivePaymentId = paymentId || current?.paymentId;
-
-      if (!effectivePaymentId) {
-        throw new BadRequestException(
-          'An appointment cannot be confirmed without an associated payment.',
-        );
-      }
-
-      const payment = await this.prisma.payment.findUnique({
-        where: { id: effectivePaymentId },
-      });
-
-      if (!payment || payment.status !== 'APPROVED') {
-        throw new BadRequestException(
-          'The appointment can only be confirmed if the payment is approved.',
-        );
-      }
+    if (dto.status === 'CONFIRMED') {
+      await this.validatePaymentForConfirmation(id, dto.paymentId);
     }
 
-    return this.prisma.appointment.update({
-      where: { id },
-      data: updateAppointmentDto,
-    });
+    // 3. Conflict Check if date or service is changing
+    if (dto.date || dto.serviceId) {
+      await this.validateConflictOnUpdate(id, dto);
+    }
+
+    return this.repo.update(id, dto);
   }
 
   async checkPendingAppointments() {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
-    const stalePending = await this.prisma.appointment.findMany({
-      where: {
-        status: 'PENDING',
-        createdAt: {
-          lt: oneHourAgo,
-        },
-      },
-      include: {
-        payment: true,
-      },
-    });
+    const oneHourAgo = new Date(DateTimeUtils.now().getTime() - 60 * 60 * 1000);
+    const stalePending = await this.repo.findStalePending(oneHourAgo);
 
     for (const appointment of stalePending) {
       if (!appointment.payment || appointment.payment.status !== 'APPROVED') {
-        await this.prisma.appointment.update({
-          where: { id: appointment.id },
-          data: {
-            status: 'CANCELED',
-            cancellationReason: 'payment not approved',
-          },
+        this.logger.debug(
+          `Canceling stale pending appointment ${appointment.id}`,
+        );
+        await this.repo.update(appointment.id, {
+          status: 'CANCELED',
+          cancellationReason: 'payment not approved',
         });
       }
     }
   }
 
   remove(id: string) {
-    return this.prisma.appointment.delete({
-      where: { id },
-    });
+    return this.repo.remove(id);
   }
 
-  private async validateOperatingHours(tenantId: string, date: Date) {
-    const dayOfWeekMap: Record<number, string> = {
-      0: 'SUNDAY',
-      1: 'MONDAY',
-      2: 'TUESDAY',
-      3: 'WEDNESDAY',
-      4: 'THURSDAY',
-      5: 'FRIDAY',
-      6: 'SATURDAY',
-    };
-
-    const dayName = dayOfWeekMap[date.getUTCDay()];
-    const operatingHour = await this.prisma.operatingHour.findFirst({
-      where: {
-        tenantId,
-        day: dayName as any,
-      },
-    });
-
-    if (!operatingHour || operatingHour.isClosed) {
-      throw new BadRequestException(
-        'The business is closed on the chosen date.',
-      );
+  private determinePrice(
+    dtoPrice: number | undefined | null,
+    subscription: any,
+    service: any,
+  ): number {
+    if (dtoPrice !== undefined && dtoPrice !== null) {
+      return dtoPrice;
     }
 
-    const appointmentTime =
-      date.getUTCHours().toString().padStart(2, '0') +
-      ':' +
-      date.getUTCMinutes().toString().padStart(2, '0');
-
-    if (
-      appointmentTime < operatingHour.startTime ||
-      appointmentTime > operatingHour.endTime
-    ) {
-      throw new BadRequestException(
-        'The chosen time is outside of operating hours.',
-      );
+    if (subscription) {
+      return 0;
     }
+
+    if (service) {
+      return Number(service.price);
+    }
+
+    throw new BadRequestException('Price could not be determined.');
   }
 
-  private async validateSubscriptionUsage(subscription: any) {
-    // 1. Check if subscription is active
-    if (subscription.status !== 'ACTIVE') {
-      throw new BadRequestException('The subscription is not active.');
-    }
-
-    // 2. Fetch Plan to check limits
-    const plan = (await this.prisma.plan.findUnique({
-      where: { id: subscription.planId },
-    })) as any;
-
-    if (!plan) {
-      // Should not happen if foreign key integrity is maintained
-      throw new BadRequestException('Associated plan not found.');
-    }
-
-    // 3. Check maxAppointments limit (if > -1)
-    if (plan.maxAppointments > -1) {
-      // Calculate current cycle start date
-      // Based on: [nextBilling - interval, nextBilling]
-      // Assuming intervals are standard (MONTHLY=1 month, QUARTERLY=3 months, YEARLY=12 months)
-      const nextBilling = new Date(subscription.nextBilling);
-      const startOfCycle = new Date(nextBilling);
-
-      switch (plan.interval) {
-        case 'MONTHLY':
-          startOfCycle.setMonth(startOfCycle.getMonth() - 1);
-          break;
-        case 'QUARTERLY':
-          startOfCycle.setMonth(startOfCycle.getMonth() - 3);
-          break;
-        case 'YEARLY':
-          startOfCycle.setFullYear(startOfCycle.getFullYear() - 1);
-          break;
-      }
-
-      // Count appointments in this cycle for this subscription
-      const usageCount = await this.prisma.appointment.count({
-        where: {
-          usedSubscriptionId: subscription.id,
-          date: {
-            gte: startOfCycle,
-            lt: nextBilling,
-          },
-          status: {
-            not: 'CANCELED',
-          },
-        },
-      });
-
-      if (usageCount >= plan.maxAppointments) {
-        throw new BadRequestException(
-          `You have reached the limit of ${plan.maxAppointments} appointments for this cycle.`,
+  private async determineStatus(paymentId?: string): Promise<string> {
+    if (paymentId) {
+      const isApproved = await this.paymentService.isPaymentApproved(paymentId);
+      if (isApproved) {
+        this.logger.debug(
+          `Payment ${paymentId} is approved. Setting status to CONFIRMED.`,
         );
+        return 'CONFIRMED';
       }
     }
+    return 'PENDING';
   }
 
-  private async validateRelatedEntities(
-    dto: CreateAppointmentDto | UpdateAppointmentDto,
+  private async validatePaymentForConfirmation(
+    id: string,
+    dtoPaymentId?: string,
   ) {
-    let tenant: any = null;
-    let customer: any = null;
-    let service: any = null;
-    let subscription: any = null;
+    const current = await this.repo.findOne(id);
+    const effectivePaymentId = dtoPaymentId || current?.paymentId;
 
-    // 1. Validate Tenant
-    if (dto.tenantId) {
-      tenant = await this.prisma.tenant.findUnique({
-        where: { id: dto.tenantId },
-      });
-      if (!tenant) {
-        throw new BadRequestException('The provided tenantId does not exist.');
-      }
+    if (!effectivePaymentId) {
+      throw new BadRequestException(
+        'An appointment cannot be confirmed without an associated payment.',
+      );
     }
 
-    // 2. Validate Customer
-    if (dto.customerId) {
-      customer = await this.prisma.customer.findUnique({
-        where: { id: dto.customerId },
-      });
-      if (!customer) {
-        throw new BadRequestException(
-          'The provided customerId does not exist.',
-        );
-      }
+    const isApproved =
+      await this.paymentService.isPaymentApproved(effectivePaymentId);
+    if (!isApproved) {
+      throw new BadRequestException(
+        'The appointment can only be confirmed if the payment is approved.',
+      );
+    }
+  }
+
+  private async validateConflictOnUpdate(
+    id: string,
+    dto: UpdateAppointmentDto,
+  ) {
+    const current = (await this.repo.findOne(id, { service: true })) as any;
+    if (!current) return;
+
+    const date = dto.date ? DateTimeUtils.toUtcDate(dto.date) : current.date;
+
+    let duration =
+      current.service?.duration || DEFAULT_SERVICE_DURATION_MINUTES;
+    if (dto.serviceId && dto.serviceId !== current.serviceId) {
+      const newService = await this.validator.validateForUpdate({
+        serviceId: dto.serviceId,
+      } as any);
+      duration =
+        newService.service?.duration || DEFAULT_SERVICE_DURATION_MINUTES;
     }
 
-    // 3. Validate Service
-    if (dto.serviceId) {
-      service = await this.prisma.service.findUnique({
-        where: { id: dto.serviceId },
-      });
-      if (!service) {
-        throw new BadRequestException('The provided serviceId does not exist.');
-      }
-    }
-
-    // 4. Validate Payment
-    if (dto.paymentId) {
-      const payment = await this.prisma.payment.findUnique({
-        where: { id: dto.paymentId },
-      });
-      if (!payment) {
-        throw new BadRequestException(
-          'The provided paymentId does not exist. Ensure you are providing the internal database payment ID (UUID), not the external provider ID.',
-        );
-      }
-
-      const existingAppointment = await this.prisma.appointment.findFirst({
-        where: { paymentId: dto.paymentId },
-      });
-      if (
-        existingAppointment &&
-        (!('id' in dto) || existingAppointment.id !== (dto as any).id)
-      ) {
-        throw new BadRequestException(
-          'The provided paymentId is already associated with another appointment.',
-        );
-      }
-    }
-
-    // 5. Validate Subscription
-    if (dto.usedSubscriptionId) {
-      subscription = await this.prisma.subscription.findUnique({
-        where: { id: dto.usedSubscriptionId },
-        include: { tenantCustomer: true },
-      });
-      if (!subscription) {
-        throw new BadRequestException(
-          'The provided usedSubscriptionId does not exist.',
-        );
-      }
-
-      // Ensure the subscription belongs to the provided Tenant and Customer
-      if (dto.tenantId && dto.customerId) {
-        if (
-          subscription.tenantCustomer.tenantId !== dto.tenantId ||
-          subscription.tenantCustomer.customerId !== dto.customerId
-        ) {
-          throw new BadRequestException(
-            'The provided subscription does not belong to the specified Tenant and Customer.',
-          );
-        }
-      }
-
-      await this.validateSubscriptionUsage(subscription);
-    }
-
-    return { tenant, customer, service, subscription };
+    await this.scheduling.assertNoConflict(
+      dto.tenantId || current.tenantId,
+      date,
+      duration,
+      id,
+    );
   }
 }

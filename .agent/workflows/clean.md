@@ -1,5 +1,5 @@
 ---
-description: Format and Lint Codebase: Runs Prettier and ESLint to fix styling and catch potential logic errors.
+description: # Format and Lint Codebase: Runs Prettier and ESLint to fix styling and catch potential logic errors.
 ---
 
 ## Steps
