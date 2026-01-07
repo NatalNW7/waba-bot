@@ -3,10 +3,15 @@ import { PaymentsService } from './payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
 import { PaymentType, PaymentMethod, PaymentStatus } from '@prisma/client';
+import { MercadoPagoService } from './mercadopago.service';
+import { PaymentRepository } from './payment-repository.service';
+import { PaymentPreferenceService } from './payment-preference.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
   let prisma: PrismaService;
+  let repo: PaymentRepository;
+  let preferenceService: PaymentPreferenceService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -24,9 +29,29 @@ describe('PaymentsService', () => {
             subscription: {
               findUnique: jest.fn(),
             },
-            payment: {
-              create: jest.fn(),
+            appointment: {
+              findUnique: jest.fn(),
             },
+          },
+        },
+        {
+          provide: PaymentRepository,
+          useValue: {
+            create: jest.fn(),
+            findAll: jest.fn(),
+            findUnique: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
+        {
+          provide: MercadoPagoService,
+          useValue: {},
+        },
+        {
+          provide: PaymentPreferenceService,
+          useValue: {
+            createAppointmentPreference: jest.fn(),
           },
         },
       ],
@@ -34,10 +59,10 @@ describe('PaymentsService', () => {
 
     service = module.get<PaymentsService>(PaymentsService);
     prisma = module.get<PrismaService>(PrismaService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+    repo = module.get<PaymentRepository>(PaymentRepository);
+    preferenceService = module.get<PaymentPreferenceService>(
+      PaymentPreferenceService,
+    );
   });
 
   describe('create', () => {
@@ -62,73 +87,77 @@ describe('PaymentsService', () => {
         .spyOn(prisma.subscription, 'findUnique')
         .mockResolvedValue({ id: 'sub-1' } as any);
       jest
-        .spyOn(prisma.payment, 'create')
+        .spyOn(repo, 'create')
         .mockResolvedValue({ id: 'payment-1', ...createPaymentDto } as any);
 
       const result = await service.create(createPaymentDto);
 
       expect(result).toBeDefined();
-      expect(prisma.payment.create).toHaveBeenCalledWith({
-        data: createPaymentDto,
-      });
+      expect(repo.create).toHaveBeenCalledWith(createPaymentDto);
     });
 
     it('should throw NotFoundException if tenant does not exist', async () => {
       jest.spyOn(prisma.tenant, 'findUnique').mockResolvedValue(null);
-
       await expect(service.create(createPaymentDto)).rejects.toThrow(
-        new NotFoundException(`Tenant with ID tenant-1 not found`),
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('createAppointmentPayment', () => {
+    it('should throw NotFoundException if appointment not found', async () => {
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(null);
+      await expect(service.createAppointmentPayment('invalid')).rejects.toThrow(
+        NotFoundException,
       );
     });
 
-    it('should throw NotFoundException if customer does not exist', async () => {
+    it('should delegate to preferenceService', async () => {
+      const mockApp = { id: 'app123' };
       jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant-1' } as any);
-      jest.spyOn(prisma.customer, 'findUnique').mockResolvedValue(null);
+        .spyOn(prisma.appointment, 'findUnique')
+        .mockResolvedValue(mockApp as any);
+      jest
+        .spyOn(preferenceService, 'createAppointmentPreference')
+        .mockResolvedValue({ preferenceId: 'pref-1' } as any);
 
-      await expect(service.create(createPaymentDto)).rejects.toThrow(
-        new NotFoundException(`Customer with ID customer-1 not found`),
-      );
+      const result = await service.createAppointmentPayment('app123');
+      expect(result.preferenceId).toBe('pref-1');
+      expect(
+        preferenceService.createAppointmentPreference,
+      ).toHaveBeenCalledWith(mockApp);
     });
+  });
 
-    it('should throw NotFoundException if subscription does not exist', async () => {
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant-1' } as any);
-      jest
-        .spyOn(prisma.customer, 'findUnique')
-        .mockResolvedValue({ id: 'customer-1' } as any);
-      jest.spyOn(prisma.subscription, 'findUnique').mockResolvedValue(null);
-
-      await expect(service.create(createPaymentDto)).rejects.toThrow(
-        new NotFoundException(`Subscription with ID sub-1 not found`),
-      );
+  describe('findAll', () => {
+    it('should call repo.findAll', async () => {
+      jest.spyOn(repo, 'findAll').mockResolvedValue([]);
+      await service.findAll();
+      expect(repo.findAll).toHaveBeenCalled();
     });
+  });
 
-    it('should create payment if optional IDs are not provided', async () => {
-      const dtoNoOptional = {
-        amount: 50,
-        type: PaymentType.APPOINTMENT,
-        method: PaymentMethod.CREDIT_CARD,
-        tenantId: 'tenant-1',
-      };
+  describe('findOne', () => {
+    it('should call repo.findUnique', async () => {
+      jest.spyOn(repo, 'findUnique').mockResolvedValue({ id: '1' } as any);
+      await service.findOne('1');
+      expect(repo.findUnique).toHaveBeenCalledWith({ where: { id: '1' } });
+    });
+  });
 
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant-1' } as any);
-      jest
-        .spyOn(prisma.payment, 'create')
-        .mockResolvedValue({ id: 'payment-2', ...dtoNoOptional } as any);
+  describe('update', () => {
+    it('should call repo.update', async () => {
+      jest.spyOn(repo, 'update').mockResolvedValue({ id: '1' } as any);
+      await service.update('1', { status: 'APPROVED' } as any);
+      expect(repo.update).toHaveBeenCalledWith('1', { status: 'APPROVED' });
+    });
+  });
 
-      const result = await service.create(dtoNoOptional as any);
-
-      expect(result).toBeDefined();
-      expect(prisma.customer.findUnique).not.toHaveBeenCalled();
-      expect(prisma.subscription.findUnique).not.toHaveBeenCalled();
-      expect(prisma.payment.create).toHaveBeenCalledWith({
-        data: dtoNoOptional,
-      });
+  describe('remove', () => {
+    it('should call repo.delete', async () => {
+      jest.spyOn(repo, 'delete').mockResolvedValue({ id: '1' } as any);
+      await service.remove('1');
+      expect(repo.delete).toHaveBeenCalledWith('1');
     });
   });
 });

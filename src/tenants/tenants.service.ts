@@ -7,10 +7,18 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseInclude } from '../common/utils/prisma-include.util';
+import { TenantRepository } from './tenant-repository.service';
+import { TenantSaasService } from './tenant-saas.service';
+import { TenantMpAuthService } from './tenant-mp-auth.service';
 
 @Injectable()
 export class TenantsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly repo: TenantRepository,
+    private readonly saasService: TenantSaasService,
+    private readonly mpAuthService: TenantMpAuthService,
+  ) {}
 
   async create(createTenantDto: CreateTenantDto) {
     if (createTenantDto.saasPlanId) {
@@ -23,13 +31,11 @@ export class TenantsService {
       }
     }
 
-    return this.prisma.tenant.create({
-      data: createTenantDto,
-    });
+    return this.repo.create(createTenantDto);
   }
 
   findAll() {
-    return this.prisma.tenant.findMany();
+    return this.repo.findAll();
   }
 
   async findOne(id: string, include?: string) {
@@ -53,7 +59,7 @@ export class TenantsService {
       },
     );
 
-    const tenant = await this.prisma.tenant.findUnique({
+    const tenant = await this.repo.findUnique({
       where: { id },
       include: includeObj,
     });
@@ -79,15 +85,22 @@ export class TenantsService {
   }
 
   update(id: string, updateTenantDto: UpdateTenantDto) {
-    return this.prisma.tenant.update({
-      where: { id },
-      data: updateTenantDto,
-    });
+    return this.repo.update(id, updateTenantDto);
   }
 
   remove(id: string) {
-    return this.prisma.tenant.delete({
-      where: { id },
-    });
+    return this.repo.delete(id);
+  }
+
+  async createSubscription(id: string) {
+    return this.saasService.createSubscription(id);
+  }
+
+  getMpAuthorizationUrl(tenantId: string) {
+    return this.mpAuthService.getMpAuthorizationUrl(tenantId);
+  }
+
+  async exchangeMpCode(code: string, tenantId: string) {
+    return this.mpAuthService.exchangeMpCode(code, tenantId);
   }
 }

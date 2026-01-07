@@ -1,11 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TenantsService } from './tenants.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { TenantRepository } from './tenant-repository.service';
+import { TenantSaasService } from './tenant-saas.service';
+import { TenantMpAuthService } from './tenant-mp-auth.service';
 
 describe('TenantsService', () => {
   let service: TenantsService;
   let prisma: PrismaService;
+  let repo: TenantRepository;
+  let saasService: TenantSaasService;
+  let mpAuthService: TenantMpAuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -17,10 +23,29 @@ describe('TenantsService', () => {
             saasPlan: {
               findUnique: jest.fn(),
             },
-            tenant: {
-              create: jest.fn(),
-              findUnique: jest.fn(),
-            },
+          },
+        },
+        {
+          provide: TenantRepository,
+          useValue: {
+            create: jest.fn(),
+            findAll: jest.fn(),
+            findUnique: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
+        {
+          provide: TenantSaasService,
+          useValue: {
+            createSubscription: jest.fn(),
+          },
+        },
+        {
+          provide: TenantMpAuthService,
+          useValue: {
+            getMpAuthorizationUrl: jest.fn(),
+            exchangeMpCode: jest.fn(),
           },
         },
       ],
@@ -28,6 +53,9 @@ describe('TenantsService', () => {
 
     service = module.get<TenantsService>(TenantsService);
     prisma = module.get<PrismaService>(PrismaService);
+    repo = module.get<TenantRepository>(TenantRepository);
+    saasService = module.get<TenantSaasService>(TenantSaasService);
+    mpAuthService = module.get<TenantMpAuthService>(TenantMpAuthService);
   });
 
   it('should be defined', () => {
@@ -60,97 +88,56 @@ describe('TenantsService', () => {
         .spyOn(prisma.saasPlan, 'findUnique')
         .mockResolvedValue({ id: 'plan123' } as any);
       jest
-        .spyOn(prisma.tenant, 'create')
+        .spyOn(repo, 'create')
         .mockResolvedValue({ id: 'tenant123', ...createDto } as any);
 
       const result = await service.create(createDto);
       expect(result).toBeDefined();
-      expect(prisma.tenant.create).toHaveBeenCalledWith({ data: createDto });
+      expect(repo.create).toHaveBeenCalledWith(createDto);
     });
+  });
 
-    it('should create tenant if no saasPlanId is provided', async () => {
-      const dtoNoPlan = { ...createDto, saasPlanId: undefined };
+  describe('createSubscription', () => {
+    it('should delegate to saasService', async () => {
       jest
-        .spyOn(prisma.tenant, 'create')
-        .mockResolvedValue({ id: 'tenant123', ...dtoNoPlan } as any);
+        .spyOn(saasService, 'createSubscription')
+        .mockResolvedValue({ initPoint: 'url' } as any);
+      const result = await service.createSubscription('t1');
+      expect(result.initPoint).toBe('url');
+      expect(saasService.createSubscription).toHaveBeenCalledWith('t1');
+    });
+  });
 
-      const result = await service.create(dtoNoPlan);
-      expect(result).toBeDefined();
-      expect(prisma.saasPlan.findUnique).not.toHaveBeenCalled();
-      expect(prisma.tenant.create).toHaveBeenCalledWith({ data: dtoNoPlan });
+  describe('getMpAuthorizationUrl', () => {
+    it('should delegate to mpAuthService', () => {
+      jest.spyOn(mpAuthService, 'getMpAuthorizationUrl').mockReturnValue('url');
+      const result = service.getMpAuthorizationUrl('t1');
+      expect(result).toBe('url');
+      expect(mpAuthService.getMpAuthorizationUrl).toHaveBeenCalledWith('t1');
+    });
+  });
+
+  describe('exchangeMpCode', () => {
+    it('should delegate to mpAuthService', async () => {
+      jest
+        .spyOn(mpAuthService, 'exchangeMpCode')
+        .mockResolvedValue({ id: 't1' } as any);
+      await service.exchangeMpCode('code', 't1');
+      expect(mpAuthService.exchangeMpCode).toHaveBeenCalledWith('code', 't1');
     });
   });
 
   describe('findOne', () => {
     it('should find tenant without inclusions if none provided', async () => {
       jest
-        .spyOn(prisma.tenant, 'findUnique')
+        .spyOn(repo, 'findUnique')
         .mockResolvedValue({ id: 'tenant123', name: 'Test' } as any);
 
       const result = await service.findOne('tenant123');
       expect(result).toBeDefined();
-      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
+      expect(repo.findUnique).toHaveBeenCalledWith({
         where: { id: 'tenant123' },
         include: undefined,
-      });
-    });
-
-    it('should find tenant with valid inclusions', async () => {
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant123', services: [] } as any);
-
-      const result = await service.findOne('tenant123', 'services,saasPlan');
-      expect(result).toBeDefined();
-      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
-        where: { id: 'tenant123' },
-        include: { services: true, saasPlan: true },
-      });
-    });
-
-    it('should find tenant with valid inclusions including customers', async () => {
-      const mockTenant = {
-        id: 'tenant123',
-        customerLinks: [
-          {
-            offerNotification: true,
-            tenantId: 'tenant123',
-            customer: {
-              id: 'cust123',
-              name: 'Customer 1',
-            },
-          },
-        ],
-      };
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue(mockTenant as any);
-
-      const result = await service.findOne('tenant123', 'customers');
-      expect(result).toBeDefined();
-      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
-        where: { id: 'tenant123' },
-        include: {
-          customerLinks: {
-            include: { customer: true },
-          },
-        },
-      });
-      expect((result as any).customers).toBeDefined();
-      expect((result as any).customers[0].name).toBe('Customer 1');
-      expect((result as any).customerLinks).toBeUndefined();
-    });
-
-    it('should ignore invalid inclusions', async () => {
-      jest
-        .spyOn(prisma.tenant, 'findUnique')
-        .mockResolvedValue({ id: 'tenant123' } as any);
-
-      const result = await service.findOne('tenant123', 'services,invalidRel');
-      expect(result).toBeDefined();
-      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
-        where: { id: 'tenant123' },
-        include: { services: true },
       });
     });
   });

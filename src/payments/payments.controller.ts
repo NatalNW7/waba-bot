@@ -37,6 +37,15 @@ export class PaymentsController {
     return this.paymentsService.create(createPaymentDto);
   }
 
+  /** Create a payment link for an appointment */
+  @Post('appointment/:id')
+  @ApiOperation({ summary: 'Create Mercado Pago payment link for appointment' })
+  @ApiCreatedResponse({ description: 'Payment link generated' })
+  @ApiNotFoundResponse({ description: 'Appointment not found' })
+  createAppointmentPayment(@Param('id') id: string) {
+    return this.paymentsService.createAppointmentPayment(id);
+  }
+
   /** Get all payments */
   @Get()
   @ApiOperation({ summary: 'List all payments' })

@@ -2,15 +2,22 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { MercadoPagoService } from './mercadopago.service';
+import { PaymentRepository } from './payment-repository.service';
+import { PaymentPreferenceService } from './payment-preference.service';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mpService: MercadoPagoService,
+    private readonly repo: PaymentRepository,
+    private readonly preferenceService: PaymentPreferenceService,
+  ) {}
 
   async create(createPaymentDto: CreatePaymentDto) {
     const { tenantId, customerId, subscriptionId } = createPaymentDto;
 
-    // Check if tenant exists
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
     });
@@ -18,7 +25,6 @@ export class PaymentsService {
       throw new NotFoundException(`Tenant with ID ${tenantId} not found`);
     }
 
-    // Check if customer exists (if provided)
     if (customerId) {
       const customer = await this.prisma.customer.findUnique({
         where: { id: customerId },
@@ -28,7 +34,6 @@ export class PaymentsService {
       }
     }
 
-    // Check if subscription exists (if provided)
     if (subscriptionId) {
       const subscription = await this.prisma.subscription.findUnique({
         where: { id: subscriptionId },
@@ -40,31 +45,43 @@ export class PaymentsService {
       }
     }
 
-    return this.prisma.payment.create({
-      data: createPaymentDto,
+    return this.repo.create(createPaymentDto);
+  }
+
+  async createAppointmentPayment(appointmentId: string) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        service: true,
+        customer: true,
+        tenant: true,
+      },
     });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    return this.preferenceService.createAppointmentPreference(
+      appointment as any,
+    );
   }
 
   findAll() {
-    return this.prisma.payment.findMany();
+    return this.repo.findAll();
   }
 
   findOne(id: string) {
-    return this.prisma.payment.findUnique({
+    return this.repo.findUnique({
       where: { id },
     });
   }
 
   update(id: string, updatePaymentDto: UpdatePaymentDto) {
-    return this.prisma.payment.update({
-      where: { id },
-      data: updatePaymentDto,
-    });
+    return this.repo.update(id, updatePaymentDto);
   }
 
   remove(id: string) {
-    return this.prisma.payment.delete({
-      where: { id },
-    });
+    return this.repo.delete(id);
   }
 }

@@ -2,10 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SubscriptionsService } from './subscriptions.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
+import { SubscriptionRepository } from './subscription-repository.service';
+import { SubscriptionBillingService } from './subscription-billing.service';
+import { CustomerSubscriptionService } from './customer-subscription.service';
 
 describe('SubscriptionsService', () => {
   let service: SubscriptionsService;
   let prisma: PrismaService;
+  let repo: SubscriptionRepository;
+  let billingService: SubscriptionBillingService;
+  let customerSubService: CustomerSubscriptionService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -14,8 +20,11 @@ describe('SubscriptionsService', () => {
         {
           provide: PrismaService,
           useValue: {
-            $transaction: jest.fn(),
+            $transaction: jest.fn().mockImplementation((cb) => cb(prisma)),
             plan: {
+              findUnique: jest.fn(),
+            },
+            customer: {
               findUnique: jest.fn(),
             },
             tenantCustomer: {
@@ -24,11 +33,28 @@ describe('SubscriptionsService', () => {
             },
             subscription: {
               create: jest.fn(),
-              findUnique: jest.fn(),
-              findMany: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
             },
+          },
+        },
+        {
+          provide: SubscriptionRepository,
+          useValue: {
+            findAll: jest.fn(),
+            findUnique: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
+        {
+          provide: SubscriptionBillingService,
+          useValue: {
+            calculateNextBilling: jest.fn(),
+          },
+        },
+        {
+          provide: CustomerSubscriptionService,
+          useValue: {
+            createMpSubscription: jest.fn(),
           },
         },
       ],
@@ -36,6 +62,13 @@ describe('SubscriptionsService', () => {
 
     service = module.get<SubscriptionsService>(SubscriptionsService);
     prisma = module.get<PrismaService>(PrismaService);
+    repo = module.get<SubscriptionRepository>(SubscriptionRepository);
+    billingService = module.get<SubscriptionBillingService>(
+      SubscriptionBillingService,
+    );
+    customerSubService = module.get<CustomerSubscriptionService>(
+      CustomerSubscriptionService,
+    );
   });
 
   describe('create', () => {
@@ -46,155 +79,107 @@ describe('SubscriptionsService', () => {
       cardTokenId: 'token-1',
     };
 
-    it('should create subscription and link if link does not exist', async () => {
-      // Mock transaction
+    const mockPlan = {
+      id: 'plan-1',
+      name: 'Plan 1',
+      price: 100,
+      tenantId: 'tenant-1',
+      interval: 'MONTHLY',
+    };
+
+    const mockCustomer = {
+      id: 'cust-1',
+      email: 'c@c.com',
+    };
+
+    beforeEach(() => {
       (prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma));
-
-      // Mock Plan
-      (prisma.plan.findUnique as jest.Mock).mockResolvedValue({
-        id: 'plan-1',
-        tenantId: 'tenant-1',
-        interval: 'MONTHLY',
-      });
-
-      // Mock TenantCustomer (not found)
-      (prisma.tenantCustomer.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.tenantCustomer.create as jest.Mock).mockResolvedValue({
+      (prisma.plan.findUnique as jest.Mock).mockResolvedValue(mockPlan);
+      (prisma.customer.findUnique as jest.Mock).mockResolvedValue(mockCustomer);
+      (prisma.tenantCustomer.findUnique as jest.Mock).mockResolvedValue({
         id: 'tc-1',
       });
+      (customerSubService.createMpSubscription as jest.Mock).mockResolvedValue({
+        id: 'mp-sub-789',
+      });
+      (billingService.calculateNextBilling as jest.Mock).mockReturnValue(
+        new Date('2025-02-01T00:00:00Z'),
+      );
+    });
 
-      // Mock Subscription Create
+    it('should throw NotFoundException if plan not found', async () => {
+      (prisma.plan.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.create(createDto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw NotFoundException if customer not found', async () => {
+      (prisma.customer.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.create(createDto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should create subscription, link to MP and store externalId', async () => {
       (prisma.subscription.create as jest.Mock).mockResolvedValue({
         id: 'sub-1',
       });
 
-      const fixedNextBilling = '2025-02-01T00:00:00Z';
-      const result = await service.create({
-        ...createDto,
-        nextBilling: fixedNextBilling,
-      });
+      const result = await service.create(createDto);
 
-      expect(prisma.plan.findUnique).toHaveBeenCalledWith({
-        where: { id: 'plan-1' },
-      });
+      expect(customerSubService.createMpSubscription).toHaveBeenCalled();
       expect(prisma.subscription.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          nextBilling: new Date(fixedNextBilling),
+          externalId: 'mp-sub-789',
           tenantCustomerId: 'tc-1',
         }),
       });
       expect(result).toEqual({ id: 'sub-1' });
     });
 
-    it('should calculate nextBilling for MONTHLY interval', async () => {
-      (prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma));
-      const startDate = new Date('2025-01-01T00:00:00Z');
-      (prisma.plan.findUnique as jest.Mock).mockResolvedValue({
-        id: 'p1',
-        tenantId: 't1',
-        interval: 'MONTHLY',
-      });
-      (prisma.tenantCustomer.findUnique as jest.Mock).mockResolvedValue({
-        id: 'tc1',
-      });
-
+    it('should calculate nextBilling if not provided', async () => {
       await service.create({
-        planId: 'p1',
-        customerId: 'c1',
-        cardTokenId: 'tok',
-        startDate: startDate.toISOString(),
+        ...createDto,
+        nextBilling: undefined,
       });
 
-      const expected = new Date(startDate);
-      expected.setMonth(expected.getMonth() + 1);
-      expect(prisma.subscription.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ nextBilling: expected }),
+      expect(billingService.calculateNextBilling).toHaveBeenCalled();
+    });
+  });
+
+  describe('findAll', () => {
+    it('should call repo.findAll', async () => {
+      jest.spyOn(repo, 'findAll').mockResolvedValue([]);
+      await service.findAll();
+      expect(repo.findAll).toHaveBeenCalled();
+    });
+  });
+
+  describe('findOne', () => {
+    it('should call repo.findUnique', async () => {
+      jest.spyOn(repo, 'findUnique').mockResolvedValue({ id: '1' } as any);
+      await service.findOne('1');
+      expect(repo.findUnique).toHaveBeenCalledWith({
+        where: { id: '1' },
+        include: undefined,
       });
     });
+  });
 
-    it('should calculate nextBilling for QUARTERLY interval', async () => {
-      (prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma));
-      const startDate = new Date('2025-01-01T00:00:00Z');
-      (prisma.plan.findUnique as jest.Mock).mockResolvedValue({
-        id: 'p1',
-        tenantId: 't1',
-        interval: 'QUARTERLY',
-      });
-      (prisma.tenantCustomer.findUnique as jest.Mock).mockResolvedValue({
-        id: 'tc1',
-      });
-
-      await service.create({
-        planId: 'p1',
-        customerId: 'c1',
-        cardTokenId: 'tok',
-        startDate: startDate.toISOString(),
-      });
-
-      const expected = new Date(startDate);
-      expected.setMonth(expected.getMonth() + 3);
-      expect(prisma.subscription.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ nextBilling: expected }),
-      });
+  describe('update', () => {
+    it('should call repo.update', async () => {
+      jest.spyOn(repo, 'update').mockResolvedValue({ id: '1' } as any);
+      await service.update('1', { status: 'ACTIVE' });
+      expect(repo.update).toHaveBeenCalledWith('1', expect.anything());
     });
+  });
 
-    it('should calculate nextBilling for YEARLY interval', async () => {
-      (prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma));
-      const startDate = new Date('2025-01-01T00:00:00Z');
-      (prisma.plan.findUnique as jest.Mock).mockResolvedValue({
-        id: 'p1',
-        tenantId: 't1',
-        interval: 'YEARLY',
-      });
-      (prisma.tenantCustomer.findUnique as jest.Mock).mockResolvedValue({
-        id: 'tc1',
-      });
-
-      await service.create({
-        planId: 'p1',
-        customerId: 'c1',
-        cardTokenId: 'tok',
-        startDate: startDate.toISOString(),
-      });
-
-      const expected = new Date(startDate);
-      expected.setFullYear(expected.getFullYear() + 1);
-      expect(prisma.subscription.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ nextBilling: expected }),
-      });
-    });
-
-    it('should use current date if startDate is not provided', async () => {
-      (prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma));
-      (prisma.plan.findUnique as jest.Mock).mockResolvedValue({
-        id: 'p1',
-        tenantId: 't1',
-        interval: 'MONTHLY',
-      });
-      (prisma.tenantCustomer.findUnique as jest.Mock).mockResolvedValue({
-        id: 'tc1',
-      });
-
-      await service.create({
-        planId: 'p1',
-        customerId: 'c1',
-        cardTokenId: 'tok',
-      });
-
-      expect(prisma.subscription.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          startDate: expect.any(Date),
-          nextBilling: expect.any(Date),
-        }),
-      });
-    });
-
-    it('should throw NotFoundException if plan not found', async () => {
-      (prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma));
-      (prisma.plan.findUnique as jest.Mock).mockResolvedValue(null);
-      await expect(service.create(createDto)).rejects.toThrow(
-        NotFoundException,
-      );
+  describe('remove', () => {
+    it('should call repo.delete', async () => {
+      jest.spyOn(repo, 'delete').mockResolvedValue({ id: '1' } as any);
+      await service.remove('1');
+      expect(repo.delete).toHaveBeenCalledWith('1');
     });
   });
 });

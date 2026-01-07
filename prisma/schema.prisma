@@ -255,6 +255,7 @@ model Subscription {
   nextBilling DateTime           @map("next_billing")
 
   cardTokenId String @map("card_token_id")
+  externalId  String? @unique @map("external_id")
 
   planId String @map("plan_id")
   plan   Plan   @relation(fields: [planId], references: [id])

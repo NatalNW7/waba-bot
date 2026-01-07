@@ -3,32 +3,49 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { parseInclude } from '../common/utils/prisma-include.util';
+import { SubscriptionRepository } from './subscription-repository.service';
+import { SubscriptionBillingService } from './subscription-billing.service';
+import { CustomerSubscriptionService } from './customer-subscription.service';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly repo: SubscriptionRepository,
+    private readonly billingService: SubscriptionBillingService,
+    private readonly customerSubService: CustomerSubscriptionService,
+  ) {}
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
     const {
       planId,
       customerId,
+      cardTokenId,
       nextBilling: dtoNextBilling,
       startDate: dtoStartDate,
       ...rest
     } = createSubscriptionDto;
 
+    // 1. Fetch Plan and Customer
+    const plan = await this.prisma.plan.findUnique({
+      where: { id: planId },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`Plan with ID ${planId} not found.`);
+    }
+
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID ${customerId} not found.`);
+    }
+
+    const tenantId = plan.tenantId;
+
     return this.prisma.$transaction(async (tx) => {
-      // 1. Fetch Plan to identify Tenant and Interval
-      const plan = await tx.plan.findUnique({
-        where: { id: planId },
-      });
-
-      if (!plan) {
-        throw new NotFoundException(`Plan with ID ${planId} not found.`);
-      }
-
-      const tenantId = plan.tenantId;
-
       // 2. Find or Create TenantCustomer relationship
       let tenantCustomer = await tx.tenantCustomer.findUnique({
         where: {
@@ -48,40 +65,42 @@ export class SubscriptionsService {
         });
       }
 
-      // 3. Calculate nextBilling if not provided
-      let nextBilling = dtoNextBilling ? new Date(dtoNextBilling) : null;
+      // 3. Billing Logic
       const startDate = dtoStartDate ? new Date(dtoStartDate) : new Date();
+      const nextBilling = dtoNextBilling
+        ? new Date(dtoNextBilling)
+        : this.billingService.calculateNextBilling(startDate, plan.interval);
 
-      if (!nextBilling) {
-        nextBilling = new Date(startDate);
-        switch (plan.interval) {
-          case 'MONTHLY':
-            nextBilling.setMonth(nextBilling.getMonth() + 1);
-            break;
-          case 'QUARTERLY':
-            nextBilling.setMonth(nextBilling.getMonth() + 3);
-            break;
-          case 'YEARLY':
-            nextBilling.setFullYear(nextBilling.getFullYear() + 1);
-            break;
-        }
-      }
+      // 4. Create Subscription in Mercado Pago
+      const mpResult = await this.customerSubService.createMpSubscription({
+        tenantId,
+        plan: {
+          name: plan.name,
+          price: Number(plan.price),
+          interval: plan.interval,
+        },
+        customer: { id: customerId, email: customer.email ?? undefined },
+        cardTokenId,
+      });
 
-      // 4. Create Subscription
+      // 5. Create Subscription in our DB
       return tx.subscription.create({
         data: {
           ...rest,
+          cardTokenId,
           startDate,
           nextBilling,
           planId,
           tenantCustomerId: tenantCustomer.id,
+          status: 'ACTIVE',
+          externalId: mpResult.id as string,
         },
       });
     });
   }
 
   findAll() {
-    return this.prisma.subscription.findMany();
+    return this.repo.findAll();
   }
 
   findOne(id: string, include?: string) {
@@ -91,22 +110,23 @@ export class SubscriptionsService {
       'appointments',
       'payments',
     ]);
-    return this.prisma.subscription.findUnique({
+    return this.repo.findUnique({
       where: { id },
       include: includeObj,
     });
   }
 
   update(id: string, updateSubscriptionDto: UpdateSubscriptionDto) {
-    return this.prisma.subscription.update({
-      where: { id },
-      data: updateSubscriptionDto,
+    const { nextBilling, startDate, ...rest } = updateSubscriptionDto;
+
+    return this.repo.update(id, {
+      ...rest,
+      nextBilling: nextBilling ? new Date(nextBilling) : undefined,
+      startDate: startDate ? new Date(startDate) : undefined,
     });
   }
 
   remove(id: string) {
-    return this.prisma.subscription.delete({
-      where: { id },
-    });
+    return this.repo.delete(id);
   }
 }

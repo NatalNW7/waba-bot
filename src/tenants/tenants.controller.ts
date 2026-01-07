@@ -71,6 +71,30 @@ export class TenantsController {
     return this.tenantsService.update(id, updateTenantDto);
   }
 
+  /** Create a SaaS subscription for a tenant */
+  @Post(':id/subscribe')
+  @ApiOperation({ summary: 'Create SaaS subscription for tenant' })
+  @ApiOkResponse({ description: 'Subscription created' })
+  @ApiNotFoundResponse({ description: 'Tenant not found' })
+  subscribe(@Param('id') id: string) {
+    return this.tenantsService.createSubscription(id);
+  }
+
+  /** Redirect to Mercado Pago OAuth */
+  @Get(':id/auth/mercadopago')
+  @ApiOperation({ summary: 'Get Mercado Pago OAuth URL' })
+  @ApiOkResponse({ description: 'OAuth URL returned' })
+  getMpAuth(@Param('id') id: string) {
+    return { url: this.tenantsService.getMpAuthorizationUrl(id) };
+  }
+
+  /** Mercado Pago OAuth Callback */
+  @Get('auth/mercadopago/callback')
+  @ApiOperation({ summary: 'Mercado Pago OAuth Callback' })
+  handleMpCallback(@Query('code') code: string, @Query('state') state: string) {
+    return this.tenantsService.exchangeMpCode(code, state);
+  }
+
   /** Delete a tenant */
   @Delete(':id')
   @ApiOperation({ summary: 'Delete tenant' })
