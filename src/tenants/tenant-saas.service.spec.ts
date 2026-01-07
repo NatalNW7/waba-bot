@@ -20,6 +20,7 @@ describe('TenantSaasService', () => {
           provide: TenantRepository,
           useValue: {
             findUnique: jest.fn(),
+            update: jest.fn().mockResolvedValue({}),
           },
         },
         {
@@ -49,7 +50,7 @@ describe('TenantSaasService', () => {
       const mockTenant = {
         id: 't1',
         email: 't@t.com',
-        saasPlan: { name: 'Gold', price: 100 },
+        saasPlan: { name: 'Gold', price: 100, interval: 'MONTHLY' },
       };
       jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
 

@@ -4,7 +4,12 @@ import type { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MercadoPagoService } from '../mercadopago.service';
 import { Payment, PreApproval } from 'mercadopago';
-import { PaymentStatus } from '@prisma/client';
+import {
+  PaymentStatus,
+  PaymentMethod,
+  SubscriptionStatus,
+  PaymentInterval,
+} from '@prisma/client';
 import { PaymentRepository } from '../payment-repository.service';
 
 @Processor('payment-notifications')
@@ -34,10 +39,14 @@ export class PaymentQueueProcessor {
 
       switch (topic) {
         case 'payment':
-          await this.handlePaymentNotification(resourceId, client);
+          await this.handlePaymentNotification(resourceId, client, targetId);
           break;
         case 'subscription_preapproval':
-          await this.handleSubscriptionNotification(resourceId, client);
+          await this.handleSubscriptionNotification(
+            resourceId,
+            client,
+            targetId,
+          );
           break;
         default:
           this.logger.warn(`Unhandled topic in job: ${topic}`);
@@ -50,7 +59,11 @@ export class PaymentQueueProcessor {
     }
   }
 
-  private async handlePaymentNotification(paymentId: string, client: any) {
+  private async handlePaymentNotification(
+    paymentId: string,
+    client: any,
+    targetId: string,
+  ) {
     try {
       const mpPayment = new Payment(client);
       const data = await mpPayment.get({ id: paymentId });
@@ -62,44 +75,69 @@ export class PaymentQueueProcessor {
 
       const externalRef = data.external_reference;
 
-      // 1. Is it a payment recorded in our DB?
-      const internalPayments = await this.paymentRepo.findAll({
+      // 1. Check if payment already exists in our DB
+      const existingPayments = await this.paymentRepo.findAll({
         where: { externalId: paymentId },
       });
-      const internalPayment = internalPayments[0];
 
-      if (internalPayment) {
-        await this.paymentRepo.update(internalPayment.id, {
+      if (existingPayments.length > 0) {
+        const paymentData = data as any;
+        await this.paymentRepo.update(existingPayments[0].id, {
           status: this.mapStatus(data.status || 'pending'),
+          netAmount: paymentData.net_received_amount,
+          fee: paymentData.fee_details?.[0]?.amount,
         });
         return;
       }
 
-      // 2. Is it a payment for an appointment (external_reference)?
+      // 2. SaaS Payment (platform webhook, external_reference = tenantId)
+      if (targetId === 'platform' && externalRef) {
+        const tenant = await this.prisma.tenant.findUnique({
+          where: { id: externalRef },
+        });
+
+        if (tenant) {
+          const paymentData = data as any;
+          await this.paymentRepo.create({
+            externalId: paymentId,
+            amount: Number(data.transaction_amount || 0),
+            netAmount: paymentData.net_received_amount,
+            fee: paymentData.fee_details?.[0]?.amount,
+            status: this.mapStatus(data.status || 'pending'),
+            type: 'SAAS_FEE',
+            method: this.mapPaymentMethod(data.payment_method_id ?? ''),
+            tenantId: tenant.id,
+          });
+
+          this.logger.log(`Created SAAS_FEE payment for tenant ${tenant.id}`);
+          return;
+        }
+      }
+
+      // 3. Appointment payment (tenant webhook)
       if (externalRef) {
         const appointment = await this.prisma.appointment.findUnique({
           where: { id: externalRef },
         });
 
         if (appointment) {
-          // Create the payment record if it doesn't exist
+          const paymentData = data as any;
           const newPayment = await this.paymentRepo.create({
             externalId: paymentId,
             amount: Number(data.transaction_amount || 0),
+            netAmount: paymentData.net_received_amount,
+            fee: paymentData.fee_details?.[0]?.amount,
             status: this.mapStatus(data.status || 'pending'),
             type: 'APPOINTMENT',
-            method: 'CREDIT_CARD', // Default for now
+            method: this.mapPaymentMethod(data.payment_method_id ?? ''),
             tenantId: appointment.tenantId,
             customerId: appointment.customerId,
           });
 
-          // Link to appointment if not linked
           if (!appointment.paymentId) {
             await this.prisma.appointment.update({
               where: { id: appointment.id },
-              data: {
-                paymentId: newPayment.id,
-              },
+              data: { paymentId: newPayment.id },
             });
           }
         }
@@ -115,10 +153,47 @@ export class PaymentQueueProcessor {
   private async handleSubscriptionNotification(
     preApprovalId: string,
     client: any,
+    targetId: string,
   ) {
     const preApproval = new PreApproval(client);
     const data = await preApproval.get({ id: preApprovalId });
 
+    // CASE 1: SaaS subscription (platform) - Update Tenant
+    if (targetId === 'platform') {
+      const externalRef = data.external_reference;
+
+      if (externalRef) {
+        const tenant = await this.prisma.tenant.findUnique({
+          where: { id: externalRef },
+          include: { saasPlan: true },
+        });
+
+        if (tenant) {
+          const newStatus = this.mapSaasStatus(data.status ?? 'pending');
+          const nextBilling =
+            data.status === 'authorized'
+              ? this.calculateNextBilling(
+                  tenant.saasPlan?.interval || 'MONTHLY',
+                )
+              : tenant.saasNextBilling;
+
+          await this.prisma.tenant.update({
+            where: { id: tenant.id },
+            data: {
+              saasStatus: newStatus,
+              saasNextBilling: nextBilling,
+            },
+          });
+
+          this.logger.log(
+            `Updated SaaS status for tenant ${tenant.id}: ${newStatus}`,
+          );
+        }
+      }
+      return;
+    }
+
+    // CASE 2: Customer subscription - Update Subscription
     const subscription = await this.prisma.subscription.findFirst({
       where: { externalId: preApprovalId },
     });
@@ -149,6 +224,39 @@ export class PaymentQueueProcessor {
         return PaymentStatus.REFUNDED;
       default:
         return PaymentStatus.PENDING;
+    }
+  }
+
+  private mapSaasStatus(mpStatus: string): SubscriptionStatus {
+    switch (mpStatus) {
+      case 'authorized':
+      case 'active':
+        return 'ACTIVE';
+      case 'paused':
+      case 'pending':
+        return 'PAST_DUE';
+      case 'cancelled':
+        return 'CANCELED';
+      default:
+        return 'PAST_DUE';
+    }
+  }
+
+  private mapPaymentMethod(mpMethod: string): PaymentMethod {
+    if (mpMethod?.toLowerCase().includes('pix')) return 'PIX';
+    return 'CREDIT_CARD';
+  }
+
+  private calculateNextBilling(interval: PaymentInterval | string): Date {
+    const now = new Date();
+    switch (interval) {
+      case 'QUARTERLY':
+        return new Date(now.setMonth(now.getMonth() + 3));
+      case 'YEARLY':
+        return new Date(now.setFullYear(now.getFullYear() + 1));
+      case 'MONTHLY':
+      default:
+        return new Date(now.setMonth(now.getMonth() + 1));
     }
   }
 }

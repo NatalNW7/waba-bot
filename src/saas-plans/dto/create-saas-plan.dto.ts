@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
+import { PaymentInterval } from '@prisma/client';
 
 /**
  * Data required to create a new SaaS subscription plan
@@ -27,4 +34,12 @@ export class CreateSaasPlanDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  /**
+   * Billing interval for the plan
+   * @example "MONTHLY"
+   */
+  @IsEnum(PaymentInterval)
+  @IsOptional()
+  interval?: PaymentInterval;
 }

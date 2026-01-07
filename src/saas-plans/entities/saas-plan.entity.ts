@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { PaymentInterval } from '@prisma/client';
 
 /**
  * SaaS Plan entity representing a subscription plan for tenants
@@ -22,6 +23,14 @@ export class SaasPlanEntity {
   /** Plan description */
   @ApiProperty({ example: 'Full access to all features', required: false })
   description?: string;
+
+  /** Billing interval */
+  @ApiProperty({
+    enum: PaymentInterval,
+    example: 'MONTHLY',
+    description: 'Billing frequency (MONTHLY, QUARTERLY, YEARLY)',
+  })
+  interval: PaymentInterval;
 
   /** Creation timestamp */
   @ApiProperty()

@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: When refactoring the code
 ---
 
 # Clean Code & NestJS Refactoring Standards

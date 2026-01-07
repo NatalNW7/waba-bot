@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: When create or update a dto file or when create or update the schemas.prisma
 ---
 
 # Swagger & Documentation Enforcement

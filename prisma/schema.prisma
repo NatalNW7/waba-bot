@@ -77,10 +77,11 @@ enum PaymentMethod {
 // 1. Tabela de Planos do SEU SaaS (Normalização)
 // Isso evita repetir o preço "99.00" em cada linha de Tenant
 model SaasPlan {
-  id          String  @id @default(uuid())
+  id          String          @id @default(uuid())
   name        String // Ex: "Basic", "Pro"
-  price       Decimal @db.Decimal(10, 2)
+  price       Decimal         @db.Decimal(10, 2)
   description String?
+  interval    PaymentInterval @default(MONTHLY)
 
   tenants Tenant[] // Quem assina este plano?
 
@@ -110,8 +111,8 @@ model Tenant {
 
   // Gestão da Assinatura do SaaS (Relacionamento com SaasPlan)
   saasStatus          SubscriptionStatus @default(ACTIVE) @map("saas_status")
-  saasNextBilling     DateTime           @map("saas_next_billing")
-  saasPaymentMethodId String             @map("saas_payment_method_id")
+  saasNextBilling     DateTime?          @map("saas_next_billing")
+  saasPaymentMethodId String?            @map("saas_payment_method_id")
 
   saasPlanId String   @map("saas_plan_id")
   saasPlan   SaasPlan @relation(fields: [saasPlanId], references: [id])

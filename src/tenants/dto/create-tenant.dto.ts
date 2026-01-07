@@ -93,20 +93,20 @@ export class CreateTenantDto {
   saasStatus?: SubscriptionStatus;
 
   /**
-   * Next SaaS billing date
+   * Next SaaS billing date (auto-calculated if not provided)
    * @example "2025-01-31T00:00:00Z"
    */
   @IsDateString()
-  @IsNotEmpty()
-  saasNextBilling: string;
+  @IsOptional()
+  saasNextBilling?: string;
 
   /**
-   * SaaS payment method ID
+   * SaaS payment method ID (optional, handled by payment provider)
    * @example "pm_123"
    */
   @IsString()
-  @IsNotEmpty()
-  saasPaymentMethodId: string;
+  @IsOptional()
+  saasPaymentMethodId?: string;
 
   /**
    * SaaS Plan ID
