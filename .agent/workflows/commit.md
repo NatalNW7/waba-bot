@@ -3,7 +3,7 @@ description: # Git Commit and Push (Conventional Commits): Stages changes, gener
 ---
 
 ## Steps
-1. **Pre-commit Check:** Run the `/clean` workflow to ensure there are no linting or formatting errors before committing.
+1. **Pre-commit Check:** if there are changes into src/ or test/, then run the `/clean` workflow to ensure there are no linting or formatting errors before committing.
 2. **Stage Changes:** Execute `git add .` to stage all current modifications.
 3. **Analyze Diff:** Review the staged changes to identify the primary **Type** and **Scope**:
     - **feat:** A new feature (e.g., a new endpoint).
