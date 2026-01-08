@@ -5,6 +5,7 @@ import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { MercadoPagoService } from './../src/payments/mercadopago.service';
 import { Payment, PreApproval, Preference } from 'mercadopago';
+import { getAuthToken, authRequest } from './auth-helper';
 
 // Mock Mercado Pago SDK
 jest.mock('mercadopago');
@@ -15,6 +16,7 @@ describe('Payments E2E', () => {
   let mpService: MercadoPagoService;
   let saasPlanId: string;
   let tenantId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -31,6 +33,9 @@ describe('Payments E2E', () => {
     prisma = app.get(PrismaService);
     mpService = app.get(MercadoPagoService);
     await app.init();
+
+    // Get auth token
+    authToken = await getAuthToken(app);
 
     // Pre-test cleanup
     await prisma.appointment.deleteMany();
@@ -49,7 +54,8 @@ describe('Payments E2E', () => {
     });
     saasPlanId = plan.id;
 
-    const tenantRes = await request(app.getHttpServer()).post('/tenants').send({
+    const req = authRequest(app, authToken);
+    const tenantRes = await req.post('/tenants').send({
       name: 'E2E Tenant',
       email: 'e2e@tenant.com',
       phone: '123456',
@@ -84,7 +90,8 @@ describe('Payments E2E', () => {
         create: mockPreApprovalCreate,
       }));
 
-      const res = await request(app.getHttpServer())
+      const req = authRequest(app, authToken);
+      const res = await req
         .post(`/tenants/${tenantId}/subscribe`)
         .send({ cardTokenId: 'token_123' })
         .expect(201);
@@ -122,13 +129,10 @@ describe('Payments E2E', () => {
       }));
       jest.spyOn(mpService, 'getTenantClient').mockResolvedValue({} as any);
 
-      await request(app.getHttpServer())
-        .post(`/payments/appointment/${appointment.id}`)
-        .expect(201);
+      const req = authRequest(app, authToken);
+      await req.post(`/payments/appointment/${appointment.id}`).expect(201);
 
-      // 3. Simulate Webhook
-      // Note: In E2E tests, we call the endpoint directly.
-      // We'll mock the Payment.get call that the processor makes.
+      // 3. Simulate Webhook (webhooks are @Public, no auth needed)
       const mockPaymentGet = jest.fn().mockResolvedValue({
         id: 'mp-pay-789',
         status: 'approved',
@@ -148,8 +152,6 @@ describe('Payments E2E', () => {
         .expect(200);
 
       // Wait for Bull Queue (since it's async)
-      // For testing, we can either use a small delay or make the queue synchronous in test env.
-      // For now, let's just wait a bit.
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const updatedPayment = await prisma.payment.findFirst({

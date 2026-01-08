@@ -3,11 +3,13 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { getAuthToken, authRequest } from './auth-helper';
 
 describe('ServicesController (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let tenantId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -17,6 +19,9 @@ describe('ServicesController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     prisma = app.get(PrismaService);
     await app.init();
+
+    // Get auth token
+    authToken = await getAuthToken(app);
 
     // Create a dummy SaasPlan
     const plan = await prisma.saasPlan.create({
@@ -50,7 +55,8 @@ describe('ServicesController (e2e)', () => {
   });
 
   it('/services (POST)', async () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .post('/services')
       .send({
         name: 'Haircut',
@@ -66,7 +72,8 @@ describe('ServicesController (e2e)', () => {
   });
 
   it('/services (GET)', () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .get('/services')
       .expect(200)
       .expect((res) => {

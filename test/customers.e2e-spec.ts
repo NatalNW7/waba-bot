@@ -3,11 +3,13 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { getAuthToken, authRequest } from './auth-helper';
 
 describe('CustomersController (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let tenantId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -17,6 +19,9 @@ describe('CustomersController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     prisma = app.get(PrismaService);
     await app.init();
+
+    // Get auth token
+    authToken = await getAuthToken(app);
 
     // Create a dummy SaasPlan
     const plan = await prisma.saasPlan.create({
@@ -50,7 +55,8 @@ describe('CustomersController (e2e)', () => {
   });
 
   it('/customers (POST) - With tenantId', async () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .post(`/customers?tenantId=${tenantId}`)
       .send({
         phone: '5511999999999',
@@ -65,7 +71,8 @@ describe('CustomersController (e2e)', () => {
   });
 
   it('/customers (POST) - Without tenantId', async () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .post('/customers')
       .send({
         phone: '5511888888888',
@@ -80,7 +87,8 @@ describe('CustomersController (e2e)', () => {
   });
 
   it('/customers (GET)', () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .get('/customers')
       .expect(200)
       .expect((res) => {

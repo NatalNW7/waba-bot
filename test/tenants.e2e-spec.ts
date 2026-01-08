@@ -3,11 +3,13 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { getAuthToken, authRequest } from './auth-helper';
 
 describe('TenantsController (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let saasPlanId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -17,6 +19,9 @@ describe('TenantsController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     prisma = app.get(PrismaService);
     await app.init();
+
+    // Get auth token
+    authToken = await getAuthToken(app);
 
     // Create a dummy SaasPlan
     const plan = await prisma.saasPlan.create({
@@ -36,7 +41,8 @@ describe('TenantsController (e2e)', () => {
   });
 
   it('/tenants (POST) - Success', async () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .post('/tenants')
       .send({
         name: 'My Waba Store',
@@ -57,7 +63,8 @@ describe('TenantsController (e2e)', () => {
   });
 
   it('/tenants (POST) - Failure (Plan not found)', async () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .post('/tenants')
       .send({
         name: 'Failed Tenant',
@@ -70,15 +77,13 @@ describe('TenantsController (e2e)', () => {
         saasPaymentMethodId: 'pm_123',
         saasPlanId: '99999999-9999-9999-9999-999999999999',
       })
-      .expect(400); // Expect 400 because service will likely fail to find plan or throw error
-    // The exact error message might vary depending on how service handles it (not captured in plan)
-    // Assuming it stays the same or verify response structure?
-    // Current test checked message, preserving that logic.
+      .expect(400);
   });
 
   it('/tenants/:id (GET) - Success with inclusions', async () => {
+    const req = authRequest(app, authToken);
     // Create a tenant first to get an ID
-    const createRes = await request(app.getHttpServer()).post('/tenants').send({
+    const createRes = await req.post('/tenants').send({
       name: 'Include Tenant',
       wabaId: 'waba_inc',
       phoneId: 'phone_inc',
@@ -92,7 +97,7 @@ describe('TenantsController (e2e)', () => {
 
     const tenantId = createRes.body.id;
 
-    return request(app.getHttpServer())
+    return req
       .get(`/tenants/${tenantId}?include=services,saasPlan`)
       .expect(200)
       .expect((res) => {
@@ -103,8 +108,9 @@ describe('TenantsController (e2e)', () => {
   });
 
   it('/tenants/:id (GET) - Success with customers inclusion', async () => {
+    const req = authRequest(app, authToken);
     // Create a tenant
-    const createRes = await request(app.getHttpServer()).post('/tenants').send({
+    const createRes = await req.post('/tenants').send({
       name: 'Customer Test Tenant',
       wabaId: 'waba_cust',
       phoneId: 'phone_cust',
@@ -133,7 +139,7 @@ describe('TenantsController (e2e)', () => {
       },
     });
 
-    return request(app.getHttpServer())
+    return req
       .get(`/tenants/${tenantId}?include=customers`)
       .expect(200)
       .expect((res) => {
@@ -145,7 +151,8 @@ describe('TenantsController (e2e)', () => {
   });
 
   it('/tenants (GET)', () => {
-    return request(app.getHttpServer())
+    const req = authRequest(app, authToken);
+    return req
       .get('/tenants')
       .expect(200)
       .expect((res) => {

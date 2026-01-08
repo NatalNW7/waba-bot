@@ -24,5 +24,5 @@ description: # NestJS & Clean Code Refactor: Analyzes recent changes or specific
    - Check for missing `@ApiProperty` or Swagger decorators to maintain documentation.
 
 5. **Verification:**
-   - Run `pnpm test` or `pnpm test:e2e` to ensure no regressions were introduced.
+   - Run `pnpm test` and `pnpm test:e2e` to ensure no regressions were introduced.
    - Summarize the improvements made (e.g., "Reduced cyclomatic complexity by 20%").
