@@ -6,15 +6,16 @@ import request from 'supertest';
  * Requires an admin user to exist in the database
  */
 export async function getAuthToken(app: INestApplication): Promise<string> {
-  const response = await request(app.getHttpServer())
+  const response = await request(app.getHttpServer() as any)
     .post('/auth/login')
     .send({
-      email: 'admin@waba-bot.com',
+      email: process.env.ADMIN_EMAIL,
       password: process.env.ADMIN_PASSWORD,
     })
     .expect(201);
 
-  return response.body.accessToken;
+  const body = response.body as { accessToken: string };
+  return body.accessToken;
 }
 
 /**
@@ -29,7 +30,7 @@ export function authRequest(
   patch: (url: string) => request.Test;
   delete: (url: string) => request.Test;
 } {
-  const server = app.getHttpServer();
+  const server = app.getHttpServer() as any;
   return {
     get: (url: string) =>
       request(server).get(url).set('Authorization', `Bearer ${token}`),

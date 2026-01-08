@@ -13,16 +13,20 @@ async function main() {
     throw new Error('ADMIN_PASSWORD environment variable is required');
   }
 
+  if (!process.env.ADMIN_EMAIL) {
+    throw new Error('ADMIN_EMAIL environment variable is required');
+  }
+
   const adminPassword = await bcrypt.hash(
     process.env.ADMIN_PASSWORD,
     10,
   );
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@waba-bot.com' },
+    where: { email: process.env.ADMIN_EMAIL },
     update: {},
     create: {
-      email: 'admin@waba-bot.com',
+      email: process.env.ADMIN_EMAIL,
       password: adminPassword,
       role: 'ADMIN',
     },

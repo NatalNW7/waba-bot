@@ -14,6 +14,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { OperatingHoursService } from './operating-hours.service';
 import { CreateOperatingHourDto } from './dto/create-operating-hour.dto';
@@ -21,6 +22,7 @@ import { UpdateOperatingHourDto } from './dto/update-operating-hour.dto';
 import { OperatingHourEntity } from './entities/operating-hour.entity';
 
 @ApiTags('Operating Hours')
+@ApiBearerAuth('JWT')
 @Controller('operating-hours')
 export class OperatingHoursController {
   constructor(private readonly operatingHoursService: OperatingHoursService) {}

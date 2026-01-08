@@ -16,6 +16,7 @@ import {
   ApiNotFoundResponse,
   ApiBadRequestResponse,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -23,6 +24,7 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { SubscriptionEntity } from './entities/subscription.entity';
 
 @ApiTags('Subscriptions')
+@ApiBearerAuth('JWT')
 @Controller('subscriptions')
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}

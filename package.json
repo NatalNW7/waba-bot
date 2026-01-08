@@ -12,7 +12,7 @@
     "services:up": "docker compose -f compose.yml up -d",
     "services:stop": "docker compose -f compose.yml stop",
     "services:down": "docker compose -f compose.yml down",
-    "startupscripts": "pnpm run services:up && pnpm run wait-for-postgres && pnpm prisma generate && pnpm run migrate:deploy",
+    "startupscripts": "pnpm run services:up && pnpm run wait-for-postgres && pnpm prisma generate && pnpm run migrate:deploy && pnpm prisma db seed",
     "start": "pnpm run startupscripts && nest start",
     "start:dev": "pnpm run startupscripts && nest start --watch",
     "start:debug": "pnpm run startupscripts && nest start --debug --watch",

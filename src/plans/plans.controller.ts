@@ -16,6 +16,7 @@ import {
   ApiNotFoundResponse,
   ApiBadRequestResponse,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PlansService } from './plans.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
@@ -23,6 +24,7 @@ import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanEntity } from './entities/plan.entity';
 
 @ApiTags('Plans')
+@ApiBearerAuth('JWT')
 @Controller('plans')
 export class PlansController {
   constructor(private readonly plansService: PlansService) {}

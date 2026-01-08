@@ -14,6 +14,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -21,6 +22,7 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PaymentEntity } from './entities/payment.entity';
 
 @ApiTags('Payments')
+@ApiBearerAuth('JWT')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}

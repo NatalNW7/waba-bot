@@ -15,8 +15,7 @@ export class MercadoPagoService {
    * Used for SaaS subscription payments (Tenants paying the platform).
    */
   getPlatformClient(): MercadoPagoConfig {
-    const accessToken =
-      process.env.MP_PLATFORM_ACCESS_TOKEN;
+    const accessToken = process.env.MP_PLATFORM_ACCESS_TOKEN;
 
     if (!accessToken) {
       throw new Error(

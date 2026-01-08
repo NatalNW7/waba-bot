@@ -15,6 +15,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -23,6 +24,7 @@ import { TenantEntity } from './entities/tenant.entity';
 import { FindTenantQueryDto } from './dto/find-tenant-query.dto';
 
 @ApiTags('Tenants')
+@ApiBearerAuth('JWT')
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}

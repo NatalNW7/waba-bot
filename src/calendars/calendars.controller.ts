@@ -14,6 +14,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CalendarsService } from './calendars.service';
 import { CreateCalendarDto } from './dto/create-calendar.dto';
@@ -21,6 +22,7 @@ import { UpdateCalendarDto } from './dto/update-calendar.dto';
 import { CalendarEntity } from './entities/calendar.entity';
 
 @ApiTags('Calendars')
+@ApiBearerAuth('JWT')
 @Controller('calendars')
 export class CalendarsController {
   constructor(private readonly calendarsService: CalendarsService) {}
