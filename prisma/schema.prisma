@@ -70,6 +70,12 @@ enum PaymentMethod {
   CREDIT_CARD
 }
 
+enum UserRole {
+  ADMIN
+  TENANT
+  CUSTOMER
+}
+
 // --------------------------------------
 // MODELS
 // --------------------------------------
@@ -89,6 +95,28 @@ model SaasPlan {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("saas_plans") // Nome da tabela no Postgres
+}
+
+// 1b. Tabela de Usuários para Autenticação
+model User {
+  id       String   @id @default(uuid())
+  email    String   @unique
+  password String   // bcrypt hashed
+  role     UserRole @default(TENANT)
+
+  // Optional links to existing entities
+  tenantId String? @unique @map("tenant_id")
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  customerId String?   @unique @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
 }
 
 model Tenant {
@@ -126,6 +154,9 @@ model Tenant {
   plans          Plan[]
   operatingHours OperatingHour[]
   payments       Payment[]
+
+  // User authentication link
+  user User?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -241,6 +272,9 @@ model Customer {
 
   appointments Appointment[]
   payments     Payment[]
+
+  // User authentication link
+  user User?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

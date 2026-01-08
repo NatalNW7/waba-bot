@@ -16,8 +16,7 @@ export class MercadoPagoService {
    */
   getPlatformClient(): MercadoPagoConfig {
     const accessToken =
-      process.env.MP_PLATFORM_ACCESS_TOKEN ||
-      'TEST-7681122337146693-010219-8ac0901b520a70aa446467eff6ed64d7-257942709';
+      process.env.MP_PLATFORM_ACCESS_TOKEN;
 
     if (!accessToken) {
       throw new Error(

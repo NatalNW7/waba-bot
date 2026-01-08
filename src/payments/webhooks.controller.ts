@@ -11,10 +11,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MercadoPagoWebhooksService } from './mercadopago-webhooks.service';
+import { Public } from '../auth/decorators/public.decorator';
 import * as crypto from 'crypto';
 
 @ApiTags('Webhooks')
 @Controller('webhooks/mercadopago')
+@Public()
 export class WebhooksController {
   constructor(private readonly webhooksService: MercadoPagoWebhooksService) {}
 
