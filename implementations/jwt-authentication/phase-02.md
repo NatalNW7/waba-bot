@@ -1,6 +1,7 @@
 # Phase 02: Auth Module Setup
 
 ## Objective
+
 Create the authentication module with required dependencies.
 
 ---
@@ -19,21 +20,21 @@ pnpm add -D @types/passport-jwt @types/bcrypt
 ### [NEW] `src/auth/auth.module.ts`
 
 ```typescript
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { PrismaModule } from '../prisma/prisma.module';
+import { Module } from "@nestjs/common";
+import { JwtModule } from "@nestjs/jwt";
+import { PassportModule } from "@nestjs/passport";
+import { AuthService } from "./auth.service";
+import { AuthController } from "./auth.controller";
+import { JwtStrategy } from "./strategies/jwt.strategy";
+import { PrismaModule } from "../prisma/prisma.module";
 
 @Module({
   imports: [
     PrismaModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-secret-key',
-      signOptions: { expiresIn: '1d' },
+      secret: process.env.JWT_SECRET || "your-secret-key",
+      signOptions: { expiresIn: "1d" },
     }),
   ],
   controllers: [AuthController],
@@ -46,10 +47,10 @@ export class AuthModule {}
 ### [NEW] `src/auth/auth.service.ts`
 
 ```typescript
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { PrismaService } from "../prisma/prisma.service";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
@@ -65,12 +66,12 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     return user;
@@ -117,16 +118,17 @@ export class AuthService {
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **JWT Secret exposure** | High | Use env variable, never commit |
-| **Dependency conflicts** | Low | Standard NestJS packages |
+| Risk                     | Level | Mitigation                     |
+| ------------------------ | ----- | ------------------------------ |
+| **JWT Secret exposure**  | High  | Use env variable, never commit |
+| **Dependency conflicts** | Low   | Standard NestJS packages       |
 
 ---
 
 ## Environment Variables
 
 Add to `.env`:
+
 ```
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 ADMIN_PASSWORD=admin123

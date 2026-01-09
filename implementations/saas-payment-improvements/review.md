@@ -9,12 +9,12 @@
 
 ### Predicted Risks - Did they occur?
 
-| Risk | Predicted | Occurred? | Notes |
-|------|-----------|-----------|-------|
-| Data Migration issues | Medium | ❌ No | Migration applied cleanly with default values |
-| Breaking API changes | Low | ❌ No | Fields made optional, backwards compatible |
-| Webhook handling errors | Medium | ❌ No | Proper null checks and error handling in place |
-| Status mapping gaps | Medium | ❌ No | All MP statuses mapped with fallback to PAST_DUE |
+| Risk                    | Predicted | Occurred? | Notes                                            |
+| ----------------------- | --------- | --------- | ------------------------------------------------ |
+| Data Migration issues   | Medium    | ❌ No     | Migration applied cleanly with default values    |
+| Breaking API changes    | Low       | ❌ No     | Fields made optional, backwards compatible       |
+| Webhook handling errors | Medium    | ❌ No     | Proper null checks and error handling in place   |
+| Status mapping gaps     | Medium    | ❌ No     | All MP statuses mapped with fallback to PAST_DUE |
 
 ### New Risks Discovered
 
@@ -37,6 +37,7 @@
 ## Verification Results
 
 ### Code Scan Findings
+
 - ✅ `SAAS_FEE` type used in `payment-webhook.processor.ts`
 - ✅ `calculateNextBilling()` implemented in:
   - `tenant-saas.service.ts` (subscription creation)
@@ -45,6 +46,7 @@
 - ✅ Optional billing fields in CreateTenantDto
 
 ### Test Results
+
 ```
 Test Suites: 26 passed, 26 total
 Tests:       75 passed, 75 total
@@ -69,10 +71,12 @@ No performance concerns. Bull queue ensures async webhook processing with retry 
 ## Project Success Score: 9/10
 
 **Strengths:**
+
 - Clean migration with no data loss
 - Comprehensive webhook handling for both platform and tenant contexts
 - Good test coverage maintained
 
 **Areas for Improvement:**
+
 - Could add dedicated unit tests for the new `calculateNextBilling` and status mapping methods
 - Consider extracting billing calculation to a shared utility

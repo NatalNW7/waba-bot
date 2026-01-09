@@ -17,10 +17,7 @@ async function main() {
     throw new Error('ADMIN_EMAIL environment variable is required');
   }
 
-  const adminPassword = await bcrypt.hash(
-    process.env.ADMIN_PASSWORD,
-    10,
-  );
+  const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
 
   const admin = await prisma.user.upsert({
     where: { email: process.env.ADMIN_EMAIL },
@@ -41,4 +38,3 @@ main()
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
-

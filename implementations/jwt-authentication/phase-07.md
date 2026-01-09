@@ -1,6 +1,7 @@
 # Phase 07: Testing & Documentation
 
 ## Objective
+
 Add unit tests for auth module and configure Swagger for JWT authentication.
 
 ---
@@ -10,14 +11,14 @@ Add unit tests for auth module and configure Swagger for JWT authentication.
 ### [NEW] `src/auth/auth.service.spec.ts`
 
 ```typescript
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
-import { UnauthorizedException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { Test, TestingModule } from "@nestjs/testing";
+import { AuthService } from "./auth.service";
+import { JwtService } from "@nestjs/jwt";
+import { PrismaService } from "../prisma/prisma.service";
+import { UnauthorizedException } from "@nestjs/common";
+import * as bcrypt from "bcrypt";
 
-describe('AuthService', () => {
+describe("AuthService", () => {
   let service: AuthService;
   let prisma: PrismaService;
 
@@ -36,7 +37,7 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: {
-            sign: jest.fn().mockReturnValue('mock-jwt-token'),
+            sign: jest.fn().mockReturnValue("mock-jwt-token"),
           },
         },
       ],
@@ -46,45 +47,45 @@ describe('AuthService', () => {
     prisma = module.get<PrismaService>(PrismaService);
   });
 
-  describe('login', () => {
-    it('should return a JWT token for valid credentials', async () => {
-      const hashedPassword = await bcrypt.hash('password123', 10);
+  describe("login", () => {
+    it("should return a JWT token for valid credentials", async () => {
+      const hashedPassword = await bcrypt.hash("password123", 10);
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user-1',
-        email: 'admin@test.com',
+        id: "user-1",
+        email: "admin@test.com",
         password: hashedPassword,
-        role: 'ADMIN',
+        role: "ADMIN",
         isActive: true,
       });
 
-      const result = await service.login('admin@test.com', 'password123');
+      const result = await service.login("admin@test.com", "password123");
 
-      expect(result.accessToken).toBe('mock-jwt-token');
-      expect(result.user.email).toBe('admin@test.com');
+      expect(result.accessToken).toBe("mock-jwt-token");
+      expect(result.user.email).toBe("admin@test.com");
     });
 
-    it('should throw UnauthorizedException for invalid password', async () => {
+    it("should throw UnauthorizedException for invalid password", async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user-1',
-        email: 'admin@test.com',
-        password: await bcrypt.hash('different', 10),
+        id: "user-1",
+        email: "admin@test.com",
+        password: await bcrypt.hash("different", 10),
         isActive: true,
       });
 
-      await expect(service.login('admin@test.com', 'wrong')).rejects.toThrow(
+      await expect(service.login("admin@test.com", "wrong")).rejects.toThrow(
         UnauthorizedException,
       );
     });
 
-    it('should throw UnauthorizedException for inactive user', async () => {
+    it("should throw UnauthorizedException for inactive user", async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user-1',
-        email: 'admin@test.com',
-        password: await bcrypt.hash('password', 10),
+        id: "user-1",
+        email: "admin@test.com",
+        password: await bcrypt.hash("password", 10),
         isActive: false,
       });
 
-      await expect(service.login('admin@test.com', 'password')).rejects.toThrow(
+      await expect(service.login("admin@test.com", "password")).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -99,29 +100,29 @@ describe('AuthService', () => {
 ### [MODIFY] `src/main.ts`
 
 ```typescript
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('WABA Bot API')
-    .setDescription('WhatsApp Business API Bot')
-    .setVersion('1.0')
+    .setTitle("WABA Bot API")
+    .setDescription("WhatsApp Business API Bot")
+    .setVersion("1.0")
     .addBearerAuth(
       {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        in: 'header',
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        in: "header",
       },
-      'JWT',
+      "JWT",
     )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup("api", app, document);
 
   await app.listen(3000);
 }
@@ -142,10 +143,10 @@ export class TenantsController { ... }
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Test coverage gaps** | Medium | Focus on auth service critical paths |
-| **Swagger not showing auth** | Low | Verify addBearerAuth configuration |
+| Risk                         | Level  | Mitigation                           |
+| ---------------------------- | ------ | ------------------------------------ |
+| **Test coverage gaps**       | Medium | Focus on auth service critical paths |
+| **Swagger not showing auth** | Low    | Verify addBearerAuth configuration   |
 
 ---
 

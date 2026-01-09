@@ -1,6 +1,7 @@
 # Phase 04: SaaS Webhook Handler
 
 ## Objective
+
 Handle Mercado Pago webhooks for SaaS subscription payments to update tenant billing status.
 
 ---
@@ -23,7 +24,7 @@ private async handleSubscriptionNotification(
   // CASE 1: SaaS subscription (platform) - Update Tenant
   if (targetId === 'platform') {
     const externalRef = data.external_reference; // This is the tenantId
-    
+
     if (externalRef) {
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: externalRef },
@@ -95,6 +96,7 @@ private calculateNextBilling(interval: string): Date {
 ```
 
 Also update the `handleNotification` method to pass `targetId`:
+
 ```diff
 case 'subscription_preapproval':
 -  await this.handleSubscriptionNotification(resourceId, client);
@@ -106,9 +108,9 @@ case 'subscription_preapproval':
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Webhook Signature** | Low | Signature validation already implemented |
-| **Race Conditions** | Low | Bull queue processes sequentially per job |
-| **Missing Tenant** | Low | Null check before update |
-| **Status Mapping** | Medium | Log unmapped statuses, default to PAST_DUE |
+| Risk                  | Level  | Mitigation                                 |
+| --------------------- | ------ | ------------------------------------------ |
+| **Webhook Signature** | Low    | Signature validation already implemented   |
+| **Race Conditions**   | Low    | Bull queue processes sequentially per job  |
+| **Missing Tenant**    | Low    | Null check before update                   |
+| **Status Mapping**    | Medium | Log unmapped statuses, default to PAST_DUE |

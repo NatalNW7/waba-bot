@@ -3,6 +3,7 @@ trigger: always_on
 ---
 
 # Coding Standards & Jest Testing
+
 - **Async/Await:** All I/O and DB operations must return `Promise<T>`.
 - **Validation:** Use `class-validator` decorators in DTO classes.
 - **Error Handling:** Use NestJS `HttpException` classes.

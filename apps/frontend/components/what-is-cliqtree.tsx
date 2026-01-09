@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react";
 
 export function WhatIsCliqtree() {
   return (
@@ -10,16 +10,20 @@ export function WhatIsCliqtree() {
           </div>
 
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">O que é o Cliqtree?</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+              O que é o Cliqtree?
+            </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              O Cliqtree é um serviço de automação inteligente que transforma a forma como salões de beleza,
-              cabeleireiros e barbearias gerenciam agendamentos. Ao se integrar diretamente ao WhatsApp, ele cuida do
-              agendamento, confirmações e lembretes automaticamente — reduzindo faltas e liberando sua equipe para focar
-              no que realmente importa: oferecer um atendimento excepcional.
+              O Cliqtree é um serviço de automação inteligente que transforma a
+              forma como salões de beleza, cabeleireiros e barbearias gerenciam
+              agendamentos. Ao se integrar diretamente ao WhatsApp, ele cuida do
+              agendamento, confirmações e lembretes automaticamente — reduzindo
+              faltas e liberando sua equipe para focar no que realmente importa:
+              oferecer um atendimento excepcional.
             </p>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }

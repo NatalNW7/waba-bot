@@ -1,16 +1,17 @@
 # Phase 06: Role-Based Access
 
 ## Objective
+
 Apply role-based restrictions to controllers for Admin, Tenant, and Customer access levels.
 
 ---
 
 ## Role Hierarchy
 
-| Role | Access Level |
-|------|--------------|
-| `ADMIN` | Full access to all endpoints |
-| `TENANT` | Access to their own tenant's resources |
+| Role       | Access Level                                   |
+| ---------- | ---------------------------------------------- |
+| `ADMIN`    | Full access to all endpoints                   |
+| `TENANT`   | Access to their own tenant's resources         |
 | `CUSTOMER` | Access to their own appointments/subscriptions |
 
 ---
@@ -71,8 +72,8 @@ findAll(@CurrentUser('tenantId') tenantId: string) {
 
 ```typescript
 // Services can verify user owns the resource
-if (user.role !== 'ADMIN' && resource.tenantId !== user.tenantId) {
-  throw new ForbiddenException('Not authorized');
+if (user.role !== "ADMIN" && resource.tenantId !== user.tenantId) {
+  throw new ForbiddenException("Not authorized");
 }
 ```
 
@@ -80,23 +81,23 @@ if (user.role !== 'ADMIN' && resource.tenantId !== user.tenantId) {
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Over-restriction** | Medium | Start permissive, tighten gradually |
-| **Resource ownership** | Medium | Validate tenantId in services |
-| **Role creep** | Low | Document role requirements per endpoint |
+| Risk                   | Level  | Mitigation                              |
+| ---------------------- | ------ | --------------------------------------- |
+| **Over-restriction**   | Medium | Start permissive, tighten gradually     |
+| **Resource ownership** | Medium | Validate tenantId in services           |
+| **Role creep**         | Low    | Document role requirements per endpoint |
 
 ---
 
 ## Role Assignment Plan
 
-| Controller | Initial Role | Future Role |
-|------------|--------------|-------------|
-| SaasPlansController | ADMIN | ADMIN |
-| TenantsController | ADMIN | ADMIN, TENANT (own data) |
-| CustomersController | ADMIN, TENANT | ADMIN, TENANT, CUSTOMER |
-| AppointmentsController | ADMIN, TENANT | All (with ownership check) |
-| PaymentsController | ADMIN, TENANT | All (with ownership check) |
-| ServicesController | ADMIN, TENANT | ADMIN, TENANT |
-| PlansController | ADMIN, TENANT | ADMIN, TENANT |
+| Controller              | Initial Role  | Future Role                |
+| ----------------------- | ------------- | -------------------------- |
+| SaasPlansController     | ADMIN         | ADMIN                      |
+| TenantsController       | ADMIN         | ADMIN, TENANT (own data)   |
+| CustomersController     | ADMIN, TENANT | ADMIN, TENANT, CUSTOMER    |
+| AppointmentsController  | ADMIN, TENANT | All (with ownership check) |
+| PaymentsController      | ADMIN, TENANT | All (with ownership check) |
+| ServicesController      | ADMIN, TENANT | ADMIN, TENANT              |
+| PlansController         | ADMIN, TENANT | ADMIN, TENANT              |
 | SubscriptionsController | ADMIN, TENANT | All (with ownership check) |

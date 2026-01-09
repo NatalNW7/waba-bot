@@ -1,4 +1,4 @@
-import { Check, X } from "lucide-react"
+import { Check, X } from "lucide-react";
 
 const plans = [
   {
@@ -52,15 +52,19 @@ const plans = [
     cta: "Obter Premium",
     highlighted: false,
   },
-]
+];
 
 export function PricingSection() {
   return (
     <section id="pricing" className="py-20 bg-muted">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Preços simples e transparentes</h2>
-          <p className="text-lg text-muted-foreground">Escolha o plano que se encaixa no seu negócio</p>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+            Preços simples e transparentes
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Escolha o plano que se encaixa no seu negócio
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -68,7 +72,9 @@ export function PricingSection() {
             <div
               key={index}
               className={`bg-background rounded-2xl p-8 relative transition-all hover:scale-[1.02] ${
-                plan.highlighted ? "border-2 border-primary shadow-xl" : "border border-border shadow-sm"
+                plan.highlighted
+                  ? "border-2 border-primary shadow-xl"
+                  : "border border-border shadow-sm"
               }`}
             >
               {plan.highlighted && (
@@ -81,7 +87,9 @@ export function PricingSection() {
 
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {plan.description}
+                </p>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-bold">{plan.price}</span>
                   <span className="text-muted-foreground">/{plan.period}</span>
@@ -96,7 +104,13 @@ export function PricingSection() {
                     ) : (
                       <X className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     )}
-                    <span className={feature.included ? "text-foreground" : "text-muted-foreground"}>
+                    <span
+                      className={
+                        feature.included
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
                       {feature.text}
                     </span>
                   </li>
@@ -120,5 +134,5 @@ export function PricingSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

@@ -3,6 +3,7 @@ description: # NestJS & Clean Code Refactor: Analyzes recent changes or specific
 ---
 
 ## Steps
+
 1. **Analyze Context:** - Examine the `git diff` or the specified files to understand recent changes.
    - Identify "Code Smells": Long methods, high coupling, logic in controllers, or duplicated code (DRY).
    - Check for NestJS violations: Missing DTOs, direct database access in controllers, or circular dependencies.

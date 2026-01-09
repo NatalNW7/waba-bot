@@ -1,6 +1,7 @@
 # Phase 01: Schema Changes
 
 ## Objective
+
 Update Prisma schema to support payment intervals and streamline billing fields.
 
 ---
@@ -10,6 +11,7 @@ Update Prisma schema to support payment intervals and streamline billing fields.
 ### [MODIFY] [schema.prisma](file:///home/gambal/gambs/waba-bot/prisma/schema.prisma)
 
 #### 1. Add `paymentInterval` to `SaasPlan`
+
 ```prisma
 model SaasPlan {
   id          String  @id @default(uuid())
@@ -24,12 +26,14 @@ model SaasPlan {
 ```
 
 #### 2. Make `saasNextBilling` optional on Tenant
+
 ```diff
 -  saasNextBilling     DateTime           @map("saas_next_billing")
 +  saasNextBilling     DateTime?          @map("saas_next_billing")
 ```
 
 #### 3. Make `saasPaymentMethodId` optional on Tenant
+
 ```diff
 -  saasPaymentMethodId String             @map("saas_payment_method_id")
 +  saasPaymentMethodId String?            @map("saas_payment_method_id")
@@ -41,15 +45,16 @@ model SaasPlan {
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Data Migration** | Medium | The new `interval` field has a default value `MONTHLY`, so existing records won't break |
-| **Breaking Changes** | Low | Making fields optional is backwards-compatible |
-| **Existing Tenants** | Low | Existing tenants with `saasNextBilling` values are unaffected |
+| Risk                 | Level  | Mitigation                                                                              |
+| -------------------- | ------ | --------------------------------------------------------------------------------------- |
+| **Data Migration**   | Medium | The new `interval` field has a default value `MONTHLY`, so existing records won't break |
+| **Breaking Changes** | Low    | Making fields optional is backwards-compatible                                          |
+| **Existing Tenants** | Low    | Existing tenants with `saasNextBilling` values are unaffected                           |
 
 ---
 
 ## Migration Command
+
 ```bash
 pnpm run migrate:make add-saas-payment-interval
 ```

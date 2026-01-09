@@ -1,6 +1,7 @@
 # Phase 05: Payment Record Creation
 
 ## Objective
+
 Record all SaaS payments in the `Payment` model with type `SAAS_FEE`.
 
 ---
@@ -32,7 +33,7 @@ private async handlePaymentNotification(
     const existingPayments = await this.paymentRepo.findAll({
       where: { externalId: paymentId },
     });
-    
+
     if (existingPayments.length > 0) {
       await this.paymentRepo.update(existingPayments[0].id, {
         status: this.mapStatus(data.status || 'pending'),
@@ -108,6 +109,7 @@ private mapPaymentMethod(mpMethod: string): PaymentMethod {
 ```
 
 Also update the `handleNotification` call to pass `targetId`:
+
 ```diff
 case 'payment':
 -  await this.handlePaymentNotification(resourceId, client);
@@ -119,8 +121,8 @@ case 'payment':
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Duplicate Payments** | Low | Check for existing `externalId` before creating |
-| **Missing Fee Data** | Low | Optional chaining for `fee_details` |
-| **Payment Method Mapping** | Low | Default to CREDIT_CARD |
+| Risk                       | Level | Mitigation                                      |
+| -------------------------- | ----- | ----------------------------------------------- |
+| **Duplicate Payments**     | Low   | Check for existing `externalId` before creating |
+| **Missing Fee Data**       | Low   | Optional chaining for `fee_details`             |
+| **Payment Method Mapping** | Low   | Default to CREDIT_CARD                          |

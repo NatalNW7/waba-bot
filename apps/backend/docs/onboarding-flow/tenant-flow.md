@@ -19,20 +19,23 @@ Before tenants can sign up, the platform administrator must create available Saa
 **Endpoint:** `POST /saas-plans`
 
 **Key Files:**
+
 - Controller: [`saas-plans.controller.ts`](src/saas-plans/saas-plans.controller.ts)
 - Service: [`saas-plans.service.ts`](src/saas-plans/saas-plans.service.ts)
 
 **Payload Example:**
+
 ```json
 {
   "name": "Pro",
-  "price": 99.00,
+  "price": 99.0,
   "description": "Full access to all features",
   "interval": "MONTHLY"
 }
 ```
 
 **Database Model:** `SaasPlan`
+
 ```prisma
 model SaasPlan {
   id          String          @id @default(uuid())
@@ -53,6 +56,7 @@ A business owner registers as a new tenant, selecting a SaaS plan.
 **Endpoint:** `POST /tenants`
 
 **Key Files:**
+
 - Controller: [`tenants.controller.ts`](src/tenants/tenants.controller.ts)
 - Service: [`tenants.service.ts`](src/tenants/tenants.service.ts)
 - DTO: [`create-tenant.dto.ts`](src/tenants/dto/create-tenant.dto.ts)
@@ -67,12 +71,14 @@ A business owner registers as a new tenant, selecting a SaaS plan.
 | `saasPlanId` | Selected SaaS plan ID | "550e8400-..." |
 
 **Optional Fields:**
+
 - `saasNextBilling` - Auto-calculated based on plan interval
 - `saasPaymentMethodId` - Handled by payment provider
 - `wabaId`, `phoneId`, `accessToken` - WhatsApp Business API credentials
 - `mpAccessToken`, `mpPublicKey`, `mpRefToken` - Mercado Pago credentials
 
 **Validation Flow:**
+
 1. The `TenantsService.create()` method validates that the provided `saasPlanId` exists
 2. If the plan doesn't exist, throws `BadRequestException`
 3. If valid, creates the tenant via `TenantRepository.create()`
@@ -100,10 +106,12 @@ After registration, the tenant must activate their SaaS subscription by paying.
 **Endpoint:** `POST /tenants/:id/subscribe`
 
 **Key Files:**
+
 - Controller: [`tenants.controller.ts`](src/tenants/tenants.controller.ts) (line 75-81)
 - Service: [`tenant-saas.service.ts`](src/tenants/tenant-saas.service.ts)
 
 **Flow:**
+
 1. Controller calls `TenantsService.createSubscription(id)`
 2. Service delegates to `TenantSaasService.createSubscription(id)`
 3. Fetches tenant with their SaaS plan details
@@ -150,6 +158,7 @@ async createSubscription(id: string) {
 ```
 
 **Response Example:**
+
 ```json
 {
   "initPoint": "https://www.mercadopago.com.br/subscriptions/checkout?...",
@@ -168,10 +177,12 @@ When a SaaS payment is processed by Mercado Pago, webhooks are automatically sen
 **Endpoint:** `POST /webhooks/mercadopago/platform`
 
 **Key Files:**
+
 - Controller: [`webhooks.controller.ts`](src/payments/webhooks.controller.ts)
 - Processor: [`payment-webhook.processor.ts`](src/payments/processors/payment-webhook.processor.ts)
 
 **Processing Flow:**
+
 1. Webhook received and queued via Bull
 2. `PaymentQueueProcessor` fetches payment details from Mercado Pago
 3. For `payment` topic:
@@ -206,7 +217,7 @@ Returns the OAuth authorization URL for Mercado Pago.
 getMpAuthorizationUrl(tenantId: string) {
   const clientId = process.env.MP_CLIENT_ID;
   const redirectUri = process.env.MP_REDIRECT_URI;
-  
+
   return `https://auth.mercadopago.com/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${tenantId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 }
 ```
@@ -247,21 +258,24 @@ Once the tenant is registered and subscribed, they can create services offered t
 **Endpoint:** `POST /services`
 
 **Key Files:**
+
 - Controller: [`services.controller.ts`](src/services/services.controller.ts)
 - Service: [`services.service.ts`](src/services/services.service.ts)
 - DTO: [`create-service.dto.ts`](src/services/dto/create-service.dto.ts)
 
 **Payload Example:**
+
 ```json
 {
   "name": "Haircut",
-  "price": 30.00,
+  "price": 30.0,
   "duration": 30,
   "tenantId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
 **Validation Flow:**
+
 1. `ServicesService.create()` validates the `tenantId` exists
 2. Creates the service linked to the tenant
 
@@ -286,6 +300,7 @@ private async validateRelatedEntities(dto) {
 ```
 
 **Database Model:** `Service`
+
 ```prisma
 model Service {
   id        String  @id @default(uuid())
@@ -333,14 +348,14 @@ erDiagram
     Tenant ||--o{ Plan : "creates"
     Tenant ||--o{ Payment : "receives"
     Tenant ||--o{ Appointment : "manages"
-    
+
     SaasPlan {
         string id PK
         string name
         decimal price
         string description
     }
-    
+
     Tenant {
         string id PK
         string name
@@ -351,7 +366,7 @@ erDiagram
         datetime saasNextBilling
         string mpAccessToken
     }
-    
+
     Service {
         string id PK
         string name
@@ -365,16 +380,17 @@ erDiagram
 
 ## Summary
 
-| Step | Endpoint | Action |
-|------|----------|--------|
-| 1 | `POST /saas-plans` | Admin creates available plans |
-| 2 | `POST /tenants` | Business owner registers |
-| 3 | `POST /tenants/:id/subscribe` | Tenant activates SaaS subscription |
-| 4a | `GET /tenants/:id/auth/mercadopago` | Get MP OAuth URL |
-| 4b | `GET /tenants/auth/mercadopago/callback` | Complete MP OAuth |
-| 5 | `POST /services` | Tenant creates services |
+| Step | Endpoint                                 | Action                             |
+| ---- | ---------------------------------------- | ---------------------------------- |
+| 1    | `POST /saas-plans`                       | Admin creates available plans      |
+| 2    | `POST /tenants`                          | Business owner registers           |
+| 3    | `POST /tenants/:id/subscribe`            | Tenant activates SaaS subscription |
+| 4a   | `GET /tenants/:id/auth/mercadopago`      | Get MP OAuth URL                   |
+| 4b   | `GET /tenants/auth/mercadopago/callback` | Complete MP OAuth                  |
+| 5    | `POST /services`                         | Tenant creates services            |
 
 After completing these steps, the tenant is fully onboarded and can:
+
 - Configure operating hours (`POST /operating-hours`)
 - Create subscription plans for customers (`POST /plans`)
 - Manage appointments (`POST /appointments`)

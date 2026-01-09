@@ -1,6 +1,6 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Mail, Globe } from "lucide-react"
+import Link from "next/link";
+import Image from "next/image";
+import { Mail, Globe } from "lucide-react";
 
 export function Header() {
   return (
@@ -40,19 +40,31 @@ export function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="/#home" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link
+              href="/#home"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
               Início
             </Link>
-            <Link href="/#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link
+              href="/#how-it-works"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
               Como Funciona
             </Link>
-            <Link href="/#benefits" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link
+              href="/#benefits"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
               Benefícios
             </Link>
             {/* <Link href="/#pricing" className="text-sm font-medium hover:text-primary transition-colors">
               Preços
             </Link> */}
-            <Link href="/#contact" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link
+              href="/#contact"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
               Contato
             </Link>
           </nav>
@@ -68,5 +80,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }

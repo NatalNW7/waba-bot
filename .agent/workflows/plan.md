@@ -3,6 +3,7 @@ description: # Feature Implementation Planner (with Risk Assessment): Breaks dow
 ---
 
 ## Steps
+
 1. **Context & Git Audit:** - Review the feature request.
    - Run `git status` and apply the `risk-assessment-rules.md`.
 2. **Phase Breakdown:** Divide the implementation into 4–10 logical phases.
@@ -19,4 +20,5 @@ description: # Feature Implementation Planner (with Risk Assessment): Breaks dow
 7. **Execution Handover:** Display the plan to the user and ask: "Would you like to start with Phase 1?"
 
 ## Post-Execution
+
 - Once all phases are checked off, the agent must prompt the user to run the **Post-Implementation Review** to document lessons learned.

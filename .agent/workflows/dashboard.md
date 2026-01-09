@@ -3,6 +3,7 @@ description: # Project Implementation Dashboard: Summarizes all active implement
 ---
 
 ## Steps
+
 1. **Locate Plans:** Search for all subdirectories in the `implementations/` folder.
 2. **Scan Status:** Read the `README.md` or phase files in each folder to determine the percentage of completion.
 3. **Analyze Reviews:** Check which plans have a completed `review.md`.

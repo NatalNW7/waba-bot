@@ -3,6 +3,7 @@ description: # Post-Implementation Review: Conducts a post-implementation review
 ---
 
 ## Steps
+
 1. **Load Plan Context:** - Read the `README.md` and all `phase-XX.md` files in the target implementation folder.
    - Identify the "Risks & Mitigations" that were predicted at the start.
 
@@ -13,7 +14,7 @@ description: # Post-Implementation Review: Conducts a post-implementation review
 3. **Risk Audit:**
    - Compare the actual implementation results against the `review.md` template.
    - Identify if any predicted risks (e.g., migration issues, circular dependencies) occurred.
-   - Document any *unforeseen* issues that arose during development.
+   - Document any _unforeseen_ issues that arose during development.
 
 4. **Documentation & Tests Check:**
    - Confirm Swagger docs are updated and match the new code.

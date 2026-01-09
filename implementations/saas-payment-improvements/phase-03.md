@@ -1,6 +1,7 @@
 # Phase 03: Tenant Service Updates
 
 ## Objective
+
 Auto-calculate `saasNextBilling` based on the SaaS plan's interval when creating subscriptions.
 
 ---
@@ -10,6 +11,7 @@ Auto-calculate `saasNextBilling` based on the SaaS plan's interval when creating
 ### [MODIFY] [create-tenant.dto.ts](file:///home/gambal/gambs/waba-bot/src/tenants/dto/create-tenant.dto.ts)
 
 Make billing fields optional since they will be calculated:
+
 ```diff
 -  @IsDateString()
 -  @IsNotEmpty()
@@ -31,6 +33,7 @@ Make billing fields optional since they will be calculated:
 ### [MODIFY] [tenant-saas.service.ts](file:///home/gambal/gambs/waba-bot/src/tenants/tenant-saas.service.ts)
 
 Update `createSubscription` to use the plan's interval for Mercado Pago:
+
 ```typescript
 async createSubscription(id: string) {
   const tenant = await this.repo.findUnique({
@@ -70,7 +73,7 @@ async createSubscription(id: string) {
 
   // Calculate next billing based on interval
   const nextBilling = this.calculateNextBilling(tenant.saasPlan.interval);
-  
+
   await this.repo.update(tenant.id, {
     saasNextBilling: nextBilling,
   });
@@ -100,6 +103,7 @@ private calculateNextBilling(interval: PaymentInterval): Date {
 ### [MODIFY] [tenant.entity.ts](file:///home/gambal/gambs/waba-bot/src/tenants/entities/tenant.entity.ts)
 
 Make optional fields reflect schema:
+
 ```typescript
 saasNextBilling?: Date;
 saasPaymentMethodId?: string;
@@ -109,7 +113,7 @@ saasPaymentMethodId?: string;
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Existing API Consumers** | Low | Fields become optional, not removed |
-| **Interval Mapping** | Low | Default to MONTHLY if unknown interval |
+| Risk                       | Level | Mitigation                             |
+| -------------------------- | ----- | -------------------------------------- |
+| **Existing API Consumers** | Low   | Fields become optional, not removed    |
+| **Interval Mapping**       | Low   | Default to MONTHLY if unknown interval |

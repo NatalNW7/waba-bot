@@ -1,6 +1,7 @@
 # Phase 03: JWT Strategy
 
 ## Objective
+
 Implement Passport JWT strategy for token validation and create the login endpoint.
 
 ---
@@ -10,10 +11,10 @@ Implement Passport JWT strategy for token validation and create the login endpoi
 ### [NEW] `src/auth/strategies/jwt.strategy.ts`
 
 ```typescript
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { PrismaService } from "../../prisma/prisma.service";
 
 export interface JwtPayload {
   sub: string;
@@ -31,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'your-secret-key',
+      secretOrKey: process.env.JWT_SECRET || "your-secret-key",
     });
   }
 
@@ -49,7 +50,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
+      throw new UnauthorizedException("User not found or inactive");
     }
 
     return user;
@@ -60,21 +61,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 ### [NEW] `src/auth/auth.controller.ts`
 
 ```typescript
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
-import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { Public } from './decorators/public.decorator';
+import { Controller, Post, Body } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiOkResponse } from "@nestjs/swagger";
+import { AuthService } from "./auth.service";
+import { LoginDto } from "./dto/login.dto";
+import { Public } from "./decorators/public.decorator";
 
-@ApiTags('Auth')
-@Controller('auth')
+@ApiTags("Auth")
+@Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Post('login')
-  @ApiOperation({ summary: 'User login' })
-  @ApiOkResponse({ description: 'Returns JWT token' })
+  @Post("login")
+  @ApiOperation({ summary: "User login" })
+  @ApiOkResponse({ description: "Returns JWT token" })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
   }
@@ -84,7 +85,7 @@ export class AuthController {
 ### [NEW] `src/auth/dto/login.dto.ts`
 
 ```typescript
-import { IsEmail, IsString, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, IsNotEmpty } from "class-validator";
 
 export class LoginDto {
   /**
@@ -129,7 +130,7 @@ export interface AuthenticatedUser {
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Token expiration** | Low | 1 day default, configurable |
-| **Payload size** | Low | Only essential fields in JWT |
+| Risk                 | Level | Mitigation                   |
+| -------------------- | ----- | ---------------------------- |
+| **Token expiration** | Low   | 1 day default, configurable  |
+| **Payload size**     | Low   | Only essential fields in JWT |

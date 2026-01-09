@@ -1,6 +1,7 @@
 # Phase 06: Testing & Documentation
 
 ## Objective
+
 Add/update unit tests and update `onboarding-flow.md` documentation.
 
 ---
@@ -10,12 +11,14 @@ Add/update unit tests and update `onboarding-flow.md` documentation.
 ### [MODIFY] [tenant-saas.service.spec.ts](file:///home/gambal/gambs/waba-bot/src/tenants/tenant-saas.service.spec.ts)
 
 Add tests for:
+
 - `calculateNextBilling` with MONTHLY, QUARTERLY, YEARLY intervals
 - Subscription creation uses plan's interval
 
 ### [MODIFY] [payment-webhook.processor.spec.ts](file:///home/gambal/gambs/waba-bot/src/payments/processors/payment-webhook.processor.spec.ts)
 
 Add tests for:
+
 - SaaS payment notification creates `SAAS_FEE` payment record
 - SaaS subscription notification updates tenant `saasStatus` and `saasNextBilling`
 - Distinguishes between platform and tenant webhooks
@@ -36,6 +39,7 @@ When a SaaS payment is processed by Mercado Pago, webhooks are sent to:
 **Endpoint:** `POST /webhooks/mercadopago/platform`
 
 **Processing Flow:**
+
 1. Webhook received and queued via Bull
 2. `PaymentQueueProcessor` fetches payment details from Mercado Pago
 3. For `payment` topic:
@@ -47,6 +51,7 @@ When a SaaS payment is processed by Mercado Pago, webhooks are sent to:
 ```
 
 Also update the Schema section to reflect:
+
 - `SaasPlan.interval` field
 - Optional `saasNextBilling` and `saasPaymentMethodId`
 
@@ -54,10 +59,10 @@ Also update the Schema section to reflect:
 
 ## ⚠️ Risks & Mitigations
 
-| Risk | Level | Mitigation |
-|------|-------|------------|
-| **Test Coverage Gaps** | Low | Focus on critical paths |
-| **Documentation Drift** | Low | Update docs in same PR as code |
+| Risk                    | Level | Mitigation                     |
+| ----------------------- | ----- | ------------------------------ |
+| **Test Coverage Gaps**  | Low   | Focus on critical paths        |
+| **Documentation Drift** | Low   | Update docs in same PR as code |
 
 ---
 

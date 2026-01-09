@@ -1,6 +1,13 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Mail, Globe, MessageCircle, Instagram, Facebook, Linkedin } from "lucide-react"
+import Link from "next/link";
+import Image from "next/image";
+import {
+  Mail,
+  Globe,
+  MessageCircle,
+  Instagram,
+  Facebook,
+  Linkedin,
+} from "lucide-react";
 
 export function Footer() {
   return (
@@ -17,8 +24,9 @@ export function Footer() {
               className="h-12 w-auto mb-4 brightness-0 invert"
             />
             <p className="text-background/70 mb-6 leading-relaxed max-w-md">
-              Assistente de agendamento automatizado via WhatsApp para salões de beleza e barbearias. Economize tempo,
-              aumente agendamentos e reduza faltas.
+              Assistente de agendamento automatizado via WhatsApp para salões de
+              beleza e barbearias. Economize tempo, aumente agendamentos e
+              reduza faltas.
             </p>
 
             {/* Social links */}
@@ -51,17 +59,26 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Links Rápidos</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/#home" className="text-background/70 hover:text-background transition-colors">
+                <Link
+                  href="/#home"
+                  className="text-background/70 hover:text-background transition-colors"
+                >
                   Início
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="text-background/70 hover:text-background transition-colors">
+                <Link
+                  href="/#how-it-works"
+                  className="text-background/70 hover:text-background transition-colors"
+                >
                   Como Funciona
                 </Link>
               </li>
               <li>
-                <Link href="/#benefits" className="text-background/70 hover:text-background transition-colors">
+                <Link
+                  href="/#benefits"
+                  className="text-background/70 hover:text-background transition-colors"
+                >
                   Benefícios
                 </Link>
               </li>
@@ -104,8 +121,12 @@ export function Footer() {
         {/* Secondary CTA */}
         <div className="border-t border-background/20 pt-12 mb-12">
           <div className="max-w-3xl mx-auto text-center">
-            <h3 className="text-2xl font-bold mb-4">Pronto para automatizar seus agendamentos?</h3>
-            <p className="text-background/70 mb-6">Comece seu teste grátis hoje e veja a diferença</p>
+            <h3 className="text-2xl font-bold mb-4">
+              Pronto para automatizar seus agendamentos?
+            </h3>
+            <p className="text-background/70 mb-6">
+              Comece seu teste grátis hoje e veja a diferença
+            </p>
             <a
               href="https://wa.me/5511913339320?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Cliqtree"
               target="_blank"
@@ -122,15 +143,21 @@ export function Footer() {
         <div className="border-t border-background/20 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-background/60">
           <p>&copy; 2025 Cliqtree. Todos os direitos reservados.</p>
           <div className="flex items-center gap-6">
-            <Link href="/politica-de-privacidade" className="hover:text-background transition-colors">
+            <Link
+              href="/politica-de-privacidade"
+              className="hover:text-background transition-colors"
+            >
               Política de Privacidade
             </Link>
-            <Link href="/termos-de-servico" className="hover:text-background transition-colors">
+            <Link
+              href="/termos-de-servico"
+              className="hover:text-background transition-colors"
+            >
               Termos de Serviço
             </Link>
           </div>
         </div>
       </div>
     </footer>
-  )
+  );
 }
