@@ -2,19 +2,30 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
+    "format": {},
     "lint": {},
     "dev": {
       "cache": false,
       "persistent": true
     },
     "test": {
-      "outputs": ["coverage/**"]
+      "outputs": [
+        "coverage/**"
+      ]
     },
     "test:e2e": {
-      "outputs": ["coverage/**"]
+      "outputs": [
+        "coverage/**"
+      ]
     }
   }
 }

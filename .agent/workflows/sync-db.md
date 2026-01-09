@@ -4,6 +4,8 @@ description: # Sync Prisma to Swagger: Synchronizes DTOs and Swagger documentati
 
 ## Steps
 
+### **Observation:** All checks bellow are insed the folder apps/backend/
+
 1. **Analyze Schema:** Review `prisma/schema.prisma` for any new models or field changes.
 2. **Identify Impact:** Find all DTOs (Data Transfer Objects) and Entities that correspond to the changed Prisma models.
 3. **Update DTOs:** - Add missing fields to DTO classes.

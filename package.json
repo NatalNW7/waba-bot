@@ -11,7 +11,7 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "test:e2e": "turbo test:e2e",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,md,json}\"",
+    "format": "turbo format",
     "clean": "turbo clean && rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {
