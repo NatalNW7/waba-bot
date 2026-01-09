@@ -29,7 +29,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Admin user seeded:', admin.email);
+  console.log('✅ Admin user seeded');
 }
 
 main()

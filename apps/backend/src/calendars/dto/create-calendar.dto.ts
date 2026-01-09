@@ -6,12 +6,12 @@ import {
   IsOptional,
   IsDateString,
 } from 'class-validator';
-import { ICreateCalendar, CalendarProvider } from '@repo/api-types';
+import { CalendarProvider } from '@prisma/client';
 
 /**
  * Data required to create a new calendar integration
  */
-export class CreateCalendarDto implements ICreateCalendar {
+export class CreateCalendarDto {
   /**
    * Calendar provider (GOOGLE or APPLE)
    * @example "GOOGLE"

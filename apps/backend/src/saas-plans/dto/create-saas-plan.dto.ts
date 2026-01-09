@@ -5,12 +5,12 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { ICreateSaasPlan, PaymentInterval } from '@repo/api-types';
+import { PaymentInterval } from '@prisma/client';
 
 /**
  * Data required to create a new SaaS subscription plan
  */
-export class CreateSaasPlanDto implements ICreateSaasPlan {
+export class CreateSaasPlanDto {
   /**
    * Plan name
    * @example "Pro"

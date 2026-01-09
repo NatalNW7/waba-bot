@@ -5,17 +5,12 @@ import {
   IsNumber,
   IsOptional,
 } from 'class-validator';
-import {
-  ICreatePayment,
-  PaymentStatus,
-  PaymentType,
-  PaymentMethod,
-} from '@repo/api-types';
+import { PaymentStatus, PaymentType, PaymentMethod } from '@prisma/client';
 
 /**
  * Data required to create a new payment record
  */
-export class CreatePaymentDto implements ICreatePayment {
+export class CreatePaymentDto {
   /**
    * External ID from payment gateway (Mercado Pago)
    * @example "mp_123456789"

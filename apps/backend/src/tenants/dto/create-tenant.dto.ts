@@ -6,12 +6,12 @@ import {
   IsEnum,
   IsDateString,
 } from 'class-validator';
-import { ICreateTenant, SubscriptionStatus } from '@repo/api-types';
+import { SubscriptionStatus } from '@prisma/client';
 
 /**
  * Data required to create a new tenant (WhatsApp Business account holder)
  */
-export class CreateTenantDto implements ICreateTenant {
+export class CreateTenantDto {
   /**
    * Business name
    * @example "My Barber Shop"
