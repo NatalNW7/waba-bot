@@ -101,7 +101,7 @@ model SaasPlan {
 model User {
   id       String   @id @default(uuid())
   email    String   @unique
-  password String   // bcrypt hashed
+  password String // bcrypt hashed
   role     UserRole @default(TENANT)
 
   // Optional links to existing entities
@@ -289,7 +289,7 @@ model Subscription {
   startDate   DateTime           @default(now()) @map("start_date")
   nextBilling DateTime           @map("next_billing")
 
-  cardTokenId String @map("card_token_id")
+  cardTokenId String  @map("card_token_id")
   externalId  String? @unique @map("external_id")
 
   planId String @map("plan_id")

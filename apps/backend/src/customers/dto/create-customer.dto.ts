@@ -5,11 +5,12 @@ import {
   IsEmail,
   IsBoolean,
 } from 'class-validator';
+import { ICreateCustomer } from '@repo/api-types';
 
 /**
  * Data required to create a new customer
  */
-export class CreateCustomerDto {
+export class CreateCustomerDto implements ICreateCustomer {
   /**
    * Customer WhatsApp phone number
    * @example "+5511999999999"

@@ -5,12 +5,12 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { PaymentInterval } from '@prisma/client';
+import { ICreatePlan, PaymentInterval } from '@repo/api-types';
 
 /**
  * Data required to create a new plan (for tenant's customers)
  */
-export class CreatePlanDto {
+export class CreatePlanDto implements ICreatePlan {
   /**
    * Plan name
    * @example "Mensal Barba"

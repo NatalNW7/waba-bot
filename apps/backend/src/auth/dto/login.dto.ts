@@ -1,9 +1,10 @@
 import { IsEmail, IsString, IsNotEmpty } from 'class-validator';
+import { ILoginRequest } from '@repo/api-types';
 
 /**
  * Login credentials
  */
-export class LoginDto {
+export class LoginDto implements ILoginRequest {
   /**
    * User email
    * @example "admin@waba-bot.com"

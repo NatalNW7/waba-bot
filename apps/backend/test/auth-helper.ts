@@ -6,7 +6,7 @@ import request from 'supertest';
  * Requires an admin user to exist in the database
  */
 export async function getAuthToken(app: INestApplication): Promise<string> {
-  const response = await request(app.getHttpServer() as any)
+  const response = await request(app.getHttpServer())
     .post('/auth/login')
     .send({
       email: process.env.ADMIN_EMAIL,
@@ -30,7 +30,7 @@ export function authRequest(
   patch: (url: string) => request.Test;
   delete: (url: string) => request.Test;
 } {
-  const server = app.getHttpServer() as any;
+  const server = app.getHttpServer();
   return {
     get: (url: string) =>
       request(server).get(url).set('Authorization', `Bearer ${token}`),

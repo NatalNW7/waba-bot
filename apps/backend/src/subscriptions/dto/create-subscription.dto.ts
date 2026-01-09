@@ -5,12 +5,12 @@ import {
   IsDateString,
   IsOptional,
 } from 'class-validator';
-import { SubscriptionStatus } from '@prisma/client';
+import { ICreateSubscription, SubscriptionStatus } from '@repo/api-types';
 
 /**
  * Data required to create a new customer subscription
  */
-export class CreateSubscriptionDto {
+export class CreateSubscriptionDto implements ICreateSubscription {
   /**
    * Subscription status (ACTIVE, PAST_DUE, CANCELED, EXPIRED)
    * @example "ACTIVE"

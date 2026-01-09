@@ -28,6 +28,7 @@
     "wait-for-postgres": "node scripts/wait-for-postgres.js"
   },
   "dependencies": {
+    "@repo/api-types": "workspace:*",
     "@nestjs/bull": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",

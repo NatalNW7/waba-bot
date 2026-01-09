@@ -5,12 +5,12 @@ import {
   IsBoolean,
   IsOptional,
 } from 'class-validator';
-import { DayOfWeek } from '@prisma/client';
+import { ICreateOperatingHour, DayOfWeek } from '@repo/api-types';
 
 /**
  * Data required to create a new operating hour entry
  */
-export class CreateOperatingHourDto {
+export class CreateOperatingHourDto implements ICreateOperatingHour {
   /**
    * Day of the week
    * @example "MONDAY"

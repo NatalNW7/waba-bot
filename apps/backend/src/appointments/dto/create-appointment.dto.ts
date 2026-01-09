@@ -6,12 +6,12 @@ import {
   IsOptional,
   IsNumber,
 } from 'class-validator';
-import { AppointmentStatus } from '@prisma/client';
+import { ICreateAppointment, AppointmentStatus } from '@repo/api-types';
 
 /**
  * Data required to create a new appointment
  */
-export class CreateAppointmentDto {
+export class CreateAppointmentDto implements ICreateAppointment {
   /**
    * Date and time of the appointment
    * @example "2025-12-31T10:00:00Z"

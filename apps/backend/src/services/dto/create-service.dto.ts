@@ -1,9 +1,10 @@
 import { IsString, IsNotEmpty, IsNumber, IsInt, Min } from 'class-validator';
+import { ICreateService } from '@repo/api-types';
 
 /**
  * Data required to create a new service offering
  */
-export class CreateServiceDto {
+export class CreateServiceDto implements ICreateService {
   /**
    * Service name
    * @example "Haircut"
