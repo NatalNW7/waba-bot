@@ -32,4 +32,9 @@ export type { IOperatingHour, ICreateOperatingHour, IUpdateOperatingHour } from 
 export type { IUser } from './user';
 
 // Auth interfaces
-export type { ILoginRequest, ILoginResponse } from './auth';
+export type {
+  ILoginRequest,
+  ILoginResponse,
+  IUserSession,
+  IOAuthLoginResponse,
+} from './auth';

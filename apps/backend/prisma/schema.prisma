@@ -101,8 +101,13 @@ model SaasPlan {
 model User {
   id       String   @id @default(uuid())
   email    String   @unique
-  password String // bcrypt hashed
+  password String? // Optional for OAuth users (bcrypt hashed if present)
   role     UserRole @default(TENANT)
+
+  // OAuth fields
+  googleId  String? @unique @map("google_id")
+  name      String?
+  avatarUrl String? @map("avatar_url")
 
   // Optional links to existing entities
   tenantId String? @unique @map("tenant_id")

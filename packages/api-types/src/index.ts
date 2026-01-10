@@ -65,4 +65,6 @@ export type {
   // Auth
   ILoginRequest,
   ILoginResponse,
+  IUserSession,
+  IOAuthLoginResponse,
 } from './interfaces';
