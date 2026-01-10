@@ -7,7 +7,7 @@ Operating hours define when a tenant is available for appointments.
 **Endpoint:** `POST /operating-hours`
 
 ```bash
-curl -X POST http://localhost:3000/operating-hours \
+curl -X POST http://localhost:8081/operating-hours \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -27,7 +27,7 @@ curl -X POST http://localhost:3000/operating-hours \
 **Endpoint:** `GET /operating-hours`
 
 ```bash
-curl -X GET http://localhost:3000/operating-hours \
+curl -X GET http://localhost:8081/operating-hours \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -36,7 +36,7 @@ curl -X GET http://localhost:3000/operating-hours \
 **Endpoint:** `GET /operating-hours/:id`
 
 ```bash
-curl -X GET http://localhost:3000/operating-hours/550e8400-e29b-41d4-a716-446655440011 \
+curl -X GET http://localhost:8081/operating-hours/550e8400-e29b-41d4-a716-446655440011 \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -45,7 +45,7 @@ curl -X GET http://localhost:3000/operating-hours/550e8400-e29b-41d4-a716-446655
 **Endpoint:** `PATCH /operating-hours/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/operating-hours/550e8400-e29b-41d4-a716-446655440011 \
+curl -X PATCH http://localhost:8081/operating-hours/550e8400-e29b-41d4-a716-446655440011 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -59,6 +59,6 @@ curl -X PATCH http://localhost:3000/operating-hours/550e8400-e29b-41d4-a716-4466
 **Endpoint:** `DELETE /operating-hours/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/operating-hours/550e8400-e29b-41d4-a716-446655440011 \
+curl -X DELETE http://localhost:8081/operating-hours/550e8400-e29b-41d4-a716-446655440011 \
   -H "Authorization: Bearer <token>"
 ```

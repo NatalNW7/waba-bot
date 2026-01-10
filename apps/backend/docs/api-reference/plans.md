@@ -7,7 +7,7 @@ Plans are subscription packages created by tenants for their customers.
 **Endpoint:** `POST /plans`
 
 ```bash
-curl -X POST http://localhost:3000/plans \
+curl -X POST http://localhost:8081/plans \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -27,7 +27,7 @@ curl -X POST http://localhost:3000/plans \
 **Endpoint:** `GET /plans`
 
 ```bash
-curl -X GET http://localhost:3000/plans \
+curl -X GET http://localhost:8081/plans \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -36,7 +36,7 @@ curl -X GET http://localhost:3000/plans \
 **Endpoint:** `GET /plans/:id`
 
 ```bash
-curl -X GET "http://localhost:3000/plans/550e8400-e29b-41d4-a716-446655440006?include=tenant,subscriptions,services" \
+curl -X GET "http://localhost:8081/plans/550e8400-e29b-41d4-a716-446655440006?include=tenant,subscriptions,services" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -45,7 +45,7 @@ curl -X GET "http://localhost:3000/plans/550e8400-e29b-41d4-a716-446655440006?in
 **Endpoint:** `PATCH /plans/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/plans/550e8400-e29b-41d4-a716-446655440006 \
+curl -X PATCH http://localhost:8081/plans/550e8400-e29b-41d4-a716-446655440006 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -58,6 +58,6 @@ curl -X PATCH http://localhost:3000/plans/550e8400-e29b-41d4-a716-446655440006 \
 **Endpoint:** `DELETE /plans/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/plans/550e8400-e29b-41d4-a716-446655440006 \
+curl -X DELETE http://localhost:8081/plans/550e8400-e29b-41d4-a716-446655440006 \
   -H "Authorization: Bearer <token>"
 ```

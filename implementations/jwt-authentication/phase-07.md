@@ -124,7 +124,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api", app, document);
 
-  await app.listen(3000);
+  await app.listen(8081);
 }
 ```
 
@@ -163,5 +163,5 @@ pnpm test
 pnpm test:e2e
 
 # Check Swagger UI has auth button
-# Visit http://localhost:3000/api
+# Visit http://localhost:8081/api
 ```

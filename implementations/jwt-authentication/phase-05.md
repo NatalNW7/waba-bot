@@ -93,11 +93,11 @@ async handleWebhook() { ... }
 
 ```bash
 # Without token - should fail
-curl http://localhost:3000/tenants
+curl http://localhost:8081/tenants
 
 # With token - should work
-curl http://localhost:3000/tenants -H "Authorization: Bearer <token>"
+curl http://localhost:8081/tenants -H "Authorization: Bearer <token>"
 
 # Webhook - should work without token
-curl -X POST http://localhost:3000/webhooks/mercadopago/platform
+curl -X POST http://localhost:8081/webhooks/mercadopago/platform
 ```

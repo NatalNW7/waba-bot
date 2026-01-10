@@ -7,7 +7,7 @@ Customers are end-users who interact with tenants via WhatsApp.
 **Endpoint:** `POST /customers`
 
 ```bash
-curl -X POST "http://localhost:3000/customers?tenantId=550e8400-e29b-41d4-a716-446655440000" \
+curl -X POST "http://localhost:8081/customers?tenantId=550e8400-e29b-41d4-a716-446655440000" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -22,7 +22,7 @@ curl -X POST "http://localhost:3000/customers?tenantId=550e8400-e29b-41d4-a716-4
 **Endpoint:** `GET /customers`
 
 ```bash
-curl -X GET http://localhost:3000/customers \
+curl -X GET http://localhost:8081/customers \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -31,7 +31,7 @@ curl -X GET http://localhost:3000/customers \
 **Endpoint:** `GET /customers/:id`
 
 ```bash
-curl -X GET "http://localhost:3000/customers/550e8400-e29b-41d4-a716-446655440001?include=tenants,appointments,payments" \
+curl -X GET "http://localhost:8081/customers/550e8400-e29b-41d4-a716-446655440001?include=tenants,appointments,payments" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -40,7 +40,7 @@ curl -X GET "http://localhost:3000/customers/550e8400-e29b-41d4-a716-44665544000
 **Endpoint:** `PATCH /customers/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/customers/550e8400-e29b-41d4-a716-446655440001 \
+curl -X PATCH http://localhost:8081/customers/550e8400-e29b-41d4-a716-446655440001 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -53,6 +53,6 @@ curl -X PATCH http://localhost:3000/customers/550e8400-e29b-41d4-a716-4466554400
 **Endpoint:** `DELETE /customers/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/customers/550e8400-e29b-41d4-a716-446655440001 \
+curl -X DELETE http://localhost:8081/customers/550e8400-e29b-41d4-a716-446655440001 \
   -H "Authorization: Bearer <token>"
 ```

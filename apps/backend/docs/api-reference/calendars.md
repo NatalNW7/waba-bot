@@ -7,7 +7,7 @@ Calendar integrations for syncing appointments with external calendars.
 **Endpoint:** `POST /calendars`
 
 ```bash
-curl -X POST http://localhost:3000/calendars \
+curl -X POST http://localhost:8081/calendars \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -27,7 +27,7 @@ curl -X POST http://localhost:3000/calendars \
 **Endpoint:** `GET /calendars`
 
 ```bash
-curl -X GET http://localhost:3000/calendars \
+curl -X GET http://localhost:8081/calendars \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -36,7 +36,7 @@ curl -X GET http://localhost:3000/calendars \
 **Endpoint:** `GET /calendars/:id`
 
 ```bash
-curl -X GET http://localhost:3000/calendars/550e8400-e29b-41d4-a716-446655440010 \
+curl -X GET http://localhost:8081/calendars/550e8400-e29b-41d4-a716-446655440010 \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -45,7 +45,7 @@ curl -X GET http://localhost:3000/calendars/550e8400-e29b-41d4-a716-446655440010
 **Endpoint:** `PATCH /calendars/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/calendars/550e8400-e29b-41d4-a716-446655440010 \
+curl -X PATCH http://localhost:8081/calendars/550e8400-e29b-41d4-a716-446655440010 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -58,6 +58,6 @@ curl -X PATCH http://localhost:3000/calendars/550e8400-e29b-41d4-a716-4466554400
 **Endpoint:** `DELETE /calendars/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/calendars/550e8400-e29b-41d4-a716-446655440010 \
+curl -X DELETE http://localhost:8081/calendars/550e8400-e29b-41d4-a716-446655440010 \
   -H "Authorization: Bearer <token>"
 ```

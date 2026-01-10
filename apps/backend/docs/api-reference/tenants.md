@@ -7,7 +7,7 @@ Tenants represent businesses using the WhatsApp Business API through this platfo
 **Endpoint:** `POST /tenants`
 
 ```bash
-curl -X POST http://localhost:3000/tenants \
+curl -X POST http://localhost:8081/tenants \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -34,7 +34,7 @@ curl -X POST http://localhost:3000/tenants \
 **Endpoint:** `GET /tenants`
 
 ```bash
-curl -X GET http://localhost:3000/tenants \
+curl -X GET http://localhost:8081/tenants \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -43,14 +43,14 @@ curl -X GET http://localhost:3000/tenants \
 **Endpoint:** `GET /tenants/:id`
 
 ```bash
-curl -X GET http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000 \
+curl -X GET http://localhost:8081/tenants/550e8400-e29b-41d4-a716-446655440000 \
   -H "Authorization: Bearer <token>"
 ```
 
 **With included relations:**
 
 ```bash
-curl -X GET "http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000?include=services,customers,operatingHours,saasPlan,appointments,users" \
+curl -X GET "http://localhost:8081/tenants/550e8400-e29b-41d4-a716-446655440000?include=services,customers,operatingHours,saasPlan,appointments,users" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -59,7 +59,7 @@ curl -X GET "http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000?
 **Endpoint:** `PATCH /tenants/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000 \
+curl -X PATCH http://localhost:8081/tenants/550e8400-e29b-41d4-a716-446655440000 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -72,7 +72,7 @@ curl -X PATCH http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000
 **Endpoint:** `DELETE /tenants/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000 \
+curl -X DELETE http://localhost:8081/tenants/550e8400-e29b-41d4-a716-446655440000 \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -81,7 +81,7 @@ curl -X DELETE http://localhost:3000/tenants/550e8400-e29b-41d4-a716-44665544000
 **Endpoint:** `POST /tenants/:id/subscribe`
 
 ```bash
-curl -X POST http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000/subscribe \
+curl -X POST http://localhost:8081/tenants/550e8400-e29b-41d4-a716-446655440000/subscribe \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -90,6 +90,6 @@ curl -X POST http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000/
 **Endpoint:** `GET /tenants/:id/auth/mercadopago`
 
 ```bash
-curl -X GET http://localhost:3000/tenants/550e8400-e29b-41d4-a716-446655440000/auth/mercadopago \
+curl -X GET http://localhost:8081/tenants/550e8400-e29b-41d4-a716-446655440000/auth/mercadopago \
   -H "Authorization: Bearer <token>"
 ```

@@ -7,7 +7,7 @@ Payments track all financial transactions in the system.
 **Endpoint:** `POST /payments`
 
 ```bash
-curl -X POST http://localhost:3000/payments \
+curl -X POST http://localhost:8081/payments \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -37,7 +37,7 @@ curl -X POST http://localhost:3000/payments \
 Generates a Mercado Pago payment link for an existing appointment.
 
 ```bash
-curl -X POST http://localhost:3000/payments/appointment/550e8400-e29b-41d4-a716-446655440003 \
+curl -X POST http://localhost:8081/payments/appointment/550e8400-e29b-41d4-a716-446655440003 \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -46,7 +46,7 @@ curl -X POST http://localhost:3000/payments/appointment/550e8400-e29b-41d4-a716-
 **Endpoint:** `GET /payments`
 
 ```bash
-curl -X GET http://localhost:3000/payments \
+curl -X GET http://localhost:8081/payments \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -55,7 +55,7 @@ curl -X GET http://localhost:3000/payments \
 **Endpoint:** `GET /payments/:id`
 
 ```bash
-curl -X GET http://localhost:3000/payments/550e8400-e29b-41d4-a716-446655440008 \
+curl -X GET http://localhost:8081/payments/550e8400-e29b-41d4-a716-446655440008 \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -64,7 +64,7 @@ curl -X GET http://localhost:3000/payments/550e8400-e29b-41d4-a716-446655440008 
 **Endpoint:** `PATCH /payments/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/payments/550e8400-e29b-41d4-a716-446655440008 \
+curl -X PATCH http://localhost:8081/payments/550e8400-e29b-41d4-a716-446655440008 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -77,6 +77,6 @@ curl -X PATCH http://localhost:3000/payments/550e8400-e29b-41d4-a716-44665544000
 **Endpoint:** `DELETE /payments/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/payments/550e8400-e29b-41d4-a716-446655440008 \
+curl -X DELETE http://localhost:8081/payments/550e8400-e29b-41d4-a716-446655440008 \
   -H "Authorization: Bearer <token>"
 ```

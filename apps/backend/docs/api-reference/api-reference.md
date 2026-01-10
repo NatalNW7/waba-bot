@@ -1,6 +1,6 @@
 # WABA Bot API Reference
 
-This document provides a comprehensive guide to using the WABA Bot REST API. All examples use `curl` and assume the API is running on `http://localhost:3000`.
+This document provides a comprehensive guide to using the WABA Bot REST API. All examples use `curl` and assume the API is running on `http://localhost:8081`.
 
 ## Table of Contents
 
@@ -31,5 +31,5 @@ This document provides a comprehensive guide to using the WABA Bot REST API. All
 For interactive API documentation, access the Swagger UI at:
 
 ```
-http://localhost:3000/api/swagger/
+http://localhost:8081/api/swagger/
 ```

@@ -9,7 +9,7 @@ Obtain a JWT token by providing valid credentials.
 **Endpoint:** `POST /auth/login`
 
 ```bash
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:8081/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@waba-bot.com",

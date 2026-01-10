@@ -7,7 +7,7 @@ Subscriptions are recurring plans purchased by customers from tenants.
 **Endpoint:** `POST /subscriptions`
 
 ```bash
-curl -X POST http://localhost:3000/subscriptions \
+curl -X POST http://localhost:8081/subscriptions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -27,7 +27,7 @@ curl -X POST http://localhost:3000/subscriptions \
 **Endpoint:** `GET /subscriptions`
 
 ```bash
-curl -X GET http://localhost:3000/subscriptions \
+curl -X GET http://localhost:8081/subscriptions \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -36,7 +36,7 @@ curl -X GET http://localhost:3000/subscriptions \
 **Endpoint:** `GET /subscriptions/:id`
 
 ```bash
-curl -X GET "http://localhost:3000/subscriptions/550e8400-e29b-41d4-a716-446655440007?include=plan,appointments,payments" \
+curl -X GET "http://localhost:8081/subscriptions/550e8400-e29b-41d4-a716-446655440007?include=plan,appointments,payments" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -45,7 +45,7 @@ curl -X GET "http://localhost:3000/subscriptions/550e8400-e29b-41d4-a716-4466554
 **Endpoint:** `PATCH /subscriptions/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/subscriptions/550e8400-e29b-41d4-a716-446655440007 \
+curl -X PATCH http://localhost:8081/subscriptions/550e8400-e29b-41d4-a716-446655440007 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -58,6 +58,6 @@ curl -X PATCH http://localhost:3000/subscriptions/550e8400-e29b-41d4-a716-446655
 **Endpoint:** `DELETE /subscriptions/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/subscriptions/550e8400-e29b-41d4-a716-446655440007 \
+curl -X DELETE http://localhost:8081/subscriptions/550e8400-e29b-41d4-a716-446655440007 \
   -H "Authorization: Bearer <token>"
 ```

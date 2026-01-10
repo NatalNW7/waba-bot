@@ -7,7 +7,7 @@ Appointments represent scheduled bookings between customers and tenants.
 **Endpoint:** `POST /appointments`
 
 ```bash
-curl -X POST http://localhost:3000/appointments \
+curl -X POST http://localhost:8081/appointments \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -28,7 +28,7 @@ curl -X POST http://localhost:3000/appointments \
 
 **Using a subscription instead of a service:**
 ```bash
-curl -X POST http://localhost:3000/appointments \
+curl -X POST http://localhost:8081/appointments \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -44,7 +44,7 @@ curl -X POST http://localhost:3000/appointments \
 **Endpoint:** `GET /appointments`
 
 ```bash
-curl -X GET http://localhost:3000/appointments \
+curl -X GET http://localhost:8081/appointments \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -53,7 +53,7 @@ curl -X GET http://localhost:3000/appointments \
 **Endpoint:** `GET /appointments/:id`
 
 ```bash
-curl -X GET http://localhost:3000/appointments/550e8400-e29b-41d4-a716-446655440003 \
+curl -X GET http://localhost:8081/appointments/550e8400-e29b-41d4-a716-446655440003 \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -62,7 +62,7 @@ curl -X GET http://localhost:3000/appointments/550e8400-e29b-41d4-a716-446655440
 **Endpoint:** `PATCH /appointments/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/appointments/550e8400-e29b-41d4-a716-446655440003 \
+curl -X PATCH http://localhost:8081/appointments/550e8400-e29b-41d4-a716-446655440003 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -75,6 +75,6 @@ curl -X PATCH http://localhost:3000/appointments/550e8400-e29b-41d4-a716-4466554
 **Endpoint:** `DELETE /appointments/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/appointments/550e8400-e29b-41d4-a716-446655440003 \
+curl -X DELETE http://localhost:8081/appointments/550e8400-e29b-41d4-a716-446655440003 \
   -H "Authorization: Bearer <token>"
 ```

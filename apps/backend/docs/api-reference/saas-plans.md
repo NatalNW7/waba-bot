@@ -7,7 +7,7 @@ SaaS Plans are subscription tiers for the platform itself (for tenants).
 **Endpoint:** `POST /saas-plans`
 
 ```bash
-curl -X POST http://localhost:3000/saas-plans \
+curl -X POST http://localhost:8081/saas-plans \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -25,7 +25,7 @@ curl -X POST http://localhost:3000/saas-plans \
 **Endpoint:** `GET /saas-plans`
 
 ```bash
-curl -X GET http://localhost:3000/saas-plans \
+curl -X GET http://localhost:8081/saas-plans \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -34,7 +34,7 @@ curl -X GET http://localhost:3000/saas-plans \
 **Endpoint:** `GET /saas-plans/:id`
 
 ```bash
-curl -X GET "http://localhost:3000/saas-plans/550e8400-e29b-41d4-a716-446655440009?include=tenants" \
+curl -X GET "http://localhost:8081/saas-plans/550e8400-e29b-41d4-a716-446655440009?include=tenants" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -43,7 +43,7 @@ curl -X GET "http://localhost:3000/saas-plans/550e8400-e29b-41d4-a716-4466554400
 **Endpoint:** `PATCH /saas-plans/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/saas-plans/550e8400-e29b-41d4-a716-446655440009 \
+curl -X PATCH http://localhost:8081/saas-plans/550e8400-e29b-41d4-a716-446655440009 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -56,6 +56,6 @@ curl -X PATCH http://localhost:3000/saas-plans/550e8400-e29b-41d4-a716-446655440
 **Endpoint:** `DELETE /saas-plans/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/saas-plans/550e8400-e29b-41d4-a716-446655440009 \
+curl -X DELETE http://localhost:8081/saas-plans/550e8400-e29b-41d4-a716-446655440009 \
   -H "Authorization: Bearer <token>"
 ```

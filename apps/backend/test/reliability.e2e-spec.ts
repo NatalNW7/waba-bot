@@ -92,7 +92,7 @@ describe('Reliability & Edge Cases (E2E)', () => {
         .expect(200);
 
       // Wait for queue
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 8081));
 
       // Should have only one payment record with this externalId
       const payments = await prisma.payment.findMany({

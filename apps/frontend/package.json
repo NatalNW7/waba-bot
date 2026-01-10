@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev --port 3001",
+    "dev": "next dev --port 8080",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,md,json}\"",
-    "start": "next start --port 3001",
+    "start": "next start --port 8080",
     "test": "echo \"No tests available for frontend\"",
     "test:e2e": "echo \"No e2e tests available for frontend\""
   },

@@ -7,7 +7,7 @@ Services are offerings provided by tenants (e.g., haircuts, beard trims).
 **Endpoint:** `POST /services`
 
 ```bash
-curl -X POST http://localhost:3000/services \
+curl -X POST http://localhost:8081/services \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -23,7 +23,7 @@ curl -X POST http://localhost:3000/services \
 **Endpoint:** `GET /services`
 
 ```bash
-curl -X GET http://localhost:3000/services \
+curl -X GET http://localhost:8081/services \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -32,7 +32,7 @@ curl -X GET http://localhost:3000/services \
 **Endpoint:** `GET /services/:id`
 
 ```bash
-curl -X GET "http://localhost:3000/services/550e8400-e29b-41d4-a716-446655440002?include=tenant,appointments,plans" \
+curl -X GET "http://localhost:8081/services/550e8400-e29b-41d4-a716-446655440002?include=tenant,appointments,plans" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -41,7 +41,7 @@ curl -X GET "http://localhost:3000/services/550e8400-e29b-41d4-a716-446655440002
 **Endpoint:** `PATCH /services/:id`
 
 ```bash
-curl -X PATCH http://localhost:3000/services/550e8400-e29b-41d4-a716-446655440002 \
+curl -X PATCH http://localhost:8081/services/550e8400-e29b-41d4-a716-446655440002 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -54,6 +54,6 @@ curl -X PATCH http://localhost:3000/services/550e8400-e29b-41d4-a716-44665544000
 **Endpoint:** `DELETE /services/:id`
 
 ```bash
-curl -X DELETE http://localhost:3000/services/550e8400-e29b-41d4-a716-446655440002 \
+curl -X DELETE http://localhost:8081/services/550e8400-e29b-41d4-a716-446655440002 \
   -H "Authorization: Bearer <token>"
 ```
