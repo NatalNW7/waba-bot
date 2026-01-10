@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, getAuthToken } from "@/lib/auth";
-import type { ISaasPlan } from "@repo/api-types";
+import { type ISaasPlan, PaymentInterval } from "@repo/api-types";
+import { BrazilianPhoneInput } from "@/components/ui/brazilian-phone-input";
+import { sanitizePhone } from "@/lib/utils/phone-utils";
+import { createTenant, createSubscription } from "@/lib/api/tenant";
 
 type OnboardingStep = "business" | "plan" | "confirmation";
 
@@ -24,6 +27,9 @@ export default function OnboardingPage() {
   });
   const [selectedPlan, setSelectedPlan] = useState<ISaasPlan | null>(null);
   const [plans, setPlans] = useState<ISaasPlan[]>([]);
+  const [selectedInterval, setSelectedInterval] = useState<PaymentInterval>(
+    PaymentInterval.MONTHLY,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,9 +55,7 @@ export default function OnboardingPage() {
         });
         if (response.ok) {
           const data = (await response.json()) as ISaasPlan[];
-          // Filter to show only MONTHLY plans for simplicity
-          const monthlyPlans = data.filter((p) => p.interval === "MONTHLY");
-          setPlans(monthlyPlans);
+          setPlans(data);
         }
       } catch {
         console.error("Failed to fetch plans");
@@ -79,33 +83,22 @@ export default function OnboardingPage() {
     setError(null);
 
     try {
-      const token = getAuthToken();
-
-      // Create tenant
-      const tenantResponse = await fetch(`${BACKEND_URL}/tenants`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: businessInfo.name,
-          email: user.email,
-          phone: businessInfo.phone,
-          saasPlanId: selectedPlan.id,
-        }),
+      // Step 1: Create tenant
+      const tenant = await createTenant({
+        name: businessInfo.name,
+        email: user.email,
+        phone: sanitizePhone(businessInfo.phone),
+        saasPlanId: selectedPlan.id,
       });
 
-      if (!tenantResponse.ok) {
-        throw new Error("Falha ao criar seu negócio");
-      }
+      // Step 2: Create subscription and get Mercado Pago payment URL
+      const subscription = await createSubscription(tenant.id);
 
-      // Refresh session to get updated onboarding status
-      await refreshSession();
-      router.push("/profile");
+      // Step 3: Redirect to Mercado Pago payment page
+      // The saasStatus will be PAST_DUE until MP confirms payment via webhook
+      window.location.href = subscription.initPoint;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -174,17 +167,14 @@ export default function OnboardingPage() {
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Telefone
                   </label>
-                  <input
-                    type="tel"
+                  <BrazilianPhoneInput
                     value={businessInfo.phone}
-                    onChange={(e) =>
+                    onChange={(phone) =>
                       setBusinessInfo({
                         ...businessInfo,
-                        phone: e.target.value,
+                        phone: phone,
                       })
                     }
-                    className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="+55 11 99999-9999"
                     required
                   />
                 </div>
@@ -210,33 +200,74 @@ export default function OnboardingPage() {
                 negócio.
               </p>
 
-              <div className="grid gap-4">
-                {plans.map((plan) => (
+              {/* Interval Tabs */}
+              <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg">
+                {[
+                  { value: PaymentInterval.MONTHLY, label: "Mensal" },
+                  { value: PaymentInterval.QUARTERLY, label: "Trimestral" },
+                  { value: PaymentInterval.YEARLY, label: "Anual" },
+                ].map((tab) => (
                   <button
-                    key={plan.id}
-                    onClick={() => handlePlanSelect(plan)}
-                    className="p-4 rounded-lg border border-border hover:border-primary text-left transition-colors group"
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setSelectedInterval(tab.value)}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                      selectedInterval === tab.value
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-foreground group-hover:text-primary">
-                          {plan.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {plan.description}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-foreground">
-                          R$ {Number(plan.price).toFixed(0)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          /mês
-                        </div>
-                      </div>
-                    </div>
+                    {tab.label}
+                    {tab.value === PaymentInterval.YEARLY && (
+                      <span className="ml-1 text-xs text-primary">
+                        Economia!
+                      </span>
+                    )}
                   </button>
                 ))}
+              </div>
+
+              {/* Plan Cards */}
+              <div className="grid gap-4">
+                {plans
+                  .filter((plan) => plan.interval === selectedInterval)
+                  .map((plan) => (
+                    <button
+                      key={plan.id}
+                      onClick={() => handlePlanSelect(plan)}
+                      className="p-4 rounded-lg border border-border hover:border-primary text-left transition-colors group"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-foreground group-hover:text-primary">
+                            {plan.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {plan.description}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-foreground">
+                            R$ {Number(plan.price).toFixed(0)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            /
+                            {selectedInterval === PaymentInterval.MONTHLY
+                              ? "mês"
+                              : selectedInterval === PaymentInterval.QUARTERLY
+                                ? "trimestre"
+                                : "ano"}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                {plans.filter((plan) => plan.interval === selectedInterval)
+                  .length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum plano disponível neste período.
+                  </div>
+                )}
               </div>
 
               <button
