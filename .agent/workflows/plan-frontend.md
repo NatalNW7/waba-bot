@@ -4,6 +4,8 @@ description: # Frontend Feature Implementation Planner: Specialized phased roadm
 
 ## Steps
 
+### Important: To conect with the backend you can use this env variables: ADMIN_EMAIL, ADMIN_PASSWORD and BACKEND_URL
+
 1. **Contract Alignment (SSOT):** - Analyze `apps/backend/docs/api-reference/api-reference.md`.
    - **New Step:** Check `packages/shared-types` or the backend DTOs to ensure the frontend has access to the exact interfaces it needs. If missing, Phase 1 must include "Type Exporting."
 

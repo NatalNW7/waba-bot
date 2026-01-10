@@ -17,7 +17,7 @@ export function HeroSection() {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-balance mb-6">
             Agendamento automatizado via WhatsApp para{" "}
-            <span className="text-primary">salões e barbearias</span>
+            <span className="text-primary">profissionais da beleza</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
