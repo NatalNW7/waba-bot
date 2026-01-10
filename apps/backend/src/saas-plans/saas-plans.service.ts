@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSaasPlanDto } from './dto/create-saas-plan.dto';
 import { UpdateSaasPlanDto } from './dto/update-saas-plan.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,9 +33,11 @@ export class SaasPlansService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.saasPlan.delete({
-      where: { id },
-    });
+  async remove(id: string) {
+    const plan = await this.prisma.saasPlan.findUnique({ where: { id } });
+    if (!plan) {
+      throw new NotFoundException(`SaaS Plan with ID ${id} not found`);
+    }
+    return this.prisma.saasPlan.delete({ where: { id } });
   }
 }

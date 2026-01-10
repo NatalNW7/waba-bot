@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -32,8 +32,12 @@ export class SubscriptionRepository {
   }
 
   async delete(id: string) {
-    return this.prisma.subscription.delete({
+    const subscription = await this.prisma.subscription.findUnique({
       where: { id },
     });
+    if (!subscription) {
+      throw new NotFoundException(`Subscription with ID ${id} not found`);
+    }
+    return this.prisma.subscription.delete({ where: { id } });
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -28,8 +28,10 @@ export class TenantRepository {
   }
 
   async delete(id: string) {
-    return this.prisma.tenant.delete({
-      where: { id },
-    });
+    const tenant = await this.prisma.tenant.findUnique({ where: { id } });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant with ID ${id} not found`);
+    }
+    return this.prisma.tenant.delete({ where: { id } });
   }
 }

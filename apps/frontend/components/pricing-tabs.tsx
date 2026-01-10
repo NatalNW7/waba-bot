@@ -65,7 +65,7 @@ function PlanCard({
 
   return (
     <div
-      className={`bg-background rounded-2xl p-8 relative transition-all hover:scale-[1.02] ${
+      className={`bg-background w-full max-w-sm rounded-2xl p-8 relative transition-all hover:scale-[1.02] ${
         isHighlighted
           ? "border-2 border-primary shadow-xl"
           : "border border-border shadow-sm"
@@ -163,7 +163,7 @@ export function PricingTabs({ plansByInterval }: PricingTabsProps) {
 
       {intervals.map((interval) => (
         <TabsContent key={interval} value={interval} className="mt-0">
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
             {plansByInterval[interval].map((plan, index) => (
               <PlanCard
                 key={plan.id}

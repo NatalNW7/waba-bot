@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -98,9 +102,11 @@ export class CustomersService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.customer.delete({
-      where: { id },
-    });
+  async remove(id: string) {
+    const customer = await this.prisma.customer.findUnique({ where: { id } });
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID ${id} not found`);
+    }
+    return this.prisma.customer.delete({ where: { id } });
   }
 }

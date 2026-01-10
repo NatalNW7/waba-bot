@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -66,9 +66,13 @@ export class AppointmentRepository {
   }
 
   async remove(id: string) {
-    return this.prisma.appointment.delete({
+    const appointment = await this.prisma.appointment.findUnique({
       where: { id },
     });
+    if (!appointment) {
+      throw new NotFoundException(`Appointment with ID ${id} not found`);
+    }
+    return this.prisma.appointment.delete({ where: { id } });
   }
 
   async findStalePending(oneHourAgo: Date) {

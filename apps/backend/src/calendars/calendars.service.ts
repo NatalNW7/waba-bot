@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCalendarDto } from './dto/create-calendar.dto';
 import { UpdateCalendarDto } from './dto/update-calendar.dto';
@@ -30,9 +30,11 @@ export class CalendarsService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.calendar.delete({
-      where: { id },
-    });
+  async remove(id: string) {
+    const calendar = await this.prisma.calendar.findUnique({ where: { id } });
+    if (!calendar) {
+      throw new NotFoundException(`Calendar with ID ${id} not found`);
+    }
+    return this.prisma.calendar.delete({ where: { id } });
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOperatingHourDto } from './dto/create-operating-hour.dto';
 import { UpdateOperatingHourDto } from './dto/update-operating-hour.dto';
@@ -30,9 +30,13 @@ export class OperatingHoursService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.operatingHour.delete({
+  async remove(id: string) {
+    const operatingHour = await this.prisma.operatingHour.findUnique({
       where: { id },
     });
+    if (!operatingHour) {
+      throw new NotFoundException(`Operating Hour with ID ${id} not found`);
+    }
+    return this.prisma.operatingHour.delete({ where: { id } });
   }
 }

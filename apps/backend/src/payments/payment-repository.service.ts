@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -32,8 +32,10 @@ export class PaymentRepository {
   }
 
   async delete(id: string) {
-    return this.prisma.payment.delete({
-      where: { id },
-    });
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) {
+      throw new NotFoundException(`Payment with ID ${id} not found`);
+    }
+    return this.prisma.payment.delete({ where: { id } });
   }
 }

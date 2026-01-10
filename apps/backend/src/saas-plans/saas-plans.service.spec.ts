@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SaasPlansService } from './saas-plans.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotFoundException } from '@nestjs/common';
 
 describe('SaasPlansService', () => {
   let service: SaasPlansService;
@@ -9,6 +10,10 @@ describe('SaasPlansService', () => {
   const mockPrismaService = {
     saasPlan: {
       findUnique: jest.fn(),
+      delete: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -22,6 +27,10 @@ describe('SaasPlansService', () => {
 
     service = module.get<SaasPlansService>(SaasPlansService);
     prisma = module.get<PrismaService>(PrismaService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -58,6 +67,34 @@ describe('SaasPlansService', () => {
         include: undefined,
       });
       expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a plan if it exists', async () => {
+      const id = 'existing-id';
+      const mockPlan = { id, name: 'Pro' };
+
+      mockPrismaService.saasPlan.findUnique.mockResolvedValue(mockPlan);
+      mockPrismaService.saasPlan.delete.mockResolvedValue(mockPlan);
+
+      await expect(service.remove(id)).resolves.toEqual(mockPlan);
+      expect(prisma.saasPlan.findUnique).toHaveBeenCalledWith({
+        where: { id },
+      });
+      expect(prisma.saasPlan.delete).toHaveBeenCalledWith({ where: { id } });
+    });
+
+    it('should throw NotFoundException if plan does not exist', async () => {
+      const id = 'non-existent-id';
+
+      mockPrismaService.saasPlan.findUnique.mockResolvedValue(null);
+
+      await expect(service.remove(id)).rejects.toThrow(NotFoundException);
+      expect(prisma.saasPlan.findUnique).toHaveBeenCalledWith({
+        where: { id },
+      });
+      expect(prisma.saasPlan.delete).not.toHaveBeenCalled();
     });
   });
 });

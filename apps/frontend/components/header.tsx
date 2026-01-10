@@ -37,7 +37,10 @@ export function Header() {
             >
               Benefícios
             </Link>
-            <Link href="/#pricing" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link
+              href="/#pricing"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
               Preços
             </Link>
             <Link
