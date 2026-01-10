@@ -141,7 +141,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-background/20 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-background/60">
-          <p>&copy; 2025 Cliqtree. Todos os direitos reservados.</p>
+          <p>&copy; 2026 Cliqtree. Todos os direitos reservados.</p>
           <div className="flex items-center gap-6">
             <Link
               href="/politica-de-privacidade"

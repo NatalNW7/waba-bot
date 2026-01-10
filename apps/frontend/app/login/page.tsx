@@ -25,7 +25,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-foreground">
-              Bem-vindo ao CliqTree
+              Bem-vindo ao Cliqtree
             </h1>
             <p className="text-muted-foreground mt-2">
               Faça login para gerenciar seu negócio
@@ -70,7 +70,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-muted-foreground mt-6">
-          © 2026 CliqTree. Todos os direitos reservados.
+          © 2026 Cliqtree. Todos os direitos reservados.
         </p>
       </div>
     </div>
