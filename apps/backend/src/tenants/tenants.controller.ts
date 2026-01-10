@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,8 +40,8 @@ export class TenantsController {
   @ApiBadRequestResponse({
     description: 'Invalid input data or SaaS plan does not exist',
   })
-  create(@Body() createTenantDto: CreateTenantDto) {
-    return this.tenantsService.create(createTenantDto);
+  create(@Body() createTenantDto: CreateTenantDto, @Request() req: any) {
+    return this.tenantsService.create(createTenantDto, req.user?.id);
   }
 
   /** Get all tenants */

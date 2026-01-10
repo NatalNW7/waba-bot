@@ -20,18 +20,47 @@ export class TenantsService {
     private readonly mpAuthService: TenantMpAuthService,
   ) {}
 
-  async create(createTenantDto: CreateTenantDto) {
+  async create(createTenantDto: CreateTenantDto, userId?: string) {
+    // Validate email/phone uniqueness with user-friendly messages
+    const existingTenant = await this.prisma.tenant.findFirst({
+      where: {
+        OR: [
+          { email: createTenantDto.email },
+          { phone: createTenantDto.phone },
+        ],
+      },
+    });
+
+    if (existingTenant) {
+      if (existingTenant.email === createTenantDto.email) {
+        throw new BadRequestException('Este email já está em uso');
+      }
+      throw new BadRequestException('Este telefone já está em uso');
+    }
+
+    // Validate SaaS plan exists
     if (createTenantDto.saasPlanId) {
       const plan = await this.prisma.saasPlan.findUnique({
         where: { id: createTenantDto.saasPlanId },
       });
 
       if (!plan) {
-        throw new BadRequestException('this saas plan does not exists');
+        throw new BadRequestException('Este plano não existe');
       }
     }
 
-    return this.repo.create(createTenantDto);
+    // Create the tenant
+    const tenant = await this.repo.create(createTenantDto);
+
+    // Link the authenticated user to the new tenant
+    if (userId) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { tenantId: tenant.id },
+      });
+    }
+
+    return tenant;
   }
 
   findAll() {

@@ -134,7 +134,7 @@ model Tenant {
   accessToken String? @map("access_token") // Token Meta
 
   // Contato
-  phone String
+  phone String @unique
   email String @unique
 
   // Integração Mercado Pago (Credentials)
