@@ -1,4 +1,4 @@
-import { MessageCircle, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export function HeroSection() {
   return (
@@ -27,16 +27,6 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="https://wa.me/5511913339320?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Cliqtree"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-whatsapp-dark transition-all hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-              <MessageCircle className="w-5 h-5" />
-              Agendar via WhatsApp
-            </a>
-
             <a
               href="#how-it-works"
               className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-muted transition-all"

@@ -51,14 +51,12 @@ export function Header() {
             </Link>
           </nav>
 
-          <a
-            href="https://wa.me/5511913339320?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Cliqtree"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:bg-whatsapp-dark transition-colors"
+          <Link
+            href="/login"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
           >
-            Agendar via WhatsApp
-          </a>
+            Fazer Login
+          </Link>
         </div>
       </div>
     </header>

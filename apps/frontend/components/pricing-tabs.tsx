@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ISaasPlan, PaymentInterval } from "@repo/api-types";
@@ -64,8 +65,9 @@ function PlanCard({
   const features = planFeatures[plan.name] || defaultFeatures;
 
   return (
-    <div
-      className={`bg-background w-full max-w-sm rounded-2xl p-8 relative transition-all hover:scale-[1.02] ${
+    <Link
+      href="/login"
+      className={`bg-background w-full max-w-sm flex-shrink-0 rounded-2xl p-8 relative transition-all hover:scale-[1.02] cursor-pointer block ${
         isHighlighted
           ? "border-2 border-primary shadow-xl"
           : "border border-border shadow-sm"
@@ -92,7 +94,7 @@ function PlanCard({
         </div>
       </div>
 
-      <ul className="space-y-4 mb-8">
+      <ul className="space-y-4 mb-2">
         {features.map((feature, featureIndex) => (
           <li key={featureIndex} className="flex items-start gap-3">
             {feature.included ? (
@@ -110,20 +112,7 @@ function PlanCard({
           </li>
         ))}
       </ul>
-
-      <a
-        href={`https://wa.me/5511999999999?text=Olá!%20Gostaria%20de%20assinar%20o%20plano%20${encodeURIComponent(plan.name)}%20${getIntervalLabel(plan.interval)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`block w-full text-center py-3 rounded-lg font-semibold transition-all ${
-          isHighlighted
-            ? "bg-primary text-primary-foreground hover:bg-whatsapp-dark"
-            : "bg-secondary text-secondary-foreground hover:bg-muted"
-        }`}
-      >
-        Começar Agora
-      </a>
-    </div>
+    </Link>
   );
 }
 
@@ -163,7 +152,7 @@ export function PricingTabs({ plansByInterval }: PricingTabsProps) {
 
       {intervals.map((interval) => (
         <TabsContent key={interval} value={interval} className="mt-0">
-          <div className="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
+          <div className="flex flex-nowrap justify-center gap-8 max-w-7xl mx-auto overflow-x-auto pb-6 pt-10 px-4">
             {plansByInterval[interval].map((plan, index) => (
               <PlanCard
                 key={plan.id}
