@@ -6,6 +6,7 @@ import {
   Req,
   Res,
   UseGuards,
+  Headers,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,6 +14,7 @@ import {
   ApiOkResponse,
   ApiBearerAuth,
   ApiExcludeEndpoint,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
@@ -31,8 +33,28 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'User login with email/password' })
   @ApiOkResponse({ description: 'Returns JWT token and user info' })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
+  }
+
+  /**
+   * Verify token validity and get expiration info
+   */
+  @Public()
+  @Post('verify')
+  @ApiOperation({ summary: 'Verify a JWT token' })
+  @ApiOkResponse({ description: 'Returns token validity status and TTL' })
+  @ApiUnauthorizedResponse({
+    description:
+      'Token expired (code: TOKEN_EXPIRED) or invalid (code: INVALID_TOKEN)',
+  })
+  verifyToken(@Headers('authorization') authHeader: string) {
+    const token = authHeader?.replace('Bearer ', '');
+    if (!token) {
+      return { valid: false, expiresAt: null, remainingMs: null };
+    }
+    return this.authService.verifyToken(token);
   }
 
   /**
@@ -66,6 +88,7 @@ export class AuthController {
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Get current user session' })
   @ApiOkResponse({ description: 'Returns user session with onboarding status' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or expired token' })
   getSession(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getSession(user);
   }

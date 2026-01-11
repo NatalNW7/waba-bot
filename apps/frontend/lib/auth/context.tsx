@@ -9,6 +9,11 @@ import {
   ReactNode,
 } from "react";
 import type { IUserSession } from "@repo/api-types";
+import {
+  isTokenExpired,
+  getTokenErrorCode,
+  getTokenRemainingTime,
+} from "./token-utils";
 
 interface AuthContextType {
   user: IUserSession | null;
@@ -21,15 +26,35 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = "auth_token";
+const AUTH_TOKEN_STORAGE_KEY = "auth_token";
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+/**
+ * Time before expiration to trigger auto-refresh warning (5 minutes)
+ */
+const EXPIRATION_WARNING_MS = 5 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<IUserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  /**
+   * Clear token and user state
+   */
+  const clearSession = useCallback(() => {
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    setUser(null);
+  }, []);
+
   const fetchSession = useCallback(
     async (token: string): Promise<IUserSession | null> => {
+      // Check expiration client-side first
+      if (isTokenExpired(token)) {
+        console.warn("Token expired, clearing session");
+        clearSession();
+        return null;
+      }
+
       try {
         const response = await fetch(`${BACKEND_URL}/auth/me`, {
           headers: {
@@ -39,21 +64,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (!response.ok) {
-          throw new Error("Session invalid");
+          const errorData = await response.json().catch(() => ({}));
+          const errorCode = getTokenErrorCode(errorData);
+
+          if (errorCode === "TOKEN_EXPIRED") {
+            console.warn("Token expired (server), clearing session");
+            clearSession();
+            return null;
+          }
+
+          if (errorCode === "INVALID_TOKEN") {
+            console.error("Invalid token, clearing session");
+            clearSession();
+            return null;
+          }
+
+          throw new Error("Session fetch failed");
         }
 
         return (await response.json()) as IUserSession;
-      } catch {
+      } catch (error) {
+        console.error("Failed to fetch session:", error);
         return null;
       }
     },
-    [],
+    [clearSession],
   );
 
   const refreshSession = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
     if (!token) {
       setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    // Early expiration check
+    if (isTokenExpired(token)) {
+      console.warn("Token expired during refresh");
+      clearSession();
       setIsLoading(false);
       return;
     }
@@ -62,30 +111,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session) {
       setUser(session);
     } else {
-      localStorage.removeItem(TOKEN_KEY);
-      setUser(null);
+      clearSession();
     }
     setIsLoading(false);
-  }, [fetchSession]);
+  }, [fetchSession, clearSession]);
 
   const login = useCallback(
     async (token: string) => {
-      localStorage.setItem(TOKEN_KEY, token);
+      // Validate token before storing
+      if (isTokenExpired(token)) {
+        throw new Error("Token is already expired");
+      }
+
+      localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
       const session = await fetchSession(token);
       if (session) {
         setUser(session);
       } else {
-        localStorage.removeItem(TOKEN_KEY);
+        clearSession();
         throw new Error("Invalid token");
       }
     },
-    [fetchSession],
+    [fetchSession, clearSession],
   );
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    setUser(null);
-  }, []);
+    clearSession();
+  }, [clearSession]);
+
+  /**
+   * Set up automatic logout when token expires
+   */
+  useEffect(() => {
+    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+    if (!token || !user) return;
+
+    const remainingTime = getTokenRemainingTime(token);
+    if (remainingTime <= 0) {
+      clearSession();
+      return;
+    }
+
+    // Warn if token is close to expiration
+    if (remainingTime <= EXPIRATION_WARNING_MS) {
+      console.warn(
+        `Token expires in ${Math.round(remainingTime / 1000 / 60)} minutes`,
+      );
+    }
+
+    // Auto-logout when token expires
+    const timeoutId = setTimeout(() => {
+      console.warn("Token expired, logging out");
+      clearSession();
+    }, remainingTime);
+
+    return () => clearTimeout(timeoutId);
+  }, [user, clearSession]);
 
   useEffect(() => {
     refreshSession();
@@ -116,5 +197,13 @@ export function useAuth() {
  */
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+
+  // Return null if token is expired
+  if (token && isTokenExpired(token)) {
+    localStorage.removeItem(TOKEN_KEY);
+    return null;
+  }
+
+  return token;
 }

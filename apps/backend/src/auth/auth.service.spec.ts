@@ -1,13 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { TokenService } from './token.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { TokenExpiredException } from './exceptions/token-expired.exception';
+import { InvalidTokenException } from './exceptions/invalid-token.exception';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: PrismaService;
+
+  const mockTokenService = {
+    createToken: jest.fn().mockReturnValue('mock-jwt-token'),
+    validateToken: jest.fn(),
+    isTokenExpired: jest.fn(),
+    getTokenExpiration: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -22,16 +31,17 @@ describe('AuthService', () => {
           },
         },
         {
-          provide: JwtService,
-          useValue: {
-            sign: jest.fn().mockReturnValue('mock-jwt-token'),
-          },
+          provide: TokenService,
+          useValue: mockTokenService,
         },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prisma = module.get<PrismaService>(PrismaService);
+
+    // Reset mocks
+    jest.clearAllMocks();
   });
 
   describe('login', () => {
@@ -51,6 +61,7 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe('mock-jwt-token');
       expect(result.user.email).toBe('admin@test.com');
+      expect(mockTokenService.createToken).toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException for invalid password', async () => {
@@ -85,6 +96,88 @@ describe('AuthService', () => {
       await expect(
         service.login('nonexistent@test.com', 'password'),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException for OAuth users without password', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user-1',
+        email: 'oauth@test.com',
+        password: null, // OAuth users have no password
+        isActive: true,
+        googleId: 'google-123',
+      });
+
+      await expect(service.login('oauth@test.com', 'password')).rejects.toThrow(
+        'This account uses social login. Please sign in with Google.',
+      );
+    });
+  });
+
+  describe('verifyToken', () => {
+    it('should return valid status for valid token', () => {
+      const expTime = Math.floor(Date.now() / 1000) + 3600;
+      mockTokenService.validateToken.mockReturnValue({
+        sub: 'user-1',
+        email: 'test@test.com',
+        exp: expTime,
+      });
+
+      const result = service.verifyToken('valid-token');
+
+      expect(result.valid).toBe(true);
+      expect(result.expiresAt).toEqual(new Date(expTime * 1000));
+      expect(result.remainingMs).toBeGreaterThan(0);
+    });
+
+    it('should throw TokenExpiredException for expired token', () => {
+      mockTokenService.validateToken.mockImplementation(() => {
+        throw new TokenExpiredException();
+      });
+
+      expect(() => service.verifyToken('expired-token')).toThrow(
+        TokenExpiredException,
+      );
+    });
+
+    it('should throw InvalidTokenException for invalid token', () => {
+      mockTokenService.validateToken.mockImplementation(() => {
+        throw new InvalidTokenException();
+      });
+
+      expect(() => service.verifyToken('invalid-token')).toThrow(
+        InvalidTokenException,
+      );
+    });
+  });
+
+  describe('getSession', () => {
+    it('should return session with COMPLETE status for user with tenant', () => {
+      const user = {
+        id: 'user-1',
+        email: 'test@test.com',
+        role: 'TENANT',
+        tenantId: 'tenant-1',
+        customerId: null,
+      };
+
+      const result = service.getSession(user);
+
+      expect(result.id).toBe('user-1');
+      expect(result.onboardingStatus).toBe('COMPLETE');
+    });
+
+    it('should return session with PENDING status for user without tenant', () => {
+      const user = {
+        id: 'user-1',
+        email: 'test@test.com',
+        role: 'TENANT',
+        tenantId: null,
+        customerId: null,
+      };
+
+      const result = service.getSession(user);
+
+      expect(result.onboardingStatus).toBe('PENDING');
     });
   });
 });
