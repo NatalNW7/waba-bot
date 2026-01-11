@@ -4,16 +4,25 @@ import { AppointmentRepository } from './appointment-repository.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
-import { Prisma } from '@prisma/client';
+import {
+  Tenant,
+  Customer,
+  Service,
+  Payment,
+  Subscription,
+  TenantCustomer,
+} from '@prisma/client';
+
+interface SubscriptionWithRelations extends Subscription {
+  tenantCustomer: TenantCustomer;
+}
 
 interface RelatedEntities {
-  tenant?: Prisma.TenantGetPayload<{}> | null;
-  customer?: Prisma.CustomerGetPayload<{}> | null;
-  service?: Prisma.ServiceGetPayload<{}> | null;
-  subscription?: Prisma.SubscriptionGetPayload<{
-    include: { tenantCustomer: true };
-  }> | null;
-  payment?: Prisma.PaymentGetPayload<{}> | null;
+  tenant?: Tenant | null;
+  customer?: Customer | null;
+  service?: Service | null;
+  subscription?: SubscriptionWithRelations | null;
+  payment?: Payment | null;
 }
 
 @Injectable()

@@ -1,4 +1,4 @@
-export type SpecialMappings = Record<string, any>;
+export type SpecialMappings = Record<string, unknown>;
 
 /**
  * Parses a comma-separated string of relations into a Prisma 'include' object.
@@ -12,10 +12,10 @@ export function parseInclude(
   includeStr?: string,
   validRelations: string[] = [],
   specialMappings: SpecialMappings = {},
-) {
+): Record<string, unknown> | undefined {
   if (!includeStr) return undefined;
 
-  const includeObj: any = {};
+  const includeObj: Record<string, unknown> = {};
   const requestedRelations = includeStr.split(',').map((r) => r.trim());
 
   requestedRelations.forEach((rel) => {

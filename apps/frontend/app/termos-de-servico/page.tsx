@@ -23,9 +23,9 @@ export default function TermsOfServicePage() {
           <div className="prose prose-lg max-w-none">
             <p className="text-lg leading-relaxed mb-8">
               Ao contratar ou utilizar os serviços do Cliqtree, você
-              ("Contratante", "Profissional" ou "Usuário") concorda com os
-              seguintes termos e condições. Leia-os atentamente antes de ativar
-              sua automação.
+              (&quot;Contratante&quot;, &quot;Profissional&quot; ou
+              &quot;Usuário&quot;) concorda com os seguintes termos e condições.
+              Leia-os atentamente antes de ativar sua automação.
             </p>
 
             <section className="mb-12">

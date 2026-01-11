@@ -1,14 +1,17 @@
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 
 export function HeroSection() {
   return (
     <section id="home" className="relative py-20 sm:py-32 overflow-hidden">
       {/* Background with overlay */}
       <div className="absolute inset-0 -z-10">
-        <img
+        <Image
           src="/placeholder.svg?height=800&width=1600"
           alt=""
-          className="w-full h-full object-cover opacity-10"
+          fill
+          className="object-cover opacity-10"
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/50 to-background"></div>
       </div>

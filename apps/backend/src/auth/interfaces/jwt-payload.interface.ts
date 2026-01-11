@@ -15,4 +15,6 @@ export interface AuthenticatedUser {
   tenantId?: string | null;
   customerId?: string | null;
   isActive?: boolean;
+  name?: string | null;
+  avatarUrl?: string | null;
 }

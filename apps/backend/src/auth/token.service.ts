@@ -81,8 +81,8 @@ export class TokenService implements OnModuleInit {
    */
   isTokenExpired(token: string): boolean {
     try {
-      const decoded = this.jwtService.decode(token);
-      if (!decoded || !decoded.exp) {
+      const decoded = this.jwtService.decode<JwtPayload>(token);
+      if (!decoded || typeof decoded.exp !== 'number') {
         return true;
       }
       return Date.now() >= decoded.exp * 1000;
@@ -98,8 +98,8 @@ export class TokenService implements OnModuleInit {
    */
   getTokenExpiration(token: string): Date | null {
     try {
-      const decoded = this.jwtService.decode(token);
-      if (!decoded || !decoded.exp) {
+      const decoded = this.jwtService.decode<JwtPayload>(token);
+      if (!decoded || typeof decoded.exp !== 'number') {
         return null;
       }
       return new Date(decoded.exp * 1000);
@@ -126,7 +126,7 @@ export class TokenService implements OnModuleInit {
    */
   decodeToken(token: string): JwtPayload | null {
     try {
-      return this.jwtService.decode(token);
+      return this.jwtService.decode<JwtPayload>(token);
     } catch {
       return null;
     }

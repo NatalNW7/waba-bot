@@ -75,8 +75,11 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiExcludeEndpoint()
-  async googleCallback(@Req() req: any, @Res() res: Response) {
-    const result = await this.authService.handleOAuthLogin(req.user);
+  googleCallback(
+    @Req() req: { user: AuthenticatedUser },
+    @Res() res: Response,
+  ) {
+    const result = this.authService.handleOAuthLogin(req.user as any);
     const frontendUrl = process.env.FRONTEND_URL;
     res.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`);
   }

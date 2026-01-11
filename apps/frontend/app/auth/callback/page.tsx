@@ -9,14 +9,18 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const { login, user, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const hasAttemptedLogin = useState(false)[0];
 
   useEffect(() => {
     const token = searchParams.get("token");
 
     if (!token) {
-      setError("Token de autenticação não encontrado");
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => setError("Token de autenticação não encontrado"), 0);
       return;
     }
+
+    if (hasAttemptedLogin) return;
 
     const handleLogin = async () => {
       try {
@@ -27,7 +31,7 @@ function AuthCallbackContent() {
     };
 
     handleLogin();
-  }, [searchParams, login]);
+  }, [searchParams, login, hasAttemptedLogin]);
 
   // Redirect based on onboarding status once we have the user
   useEffect(() => {

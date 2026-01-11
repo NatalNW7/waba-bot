@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/lib/auth";
 
 export default function ProfilePage() {
@@ -36,9 +38,11 @@ export default function ProfilePage() {
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             {user.avatarUrl ? (
-              <img
+              <Image
                 src={user.avatarUrl}
                 alt={user.name || "Avatar"}
+                width={64}
+                height={64}
                 className="w-16 h-16 rounded-full"
               />
             ) : (
@@ -86,12 +90,12 @@ export default function ProfilePage() {
 
           {/* Actions */}
           <div className="space-y-3">
-            <a
+            <Link
               href="/"
               className="block w-full px-4 py-3 rounded-lg bg-secondary text-secondary-foreground font-medium hover:bg-secondary/80 transition-colors text-center"
             >
               Voltar ao início
-            </a>
+            </Link>
             <button
               onClick={handleLogout}
               className="w-full px-4 py-3 rounded-lg border border-destructive text-destructive font-medium hover:bg-destructive/10 transition-colors"

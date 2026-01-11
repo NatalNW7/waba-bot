@@ -45,7 +45,7 @@ export class AuthService {
   /**
    * Handle OAuth login - generate JWT for authenticated user
    */
-  async handleOAuthLogin(user: User) {
+  handleOAuthLogin(user: User) {
     if (!user) {
       throw new UnauthorizedException('No user from OAuth');
     }
@@ -82,8 +82,8 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
-      name: (user as any).name || null,
-      avatarUrl: (user as any).avatarUrl || null,
+      name: user.name ?? null,
+      avatarUrl: user.avatarUrl ?? null,
       role: user.role,
       tenantId: user.tenantId,
       onboardingStatus,

@@ -40,7 +40,7 @@ export function Testimonials() {
               <Quote className="absolute top-6 right-6 w-8 h-8 text-primary/20" />
 
               <p className="text-foreground leading-relaxed mb-6 relative z-10">
-                "{testimonial.quote}"
+                &quot;{testimonial.quote}&quot;
               </p>
 
               <div className="border-t border-border pt-4">
