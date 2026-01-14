@@ -38,8 +38,11 @@ export class WebhooksController {
     const topic = queryTopic || body.type || body.topic;
     const resourceId = queryId || (body.data ? body.data.id : body.id);
 
-    // Signature Validation
-    if (process.env.MP_WEBHOOK_SECRET && signatureHeader) {
+    // Signature Validation - MANDATORY when secret is configured
+    if (process.env.MP_WEBHOOK_SECRET) {
+      if (!signatureHeader) {
+        throw new BadRequestException('Missing webhook signature header');
+      }
       this.validateSignature(signatureHeader, requestId, resourceId);
     }
 

@@ -10,6 +10,15 @@ import { getAuthToken, authRequest } from './auth-helper';
 // Mock Mercado Pago SDK
 jest.mock('mercadopago');
 
+// Disable webhook signature validation for these E2E tests
+const originalMpWebhookSecret = process.env.MP_WEBHOOK_SECRET;
+beforeAll(() => {
+  delete process.env.MP_WEBHOOK_SECRET;
+});
+afterAll(() => {
+  process.env.MP_WEBHOOK_SECRET = originalMpWebhookSecret;
+});
+
 describe('Payments E2E', () => {
   let app: INestApplication;
   let prisma: PrismaService;

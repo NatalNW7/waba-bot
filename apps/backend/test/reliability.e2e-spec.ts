@@ -8,6 +8,15 @@ import { Payment } from 'mercadopago';
 
 jest.mock('mercadopago');
 
+// Disable webhook signature validation for these reliability tests
+const originalMpWebhookSecret = process.env.MP_WEBHOOK_SECRET;
+beforeAll(() => {
+  delete process.env.MP_WEBHOOK_SECRET;
+});
+afterAll(() => {
+  process.env.MP_WEBHOOK_SECRET = originalMpWebhookSecret;
+});
+
 describe('Reliability & Edge Cases (E2E)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -91,8 +100,8 @@ describe('Reliability & Edge Cases (E2E)', () => {
         .send({ type: 'payment', data: { id: paymentId } })
         .expect(200);
 
-      // Wait for queue
-      await new Promise((resolve) => setTimeout(resolve, 8081));
+      // Wait for queue processing
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Should have only one payment record with this externalId
       const payments = await prisma.payment.findMany({
@@ -100,8 +109,9 @@ describe('Reliability & Edge Cases (E2E)', () => {
       });
       expect(payments.length).toBe(1);
       expect(payments[0].status).toBe('APPROVED');
-    });
+    }, 15000); // 15 second timeout for async queue processing
   });
+
 
   describe('Webhook Edge Cases', () => {
     it('should ignore notifications for unknown topics', async () => {

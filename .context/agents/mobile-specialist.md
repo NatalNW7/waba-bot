@@ -1,0 +1,139 @@
+---
+status: unfilled
+generated: 2026-01-13
+---
+
+# Mobile Specialist Agent Playbook
+
+## Mission
+Describe how the mobile specialist agent supports the team and when to engage it.
+
+## Responsibilities
+- Develop native and cross-platform mobile applications
+- Optimize mobile app performance and battery usage
+- Implement mobile-specific UI/UX patterns
+- Handle app store deployment and updates
+- Integrate push notifications and offline capabilities
+
+## Best Practices
+- Test on real devices, not just simulators
+- Optimize for battery life and data usage
+- Follow platform-specific design guidelines
+- Implement proper offline-first strategies
+- Plan for app store review requirements early
+
+## Key Project Resources
+- Documentation index: [docs/README.md](../docs/README.md)
+- Agent handbook: [agents/README.md](./README.md)
+- Agent knowledge base: [AGENTS.md](../../AGENTS.md)
+- Contributor guide: [CONTRIBUTING.md](../../CONTRIBUTING.md)
+
+## Repository Starting Points
+- `apps/` — TODO: Describe the purpose of this directory.
+- `coverage/` — TODO: Describe the purpose of this directory.
+- `implementations/` — TODO: Describe the purpose of this directory.
+- `packages/` — TODO: Describe the purpose of this directory.
+
+## Key Files
+**Entry Points:**
+- [`packages/api-types/src/index.ts`](packages/api-types/src/index.ts)
+- [`apps/backend/src/main.ts`](apps/backend/src/main.ts)
+- [`packages/api-types/src/interfaces/index.ts`](packages/api-types/src/interfaces/index.ts)
+- [`apps/frontend/lib/auth/index.ts`](apps/frontend/lib/auth/index.ts)
+- [`apps/backend/src/auth/index.ts`](apps/backend/src/auth/index.ts)
+- [`apps/backend/src/auth/exceptions/index.ts`](apps/backend/src/auth/exceptions/index.ts)
+
+**Pattern Implementations:**
+- Repository: [`TenantRepository`](apps/backend/src/tenants/tenant-repository.service.ts), [`SubscriptionRepository`](apps/backend/src/subscriptions/subscription-repository.service.ts), [`PaymentRepository`](apps/backend/src/payments/payment-repository.service.ts), [`AppointmentRepository`](apps/backend/src/appointments/appointment-repository.service.ts)
+- Service Layer: [`AppService`](apps/backend/src/app.service.ts), [`TenantsService`](apps/backend/src/tenants/tenants.service.ts), [`TenantSaasService`](apps/backend/src/tenants/tenant-saas.service.ts), [`TenantMpAuthService`](apps/backend/src/tenants/tenant-mp-auth.service.ts), [`SubscriptionsService`](apps/backend/src/subscriptions/subscriptions.service.ts), [`SubscriptionBillingService`](apps/backend/src/subscriptions/subscription-billing.service.ts), [`CustomerSubscriptionService`](apps/backend/src/subscriptions/customer-subscription.service.ts), [`ServicesService`](apps/backend/src/services/services.service.ts), [`SaasPlansService`](apps/backend/src/saas-plans/saas-plans.service.ts), [`PrismaService`](apps/backend/src/prisma/prisma.service.ts), [`PlansService`](apps/backend/src/plans/plans.service.ts), [`PaymentsService`](apps/backend/src/payments/payments.service.ts), [`PaymentPreferenceService`](apps/backend/src/payments/payment-preference.service.ts), [`MercadoPagoService`](apps/backend/src/payments/mercadopago.service.ts), [`MercadoPagoWebhooksService`](apps/backend/src/payments/mercadopago-webhooks.service.ts), [`OperatingHoursService`](apps/backend/src/operating-hours/operating-hours.service.ts), [`CustomersService`](apps/backend/src/customers/customers.service.ts), [`CalendarsService`](apps/backend/src/calendars/calendars.service.ts), [`TokenService`](apps/backend/src/auth/token.service.ts), [`AuthService`](apps/backend/src/auth/auth.service.ts), [`TenantCustomerService`](apps/backend/src/appointments/tenant-customer.service.ts), [`SchedulingService`](apps/backend/src/appointments/scheduling.service.ts), [`AppointmentsService`](apps/backend/src/appointments/appointments.service.ts)
+- Controller: [`AppController`](apps/backend/src/app.controller.ts), [`WabaController`](apps/backend/src/waba/waba.controller.ts), [`TenantsController`](apps/backend/src/tenants/tenants.controller.ts), [`SubscriptionsController`](apps/backend/src/subscriptions/subscriptions.controller.ts), [`ServicesController`](apps/backend/src/services/services.controller.ts), [`SaasPlansController`](apps/backend/src/saas-plans/saas-plans.controller.ts), [`PlansController`](apps/backend/src/plans/plans.controller.ts), [`WebhooksController`](apps/backend/src/payments/webhooks.controller.ts), [`PaymentsController`](apps/backend/src/payments/payments.controller.ts), [`OperatingHoursController`](apps/backend/src/operating-hours/operating-hours.controller.ts), [`CustomersController`](apps/backend/src/customers/customers.controller.ts), [`CalendarsController`](apps/backend/src/calendars/calendars.controller.ts), [`AuthController`](apps/backend/src/auth/auth.controller.ts), [`AppointmentsController`](apps/backend/src/appointments/appointments.controller.ts)
+
+**Service Files:**
+- [`AppService`](apps/backend/src/app.service.ts#L4)
+- [`TenantsService`](apps/backend/src/tenants/tenants.service.ts#L15)
+- [`TenantSaasService`](apps/backend/src/tenants/tenant-saas.service.ts#L18)
+- [`TenantMpAuthService`](apps/backend/src/tenants/tenant-mp-auth.service.ts#L7)
+- [`SubscriptionsService`](apps/backend/src/subscriptions/subscriptions.service.ts#L11)
+- [`SubscriptionBillingService`](apps/backend/src/subscriptions/subscription-billing.service.ts#L4)
+- [`CustomerSubscriptionService`](apps/backend/src/subscriptions/customer-subscription.service.ts#L6)
+- [`ServicesService`](apps/backend/src/services/services.service.ts#L12)
+- [`SaasPlansService`](apps/backend/src/saas-plans/saas-plans.service.ts#L8)
+- [`PrismaService`](apps/backend/src/prisma/prisma.service.ts#L6)
+- [`PlansService`](apps/backend/src/plans/plans.service.ts#L8)
+- [`PaymentsService`](apps/backend/src/payments/payments.service.ts#L10)
+- [`PaymentPreferenceService`](apps/backend/src/payments/payment-preference.service.ts#L14)
+- [`MercadoPagoService`](apps/backend/src/payments/mercadopago.service.ts#L10)
+- [`MercadoPagoWebhooksService`](apps/backend/src/payments/mercadopago-webhooks.service.ts#L6)
+- [`OperatingHoursService`](apps/backend/src/operating-hours/operating-hours.service.ts#L7)
+- [`CustomersService`](apps/backend/src/customers/customers.service.ts#L12)
+- [`CalendarsService`](apps/backend/src/calendars/calendars.service.ts#L7)
+- [`TokenService`](apps/backend/src/auth/token.service.ts#L17)
+- [`AuthService`](apps/backend/src/auth/auth.service.ts#L9)
+- [`TenantCustomerService`](apps/backend/src/appointments/tenant-customer.service.ts#L5)
+- [`SchedulingService`](apps/backend/src/appointments/scheduling.service.ts#L8)
+- [`AppointmentsService`](apps/backend/src/appointments/appointments.service.ts#L17)
+
+## Architecture Context
+
+### Controllers
+Request handling and routing
+- **Directories**: `packages/api-types/src`, `apps/backend/src`, `packages/api-types/src/interfaces`, `apps/frontend/lib/api`, `apps/backend/src/waba`, `apps/backend/src/tenants`, `apps/backend/src/subscriptions`, `apps/backend/src/saas-plans`, `apps/backend/src/plans`, `apps/backend/src/payments`, `apps/backend/src/operating-hours`, `apps/backend/src/customers`, `apps/backend/src/calendars`, `apps/backend/src/auth`, `apps/backend/src/appointments`
+- **Symbols**: 68 total
+- **Key exports**: [`AppointmentStatus`](packages/api-types/src/enums.ts#L7), [`CalendarProvider`](packages/api-types/src/enums.ts#L15), [`SubscriptionStatus`](packages/api-types/src/enums.ts#L21), [`PaymentInterval`](packages/api-types/src/enums.ts#L29), [`DayOfWeek`](packages/api-types/src/enums.ts#L36), [`PaymentStatus`](packages/api-types/src/enums.ts#L47), [`PaymentType`](packages/api-types/src/enums.ts#L56), [`PaymentMethod`](packages/api-types/src/enums.ts#L63), [`UserRole`](packages/api-types/src/enums.ts#L69), [`AppController`](apps/backend/src/app.controller.ts#L7), [`IUser`](packages/api-types/src/interfaces/user.ts#L6), [`ITenant`](packages/api-types/src/interfaces/tenant.ts#L6), [`ICreateTenant`](packages/api-types/src/interfaces/tenant.ts#L28), [`IUpdateTenant`](packages/api-types/src/interfaces/tenant.ts#L47), [`ISubscription`](packages/api-types/src/interfaces/subscription.ts#L6), [`ICreateSubscription`](packages/api-types/src/interfaces/subscription.ts#L22), [`IUpdateSubscription`](packages/api-types/src/interfaces/subscription.ts#L34), [`ISaasPlan`](packages/api-types/src/interfaces/saas-plan.ts#L6), [`ICreateSaasPlan`](packages/api-types/src/interfaces/saas-plan.ts#L19), [`IUpdateSaasPlan`](packages/api-types/src/interfaces/saas-plan.ts#L29), [`IPlan`](packages/api-types/src/interfaces/plan.ts#L6), [`ICreatePlan`](packages/api-types/src/interfaces/plan.ts#L21), [`IUpdatePlan`](packages/api-types/src/interfaces/plan.ts#L33), [`IPayment`](packages/api-types/src/interfaces/payment.ts#L6), [`ICreatePayment`](packages/api-types/src/interfaces/payment.ts#L25), [`IUpdatePayment`](packages/api-types/src/interfaces/payment.ts#L41), [`IOperatingHour`](packages/api-types/src/interfaces/operating-hour.ts#L6), [`ICreateOperatingHour`](packages/api-types/src/interfaces/operating-hour.ts#L19), [`IUpdateOperatingHour`](packages/api-types/src/interfaces/operating-hour.ts#L31), [`ICustomer`](packages/api-types/src/interfaces/customer.ts#L4), [`ICreateCustomer`](packages/api-types/src/interfaces/customer.ts#L16), [`IUpdateCustomer`](packages/api-types/src/interfaces/customer.ts#L25), [`ICalendar`](packages/api-types/src/interfaces/calendar.ts#L6), [`ICreateCalendar`](packages/api-types/src/interfaces/calendar.ts#L21), [`IUpdateCalendar`](packages/api-types/src/interfaces/calendar.ts#L33), [`ILoginRequest`](packages/api-types/src/interfaces/auth.ts#L6), [`ILoginResponse`](packages/api-types/src/interfaces/auth.ts#L14), [`IUserSession`](packages/api-types/src/interfaces/auth.ts#L26), [`IOAuthLoginResponse`](packages/api-types/src/interfaces/auth.ts#L39), [`IAppointment`](packages/api-types/src/interfaces/appointment.ts#L6), [`ICreateAppointment`](packages/api-types/src/interfaces/appointment.ts#L26), [`IUpdateAppointment`](packages/api-types/src/interfaces/appointment.ts#L42), [`CreateTenantRequest`](apps/frontend/lib/api/tenant.ts#L5), [`CreateTenantResponse`](apps/frontend/lib/api/tenant.ts#L12), [`SubscribeResponse`](apps/frontend/lib/api/tenant.ts#L21), [`createTenant`](apps/frontend/lib/api/tenant.ts#L29), [`createSubscription`](apps/frontend/lib/api/tenant.ts#L56), [`getSaasPlans`](apps/frontend/lib/api/saas-plans.ts#L12), [`groupPlansByInterval`](apps/frontend/lib/api/saas-plans.ts#L27), [`formatPrice`](apps/frontend/lib/api/saas-plans.ts#L55), [`getIntervalLabel`](apps/frontend/lib/api/saas-plans.ts#L70), [`getPeriodText`](apps/frontend/lib/api/saas-plans.ts#L84), [`ApiError`](apps/frontend/lib/api/config.ts#L24), [`apiFetch`](apps/frontend/lib/api/config.ts#L80), [`WabaController`](apps/backend/src/waba/waba.controller.ts#L8), [`WabaAPI`](apps/backend/src/waba/waba.api.ts#L3), [`TenantsController`](apps/backend/src/tenants/tenants.controller.ts#L30), [`SubscriptionsController`](apps/backend/src/subscriptions/subscriptions.controller.ts#L29), [`SaasPlansController`](apps/backend/src/saas-plans/saas-plans.controller.ts#L29), [`PlansController`](apps/backend/src/plans/plans.controller.ts#L29), [`WebhooksController`](apps/backend/src/payments/webhooks.controller.ts#L20), [`PaymentsController`](apps/backend/src/payments/payments.controller.ts#L27), [`OperatingHoursController`](apps/backend/src/operating-hours/operating-hours.controller.ts#L27), [`CustomersController`](apps/backend/src/customers/customers.controller.ts#L29), [`CalendarsController`](apps/backend/src/calendars/calendars.controller.ts#L27), [`AuthController`](apps/backend/src/auth/auth.controller.ts#L29), [`AppointmentsController`](apps/backend/src/appointments/appointments.controller.ts#L27)
+
+### Utils
+Shared utilities and helpers
+- **Directories**: `apps/frontend/lib`, `apps/backend/test`, `apps/frontend/lib/utils`, `apps/frontend/lib/constants`, `apps/frontend/lib/auth`, `apps/backend/src/common/utils`, `apps/backend/src/appointments/utils`
+- **Symbols**: 23 total
+- **Key exports**: [`cn`](apps/frontend/lib/utils.ts#L4), [`getAuthToken`](apps/backend/test/auth-helper.ts#L8), [`authRequest`](apps/backend/test/auth-helper.ts#L24), [`sanitizePhone`](apps/frontend/lib/utils/phone-utils.ts#L10), [`formatPhoneDisplay`](apps/frontend/lib/utils/phone-utils.ts#L25), [`isValidBrazilianPhone`](apps/frontend/lib/utils/phone-utils.ts#L50), [`BrazilianDDD`](apps/frontend/lib/constants/brazilian-ddd.ts#L6), [`getDDDByCode`](apps/frontend/lib/constants/brazilian-ddd.ts#L139), [`searchDDDs`](apps/frontend/lib/constants/brazilian-ddd.ts#L146), [`JwtPayload`](apps/frontend/lib/auth/token-utils.ts#L4), [`TokenErrorCode`](apps/frontend/lib/auth/token-utils.ts#L17), [`parseJwt`](apps/frontend/lib/auth/token-utils.ts#L25), [`isTokenExpired`](apps/frontend/lib/auth/token-utils.ts#L42), [`getTokenExpirationDate`](apps/frontend/lib/auth/token-utils.ts#L53), [`getTokenRemainingTime`](apps/frontend/lib/auth/token-utils.ts#L64), [`getTokenErrorCode`](apps/frontend/lib/auth/token-utils.ts#L75), [`SpecialMappings`](apps/backend/src/common/utils/prisma-include.util.ts#L1), [`parseInclude`](apps/backend/src/common/utils/prisma-include.util.ts#L11), [`DateTimeUtils`](apps/backend/src/appointments/utils/date-time.utils.ts#L1), [`IAuthStrategy`](apps/frontend/lib/auth/strategies.tsx#L9), [`AuthProvider`](apps/frontend/lib/auth/context.tsx#L37), [`getAuthToken`](apps/frontend/lib/auth/context.tsx#L198)
+
+### Services
+Business logic and orchestration
+- **Directories**: `apps/backend/test`, `apps/backend/src`, `packages/api-types/src/interfaces`, `apps/backend/src/tenants`, `apps/backend/src/subscriptions`, `apps/backend/src/services`, `apps/backend/src/saas-plans`, `apps/backend/src/prisma`, `apps/backend/src/plans`, `apps/backend/src/payments`, `apps/backend/src/operating-hours`, `apps/backend/src/customers`, `apps/backend/src/calendars`, `apps/backend/src/auth`, `apps/backend/src/appointments`, `apps/backend/src/services/entities`, `apps/backend/src/services/dto`
+- **Symbols**: 42 total
+- **Key exports**: [`AppService`](apps/backend/src/app.service.ts#L4), [`IService`](packages/api-types/src/interfaces/service.ts#L4), [`ICreateService`](packages/api-types/src/interfaces/service.ts#L15), [`IUpdateService`](packages/api-types/src/interfaces/service.ts#L25), [`TenantsService`](apps/backend/src/tenants/tenants.service.ts#L15), [`TenantSaasService`](apps/backend/src/tenants/tenant-saas.service.ts#L18), [`TenantRepository`](apps/backend/src/tenants/tenant-repository.service.ts#L6), [`TenantMpAuthService`](apps/backend/src/tenants/tenant-mp-auth.service.ts#L7), [`SubscriptionsService`](apps/backend/src/subscriptions/subscriptions.service.ts#L11), [`SubscriptionRepository`](apps/backend/src/subscriptions/subscription-repository.service.ts#L6), [`SubscriptionBillingService`](apps/backend/src/subscriptions/subscription-billing.service.ts#L4), [`CustomerSubscriptionService`](apps/backend/src/subscriptions/customer-subscription.service.ts#L6), [`ServicesService`](apps/backend/src/services/services.service.ts#L12), [`ServicesModule`](apps/backend/src/services/services.module.ts#L9), [`ServicesController`](apps/backend/src/services/services.controller.ts#L29), [`SaasPlansService`](apps/backend/src/saas-plans/saas-plans.service.ts#L8), [`PrismaService`](apps/backend/src/prisma/prisma.service.ts#L6), [`PlansService`](apps/backend/src/plans/plans.service.ts#L8), [`PaymentsService`](apps/backend/src/payments/payments.service.ts#L10), [`PaymentRepository`](apps/backend/src/payments/payment-repository.service.ts#L6), [`PaymentPreferenceService`](apps/backend/src/payments/payment-preference.service.ts#L14), [`MercadoPagoService`](apps/backend/src/payments/mercadopago.service.ts#L10), [`MercadoPagoWebhooksService`](apps/backend/src/payments/mercadopago-webhooks.service.ts#L6), [`OperatingHoursService`](apps/backend/src/operating-hours/operating-hours.service.ts#L7), [`CustomersService`](apps/backend/src/customers/customers.service.ts#L12), [`CalendarsService`](apps/backend/src/calendars/calendars.service.ts#L7), [`TokenService`](apps/backend/src/auth/token.service.ts#L17), [`AuthService`](apps/backend/src/auth/auth.service.ts#L9), [`TenantCustomerService`](apps/backend/src/appointments/tenant-customer.service.ts#L5), [`SchedulingService`](apps/backend/src/appointments/scheduling.service.ts#L8), [`RelatedEntitiesValidator`](apps/backend/src/appointments/related-entities-validator.service.ts#L29), [`AppointmentsService`](apps/backend/src/appointments/appointments.service.ts#L17), [`AppointmentRepository`](apps/backend/src/appointments/appointment-repository.service.ts#L6), [`AppointmentPaymentValidator`](apps/backend/src/appointments/appointment-payment.service.ts#L5), [`AppointmentOperatingHoursValidator`](apps/backend/src/appointments/appointment-operating-hours.service.ts#L6), [`ServiceEntity`](apps/backend/src/services/entities/service.entity.ts#L6), [`UpdateServiceDto`](apps/backend/src/services/dto/update-service.dto.ts#L4), [`CreateServiceDto`](apps/backend/src/services/dto/create-service.dto.ts#L6)
+
+### Models
+Data structures and domain objects
+- **Directories**: `apps/backend/src/tenants/entities`, `apps/backend/src/subscriptions/entities`, `apps/backend/src/saas-plans/entities`, `apps/backend/src/plans/entities`, `apps/backend/src/payments/entities`, `apps/backend/src/operating-hours/entities`, `apps/backend/src/customers/entities`, `apps/backend/src/calendars/entities`, `apps/backend/src/appointments/entities`
+- **Symbols**: 9 total
+- **Key exports**: [`TenantEntity`](apps/backend/src/tenants/entities/tenant.entity.ts#L15), [`SubscriptionEntity`](apps/backend/src/subscriptions/entities/subscription.entity.ts#L7), [`SaasPlanEntity`](apps/backend/src/saas-plans/entities/saas-plan.entity.ts#L7), [`PlanEntity`](apps/backend/src/plans/entities/plan.entity.ts#L7), [`PaymentEntity`](apps/backend/src/payments/entities/payment.entity.ts#L7), [`OperatingHourEntity`](apps/backend/src/operating-hours/entities/operating-hour.entity.ts#L7), [`CustomerEntity`](apps/backend/src/customers/entities/customer.entity.ts#L6), [`CalendarEntity`](apps/backend/src/calendars/entities/calendar.entity.ts#L7), [`AppointmentEntity`](apps/backend/src/appointments/entities/appointment.entity.ts#L7)
+
+### Components
+UI components and views
+- **Directories**: `apps/frontend/components`, `apps/frontend/app`, `apps/frontend/components/ui`, `apps/frontend/app/termos-de-servico`, `apps/frontend/app/profile`, `apps/frontend/app/politica-de-privacidade`, `apps/frontend/app/onboarding`, `apps/frontend/app/login`, `apps/frontend/app/auth/callback`
+- **Symbols**: 13 total
+- **Key exports**: [`WhatIsCliqtree`](apps/frontend/components/what-is-cliqtree.tsx#L3), [`ThemeProvider`](apps/frontend/components/theme-provider.tsx#L9), [`HeroSection`](apps/frontend/components/hero-section.tsx#L4), [`Header`](apps/frontend/components/header.tsx#L5), [`BenefitsSection`](apps/frontend/components/benefits-section.tsx#L39), [`Home`](apps/frontend/app/page.tsx#L10), [`TermsOfServicePage`](apps/frontend/app/termos-de-servico/page.tsx#L10)
+## Key Symbols for This Agent
+- [`AppService`](apps/backend/src/app.service.ts#L4) (class)
+- [`AppModule`](apps/backend/src/app.module.ts#L50) (class)
+- [`AppController`](apps/backend/src/app.controller.ts#L7) (class)
+- [`ApiError`](apps/frontend/lib/api/config.ts#L24) (class)
+- [`WabaProcessor`](apps/backend/src/waba/waba.processor.ts#L6) (class)
+- [`IUser`](packages/api-types/src/interfaces/user.ts#L6) (interface)
+- [`ITenant`](packages/api-types/src/interfaces/tenant.ts#L6) (interface)
+- [`ICreateTenant`](packages/api-types/src/interfaces/tenant.ts#L28) (interface)
+- [`IUpdateTenant`](packages/api-types/src/interfaces/tenant.ts#L47) (interface)
+- [`ISubscription`](packages/api-types/src/interfaces/subscription.ts#L6) (interface)
+
+## Documentation Touchpoints
+- [Documentation Index](../docs/README.md)
+- [Project Overview](../docs/project-overview.md)
+- [Architecture Notes](../docs/architecture.md)
+- [Development Workflow](../docs/development-workflow.md)
+- [Testing Strategy](../docs/testing-strategy.md)
+- [Glossary & Domain Concepts](../docs/glossary.md)
+- [Data Flow & Integrations](../docs/data-flow.md)
+- [Security & Compliance Notes](../docs/security.md)
+- [Tooling & Productivity Guide](../docs/tooling.md)
+
+## Collaboration Checklist
+
+1. Confirm assumptions with issue reporters or maintainers.
+2. Review open pull requests affecting this area.
+3. Update the relevant doc section listed above.
+4. Capture learnings back in [docs/README.md](../docs/README.md).
+
+## Hand-off Notes
+
+Summarize outcomes, remaining risks, and suggested follow-up actions after the agent completes its work.

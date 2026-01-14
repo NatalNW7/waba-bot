@@ -20,11 +20,15 @@ describe('TenantsService', () => {
         {
           provide: PrismaService,
           useValue: {
+            tenant: {
+              findFirst: jest.fn(),
+            },
             saasPlan: {
               findUnique: jest.fn(),
             },
           },
         },
+
         {
           provide: TenantRepository,
           useValue: {
@@ -76,14 +80,16 @@ describe('TenantsService', () => {
     };
 
     it('should throw BadRequestException if saasPlan does not exist', async () => {
+      jest.spyOn(prisma.tenant, 'findFirst').mockResolvedValue(null);
       jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue(null);
 
       await expect(service.create(createDto)).rejects.toThrow(
-        new BadRequestException('this saas plan does not exists'),
+        new BadRequestException('Este plano não existe'),
       );
     });
 
     it('should create tenant if saasPlan exists', async () => {
+      jest.spyOn(prisma.tenant, 'findFirst').mockResolvedValue(null);
       jest
         .spyOn(prisma.saasPlan, 'findUnique')
         .mockResolvedValue({ id: 'plan123' } as any);
@@ -94,6 +100,7 @@ describe('TenantsService', () => {
       const result = await service.create(createDto);
       expect(result).toBeDefined();
       expect(repo.create).toHaveBeenCalledWith(createDto);
+
     });
   });
 
