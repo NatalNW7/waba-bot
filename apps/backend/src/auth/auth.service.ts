@@ -98,9 +98,10 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId,
-      customerId: user.customerId,
+      tenantId: user.tenantId ?? undefined,
+      customerId: user.customerId ?? undefined,
     };
+
 
     return {
       accessToken: this.tokenService.createToken(payload),

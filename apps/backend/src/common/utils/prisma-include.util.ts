@@ -1,4 +1,9 @@
-export type SpecialMappings = Record<string, unknown>;
+interface SpecialMapping {
+  key: string;
+  value?: unknown;
+}
+
+export type SpecialMappings = Record<string, SpecialMapping | unknown>;
 
 /**
  * Parses a comma-separated string of relations into a Prisma 'include' object.
@@ -24,8 +29,8 @@ export function parseInclude(
         // If there's a special mapping (like flattening or nested includes), use it.
         // We might need to handle cases where the key in Prisma differs from 'rel'.
         const mapping = specialMappings[rel];
-        if (typeof mapping === 'object' && mapping.key) {
-          includeObj[mapping.key] = mapping.value || true;
+        if (isSpecialMapping(mapping)) {
+          includeObj[mapping.key] = mapping.value ?? true;
         } else {
           includeObj[rel] = mapping;
         }
@@ -37,3 +42,13 @@ export function parseInclude(
 
   return Object.keys(includeObj).length > 0 ? includeObj : undefined;
 }
+
+function isSpecialMapping(mapping: unknown): mapping is SpecialMapping {
+  return (
+    typeof mapping === 'object' &&
+    mapping !== null &&
+    'key' in mapping &&
+    typeof (mapping as SpecialMapping).key === 'string'
+  );
+}
+
