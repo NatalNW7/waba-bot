@@ -102,7 +102,6 @@ export class AuthService {
       customerId: user.customerId ?? undefined,
     };
 
-
     return {
       accessToken: this.tokenService.createToken(payload),
       user: {

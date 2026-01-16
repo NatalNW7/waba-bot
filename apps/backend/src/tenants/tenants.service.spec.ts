@@ -84,7 +84,7 @@ describe('TenantsService', () => {
       jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue(null);
 
       await expect(service.create(createDto)).rejects.toThrow(
-        new BadRequestException('Este plano não existe'),
+        new BadRequestException('this saas plan does not exists'),
       );
     });
 
@@ -100,7 +100,6 @@ describe('TenantsService', () => {
       const result = await service.create(createDto);
       expect(result).toBeDefined();
       expect(repo.create).toHaveBeenCalledWith(createDto);
-
     });
   });
 

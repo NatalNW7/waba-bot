@@ -112,7 +112,6 @@ describe('Reliability & Edge Cases (E2E)', () => {
     }, 15000); // 15 second timeout for async queue processing
   });
 
-
   describe('Webhook Edge Cases', () => {
     it('should ignore notifications for unknown topics', async () => {
       const res = await request(app.getHttpServer())

@@ -91,7 +91,13 @@ export default function GlobalError({
             </p>
 
             {/* Action Buttons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
               <button
                 onClick={() => reset()}
                 style={{

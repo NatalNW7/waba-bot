@@ -51,4 +51,3 @@ function isSpecialMapping(mapping: unknown): mapping is SpecialMapping {
     typeof (mapping as SpecialMapping).key === 'string'
   );
 }
-
