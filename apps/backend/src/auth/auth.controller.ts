@@ -87,6 +87,18 @@ export class AuthController {
   }
 
   /**
+   * Check email verification status
+   */
+  @Get('email-status')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Check email verification status' })
+  @ApiOkResponse({ description: 'Returns email verification status' })
+  async getEmailStatus(@CurrentUser() user: AuthenticatedUser) {
+    const verified = await this.authService.isEmailVerified(user.id);
+    return { emailVerified: verified };
+  }
+
+  /**
    * Initiate Google OAuth flow
    */
   @Public()

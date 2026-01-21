@@ -139,9 +139,9 @@ describe('EmailVerificationService', () => {
         emailVerificationExpiry: futureDate,
       });
 
-      await expect(
-        service.verifyEmailCode('user-1', '000000'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyEmailCode('user-1', '000000')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for expired code', async () => {
@@ -155,9 +155,9 @@ describe('EmailVerificationService', () => {
         emailVerificationExpiry: pastDate,
       });
 
-      await expect(
-        service.verifyEmailCode('user-1', '123456'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyEmailCode('user-1', '123456')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException if no pending verification', async () => {
@@ -168,9 +168,9 @@ describe('EmailVerificationService', () => {
         emailVerificationExpiry: null,
       });
 
-      await expect(
-        service.verifyEmailCode('user-1', '123456'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyEmailCode('user-1', '123456')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for non-existent user', async () => {

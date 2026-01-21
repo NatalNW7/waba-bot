@@ -180,3 +180,25 @@ export async function verifyEmail(
   return response.json() as Promise<{ verified: boolean }>;
 }
 
+/**
+ * Check email verification status
+ */
+export async function getEmailStatus(): Promise<{ emailVerified: boolean }> {
+  const token = getAuthToken();
+
+  const response = await fetch(`${BACKEND_URL}/auth/email-status`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    return { emailVerified: false };
+  }
+
+  return response.json() as Promise<{ emailVerified: boolean }>;
+}
+
+

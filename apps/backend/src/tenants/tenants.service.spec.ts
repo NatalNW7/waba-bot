@@ -125,7 +125,9 @@ describe('TenantsService', () => {
 
       // Mock tenant creation (no conflicts)
       jest.spyOn(prisma.tenant, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue({ id: 'plan-123' } as any);
+      jest
+        .spyOn(prisma.saasPlan, 'findUnique')
+        .mockResolvedValue({ id: 'plan-123' } as any);
       jest.spyOn(repo, 'create').mockResolvedValue({
         id: 'tenant-new',
         name: 'New Business',
@@ -167,7 +169,9 @@ describe('TenantsService', () => {
       });
       (prisma.user.update as jest.Mock).mockResolvedValue({});
       jest.spyOn(prisma.tenant, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue({ id: 'plan-123' } as any);
+      jest
+        .spyOn(prisma.saasPlan, 'findUnique')
+        .mockResolvedValue({ id: 'plan-123' } as any);
       jest.spyOn(repo, 'create').mockResolvedValue({
         id: 'tenant-new',
         name: 'New Business',
@@ -233,4 +237,3 @@ describe('TenantsService', () => {
     });
   });
 });
-

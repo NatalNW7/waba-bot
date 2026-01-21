@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsEmail,
-  IsUUID,
-  IsOptional,
-  IsBoolean,
-} from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class OnboardTenantDto {
@@ -23,8 +17,11 @@ export class OnboardTenantDto {
   @IsString()
   phone: string;
 
-  @ApiProperty({ description: 'Selected SaaS plan ID' })
-  @IsUUID()
+  @ApiProperty({
+    description: 'Selected SaaS plan ID',
+    example: 'starter-monthly',
+  })
+  @IsString()
   saasPlanId: string;
 
   @ApiPropertyOptional({

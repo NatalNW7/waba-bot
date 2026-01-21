@@ -76,7 +76,10 @@ describe('EmailService', () => {
       const serviceWithoutEmail = module.get<EmailService>(EmailService);
       const logSpy = jest.spyOn(serviceWithoutEmail['logger'], 'log');
 
-      await serviceWithoutEmail.sendVerificationEmail('user@example.com', '999999');
+      await serviceWithoutEmail.sendVerificationEmail(
+        'user@example.com',
+        '999999',
+      );
 
       expect(logSpy).toHaveBeenCalledWith(
         expect.stringContaining('[MOCK EMAIL]'),

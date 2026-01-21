@@ -171,7 +171,9 @@ describe('AuthService', () => {
       const result = await service.sendVerificationCode('user-1');
 
       expect(result.message).toBe('Código de verificação enviado');
-      expect(mockEmailVerificationService.sendVerificationCode).toHaveBeenCalledWith('user-1');
+      expect(
+        mockEmailVerificationService.sendVerificationCode,
+      ).toHaveBeenCalledWith('user-1');
     });
   });
 
@@ -184,7 +186,10 @@ describe('AuthService', () => {
       const result = await service.verifyEmailCode('user-1', '123456');
 
       expect(result.verified).toBe(true);
-      expect(mockEmailVerificationService.verifyEmailCode).toHaveBeenCalledWith('user-1', '123456');
+      expect(mockEmailVerificationService.verifyEmailCode).toHaveBeenCalledWith(
+        'user-1',
+        '123456',
+      );
     });
   });
 
@@ -195,7 +200,9 @@ describe('AuthService', () => {
       const result = await service.isEmailVerified('user-1');
 
       expect(result).toBe(true);
-      expect(mockEmailVerificationService.isEmailVerified).toHaveBeenCalledWith('user-1');
+      expect(mockEmailVerificationService.isEmailVerified).toHaveBeenCalledWith(
+        'user-1',
+      );
     });
   });
 
@@ -230,4 +237,3 @@ describe('AuthService', () => {
     });
   });
 });
-
