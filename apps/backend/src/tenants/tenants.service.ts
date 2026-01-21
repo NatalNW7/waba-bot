@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { OnboardTenantDto } from './dto/onboard-tenant.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseInclude } from '../common/utils/prisma-include.util';
 import { TenantRepository } from './tenant-repository.service';
 import { TenantSaasService } from './tenant-saas.service';
 import { TenantMpAuthService } from './tenant-mp-auth.service';
+import { OnboardResponse } from './interfaces/onboard-response.interface';
 
 @Injectable()
 export class TenantsService {
@@ -61,6 +63,60 @@ export class TenantsService {
     }
 
     return tenant;
+  }
+
+  /**
+   * Consolidated onboarding: creates tenant and subscription in one request
+   */
+  async onboard(
+    dto: OnboardTenantDto,
+    userId: string,
+  ): Promise<OnboardResponse> {
+    // Verify email is verified before onboarding
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { emailVerified: true },
+    });
+
+    if (!user?.emailVerified) {
+      throw new BadRequestException(
+        'Email não verificado. Por favor, verifique seu email antes de continuar.',
+      );
+    }
+
+    // Create tenant (reuses existing validation and creation logic)
+    const tenant = await this.create(
+      {
+        name: dto.name,
+        email: dto.email,
+        phone: dto.phone,
+        saasPlanId: dto.saasPlanId,
+      },
+      userId,
+    );
+
+    const response: OnboardResponse = {
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        email: tenant.email,
+        phone: tenant.phone,
+        saasPlanId: tenant.saasPlanId,
+        saasStatus: tenant.saasStatus,
+      },
+    };
+
+    // Create subscription if requested (default: true)
+    const shouldCreateSubscription = dto.createSubscription !== false;
+    if (shouldCreateSubscription) {
+      const subscription = await this.saasService.createSubscription(tenant.id);
+      response.subscription = {
+        initPoint: subscription.initPoint,
+        externalId: subscription.externalId,
+      };
+    }
+
+    return response;
   }
 
   findAll() {

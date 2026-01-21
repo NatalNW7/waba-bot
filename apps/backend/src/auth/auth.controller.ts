@@ -15,11 +15,13 @@ import {
   ApiBearerAuth,
   ApiExcludeEndpoint,
   ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { AuthenticatedUser } from './interfaces/jwt-payload.interface';
@@ -55,6 +57,33 @@ export class AuthController {
       return { valid: false, expiresAt: null, remainingMs: null };
     }
     return this.authService.verifyToken(token);
+  }
+
+  /**
+   * Send email verification code
+   */
+  @Post('send-verification')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Send email verification code' })
+  @ApiOkResponse({ description: 'Verification code sent' })
+  @ApiBadRequestResponse({ description: 'User not found' })
+  async sendVerification(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.sendVerificationCode(user.id);
+  }
+
+  /**
+   * Verify email with code
+   */
+  @Post('verify-email')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Verify email with code' })
+  @ApiOkResponse({ description: 'Email verified successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid or expired code' })
+  async verifyEmail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: VerifyEmailDto,
+  ) {
+    return this.authService.verifyEmailCode(user.id, dto.code);
   }
 
   /**

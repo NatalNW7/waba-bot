@@ -21,6 +21,7 @@ import {
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { OnboardTenantDto } from './dto/onboard-tenant.dto';
 import { TenantEntity } from './entities/tenant.entity';
 import { FindTenantQueryDto } from './dto/find-tenant-query.dto';
 
@@ -42,6 +43,26 @@ export class TenantsController {
   })
   create(@Body() createTenantDto: CreateTenantDto, @Request() req: any) {
     return this.tenantsService.create(createTenantDto, req.user?.id);
+  }
+
+  /**
+   * Consolidated onboarding endpoint
+   * Creates tenant AND subscription in a single request
+   */
+  @Post('onboard')
+  @ApiOperation({
+    summary: 'Complete onboarding: create tenant and subscription',
+    description:
+      'Creates a tenant and SaaS subscription in a single request. Requires email to be verified first.',
+  })
+  @ApiCreatedResponse({
+    description: 'Tenant created and subscription initiated',
+  })
+  @ApiBadRequestResponse({
+    description: 'Email not verified, invalid data, or SaaS plan not found',
+  })
+  onboard(@Body() onboardDto: OnboardTenantDto, @Request() req: any) {
+    return this.tenantsService.onboard(onboardDto, req.user.id);
   }
 
   /** Get all tenants */

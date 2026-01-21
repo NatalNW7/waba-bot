@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, getAuthToken } from "@/lib/auth";
 import { type ISaasPlan, PaymentInterval } from "@repo/api-types";
 import { BrazilianPhoneInput } from "@/components/ui/brazilian-phone-input";
 import { sanitizePhone } from "@/lib/utils/phone-utils";
-import { createTenant, createSubscription } from "@/lib/api/tenant";
+import {
+  onboardTenant,
+  sendVerificationEmail,
+  verifyEmail,
+} from "@/lib/api/tenant";
 
-type OnboardingStep = "business" | "plan" | "confirmation";
+type OnboardingStep = "business" | "email" | "plan" | "confirmation";
 
 interface BusinessInfo {
   name: string;
@@ -16,10 +20,11 @@ interface BusinessInfo {
 }
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const STEPS: OnboardingStep[] = ["business", "email", "plan", "confirmation"];
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, isLoading, refreshSession } = useAuth();
+  const { user, isLoading } = useAuth();
   const [step, setStep] = useState<OnboardingStep>("business");
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
     name: "",
@@ -32,6 +37,15 @@ export default function OnboardingPage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Email verification state
+  const [verificationCode, setVerificationCode] = useState<string[]>(
+    Array(6).fill(""),
+  );
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Redirect if not authenticated or already onboarded
   useEffect(() => {
@@ -67,7 +81,82 @@ export default function OnboardingPage() {
   const handleBusinessSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (businessInfo.name && businessInfo.phone) {
-      setStep("plan");
+      setStep("email");
+    }
+  };
+
+  // Send verification email
+  const handleSendVerificationCode = async () => {
+    setIsSendingCode(true);
+    setError(null);
+    try {
+      await sendVerificationEmail();
+      setCodeSent(true);
+      // Focus first input
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao enviar código");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  // Handle code input
+  const handleCodeChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return; // Only allow digits
+
+    const newCode = [...verificationCode];
+    newCode[index] = value.slice(-1); // Only take last digit
+    setVerificationCode(newCode);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodeKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Backspace" && !verificationCode[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").slice(0, 6);
+    if (/^\d+$/.test(pastedData)) {
+      const newCode = [...verificationCode];
+      pastedData.split("").forEach((char, i) => {
+        if (i < 6) newCode[i] = char;
+      });
+      setVerificationCode(newCode);
+      inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
+    }
+  };
+
+  // Verify email code
+  const handleVerifyCode = async () => {
+    const code = verificationCode.join("");
+    if (code.length !== 6) {
+      setError("Digite o código de 6 dígitos");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const result = await verifyEmail(code);
+      if (result.verified) {
+        setIsEmailVerified(true);
+        setStep("plan");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Código inválido");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -76,6 +165,7 @@ export default function OnboardingPage() {
     setStep("confirmation");
   };
 
+  // Single consolidated request for onboarding
   const handleConfirmation = async () => {
     if (!selectedPlan || !user) return;
 
@@ -83,25 +173,25 @@ export default function OnboardingPage() {
     setError(null);
 
     try {
-      // Step 1: Create tenant
-      const tenant = await createTenant({
+      // Single consolidated request - creates tenant AND subscription
+      const result = await onboardTenant({
         name: businessInfo.name,
         email: user.email,
         phone: sanitizePhone(businessInfo.phone),
         saasPlanId: selectedPlan.id,
       });
 
-      // Step 2: Create subscription and get Mercado Pago payment URL
-      const subscription = await createSubscription(tenant.id);
-
-      // Step 3: Redirect to Mercado Pago payment page
-      // The saasStatus will be PAST_DUE until MP confirms payment via webhook
-      window.location.href = subscription.initPoint;
+      // Redirect to Mercado Pago payment page
+      if (result.subscription?.initPoint) {
+        window.location.href = result.subscription.initPoint;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
       setIsSubmitting(false);
     }
   };
+
+  const getCurrentStepIndex = () => STEPS.indexOf(step);
 
   if (isLoading) {
     return (
@@ -116,21 +206,25 @@ export default function OnboardingPage() {
       <div className="max-w-2xl mx-auto">
         {/* Progress Steps */}
         <div className="mb-8">
-          <div className="flex items-center justify-center gap-4">
-            {["business", "plan", "confirmation"].map((s, i) => (
+          <div className="flex items-center justify-center gap-2">
+            {STEPS.map((s, i) => (
               <div key={s} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step === s ||
-                    ["plan", "confirmation"].indexOf(step) >
-                      ["business", "plan", "confirmation"].indexOf(s)
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    getCurrentStepIndex() >= i
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {i + 1}
                 </div>
-                {i < 2 && <div className="w-12 h-0.5 bg-muted ml-2" />}
+                {i < STEPS.length - 1 && (
+                  <div
+                    className={`w-8 h-0.5 ml-2 transition-colors ${
+                      getCurrentStepIndex() > i ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -189,7 +283,93 @@ export default function OnboardingPage() {
             </form>
           )}
 
-          {/* Step 2: Plan Selection */}
+          {/* Step 2: Email Verification */}
+          {step === "email" && (
+            <div>
+              <h1 className="text-2xl font-bold text-foreground mb-2">
+                Verificar seu email
+              </h1>
+              <p className="text-muted-foreground mb-6">
+                Enviaremos um código de verificação para{" "}
+                <span className="font-medium text-foreground">
+                  {user?.email}
+                </span>
+              </p>
+
+              {!codeSent ? (
+                <button
+                  onClick={handleSendVerificationCode}
+                  disabled={isSendingCode}
+                  className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {isSendingCode ? "Enviando..." : "Enviar código de verificação"}
+                </button>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-3 text-center">
+                      Digite o código de 6 dígitos
+                    </label>
+                    <div
+                      className="flex justify-center gap-2"
+                      onPaste={handleCodePaste}
+                    >
+                      {verificationCode.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(el) => {
+                            inputRefs.current[index] = el;
+                          }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) =>
+                            handleCodeChange(index, e.target.value)
+                          }
+                          onKeyDown={(e) => handleCodeKeyDown(index, e)}
+                          className="w-12 h-14 text-center text-xl font-bold rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-center">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleVerifyCode}
+                    disabled={
+                      isSubmitting || verificationCode.join("").length !== 6
+                    }
+                    className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Verificando..." : "Verificar"}
+                  </button>
+
+                  <button
+                    onClick={handleSendVerificationCode}
+                    disabled={isSendingCode}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    {isSendingCode ? "Enviando..." : "Reenviar código"}
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => setStep("business")}
+                className="w-full mt-4 px-4 py-2 text-muted-foreground hover:text-foreground"
+              >
+                ← Voltar
+              </button>
+            </div>
+          )}
+
+          {/* Step 3: Plan Selection */}
           {step === "plan" && (
             <div>
               <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -271,7 +451,7 @@ export default function OnboardingPage() {
               </div>
 
               <button
-                onClick={() => setStep("business")}
+                onClick={() => setStep("email")}
                 className="w-full mt-4 px-4 py-2 text-muted-foreground hover:text-foreground"
               >
                 ← Voltar
@@ -279,7 +459,7 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 3: Confirmation */}
+          {/* Step 4: Confirmation */}
           {step === "confirmation" && selectedPlan && (
             <div>
               <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -306,6 +486,7 @@ export default function OnboardingPage() {
                   <span className="text-muted-foreground">Email:</span>
                   <span className="font-medium text-foreground">
                     {user?.email}
+                    <span className="ml-2 text-xs text-primary">✓ Verificado</span>
                   </span>
                 </div>
                 <hr className="border-border" />

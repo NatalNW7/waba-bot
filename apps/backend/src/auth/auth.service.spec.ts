@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './token.service';
-import { UnauthorizedException } from '@nestjs/common';
+import { EmailVerificationService } from './email-verification.service';
+import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { TokenExpiredException } from './exceptions/token-expired.exception';
 import { InvalidTokenException } from './exceptions/invalid-token.exception';
 import * as bcrypt from 'bcrypt';
@@ -18,6 +19,12 @@ describe('AuthService', () => {
     getTokenExpiration: jest.fn(),
   };
 
+  const mockEmailVerificationService = {
+    sendVerificationCode: jest.fn(),
+    verifyEmailCode: jest.fn(),
+    isEmailVerified: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -27,12 +34,17 @@ describe('AuthService', () => {
           useValue: {
             user: {
               findUnique: jest.fn(),
+              update: jest.fn(),
             },
           },
         },
         {
           provide: TokenService,
           useValue: mockTokenService,
+        },
+        {
+          provide: EmailVerificationService,
+          useValue: mockEmailVerificationService,
         },
       ],
     }).compile();
@@ -150,6 +162,43 @@ describe('AuthService', () => {
     });
   });
 
+  describe('sendVerificationCode', () => {
+    it('should delegate to EmailVerificationService', async () => {
+      mockEmailVerificationService.sendVerificationCode.mockResolvedValue({
+        message: 'Código de verificação enviado',
+      });
+
+      const result = await service.sendVerificationCode('user-1');
+
+      expect(result.message).toBe('Código de verificação enviado');
+      expect(mockEmailVerificationService.sendVerificationCode).toHaveBeenCalledWith('user-1');
+    });
+  });
+
+  describe('verifyEmailCode', () => {
+    it('should delegate to EmailVerificationService', async () => {
+      mockEmailVerificationService.verifyEmailCode.mockResolvedValue({
+        verified: true,
+      });
+
+      const result = await service.verifyEmailCode('user-1', '123456');
+
+      expect(result.verified).toBe(true);
+      expect(mockEmailVerificationService.verifyEmailCode).toHaveBeenCalledWith('user-1', '123456');
+    });
+  });
+
+  describe('isEmailVerified', () => {
+    it('should delegate to EmailVerificationService', async () => {
+      mockEmailVerificationService.isEmailVerified.mockResolvedValue(true);
+
+      const result = await service.isEmailVerified('user-1');
+
+      expect(result).toBe(true);
+      expect(mockEmailVerificationService.isEmailVerified).toHaveBeenCalledWith('user-1');
+    });
+  });
+
   describe('getSession', () => {
     it('should return session with COMPLETE status for user with tenant', () => {
       const user = {
@@ -181,3 +230,4 @@ describe('AuthService', () => {
     });
   });
 });
+

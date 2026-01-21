@@ -4,12 +4,14 @@ import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuthenticatedUser } from './interfaces/jwt-payload.interface';
 import { TokenService } from './token.service';
+import { EmailVerificationService } from './email-verification.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: TokenService,
+    private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -54,8 +56,6 @@ export class AuthService {
 
   /**
    * Verify a token and return its status
-   * @param token - JWT token to verify
-   * @returns Token validity status and expiration info
    */
   verifyToken(token: string): {
     valid: boolean;
@@ -71,6 +71,30 @@ export class AuthService {
       expiresAt,
       remainingMs,
     };
+  }
+
+  /**
+   * Send email verification code - delegates to EmailVerificationService
+   */
+  async sendVerificationCode(userId: string): Promise<{ message: string }> {
+    return this.emailVerificationService.sendVerificationCode(userId);
+  }
+
+  /**
+   * Verify email with code - delegates to EmailVerificationService
+   */
+  async verifyEmailCode(
+    userId: string,
+    code: string,
+  ): Promise<{ verified: boolean }> {
+    return this.emailVerificationService.verifyEmailCode(userId, code);
+  }
+
+  /**
+   * Check if user email is verified - delegates to EmailVerificationService
+   */
+  async isEmailVerified(userId: string): Promise<boolean> {
+    return this.emailVerificationService.isEmailVerified(userId);
   }
 
   /**

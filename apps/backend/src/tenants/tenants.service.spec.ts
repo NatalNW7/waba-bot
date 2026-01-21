@@ -26,6 +26,10 @@ describe('TenantsService', () => {
             saasPlan: {
               findUnique: jest.fn(),
             },
+            user: {
+              findUnique: jest.fn(),
+              update: jest.fn(),
+            },
           },
         },
 
@@ -84,7 +88,7 @@ describe('TenantsService', () => {
       jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue(null);
 
       await expect(service.create(createDto)).rejects.toThrow(
-        new BadRequestException('this saas plan does not exists'),
+        new BadRequestException('Este plano não existe'),
       );
     });
 
@@ -100,6 +104,87 @@ describe('TenantsService', () => {
       const result = await service.create(createDto);
       expect(result).toBeDefined();
       expect(repo.create).toHaveBeenCalledWith(createDto);
+    });
+  });
+
+  describe('onboard', () => {
+    const onboardDto = {
+      name: 'New Business',
+      email: 'business@example.com',
+      phone: '+5511999999999',
+      saasPlanId: 'plan-123',
+    };
+
+    it('should create tenant and subscription when email is verified', async () => {
+      // Mock email verified user
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user-1',
+        emailVerified: true,
+      });
+      (prisma.user.update as jest.Mock).mockResolvedValue({});
+
+      // Mock tenant creation (no conflicts)
+      jest.spyOn(prisma.tenant, 'findFirst').mockResolvedValue(null);
+      jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue({ id: 'plan-123' } as any);
+      jest.spyOn(repo, 'create').mockResolvedValue({
+        id: 'tenant-new',
+        name: 'New Business',
+        email: 'business@example.com',
+        phone: '+5511999999999',
+        saasPlanId: 'plan-123',
+        saasStatus: 'ACTIVE',
+      } as any);
+
+      // Mock subscription creation
+      jest.spyOn(saasService, 'createSubscription').mockResolvedValue({
+        initPoint: 'https://mp.com/pay',
+        externalId: 'mp-123',
+      });
+
+      const result = await service.onboard(onboardDto, 'user-1');
+
+      expect(result.tenant.id).toBe('tenant-new');
+      expect(result.subscription?.initPoint).toBe('https://mp.com/pay');
+      expect(saasService.createSubscription).toHaveBeenCalledWith('tenant-new');
+    });
+
+    it('should throw BadRequestException if email not verified', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user-1',
+        emailVerified: false,
+      });
+
+      await expect(service.onboard(onboardDto, 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repo.create).not.toHaveBeenCalled();
+    });
+
+    it('should skip subscription creation if createSubscription is false', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user-1',
+        emailVerified: true,
+      });
+      (prisma.user.update as jest.Mock).mockResolvedValue({});
+      jest.spyOn(prisma.tenant, 'findFirst').mockResolvedValue(null);
+      jest.spyOn(prisma.saasPlan, 'findUnique').mockResolvedValue({ id: 'plan-123' } as any);
+      jest.spyOn(repo, 'create').mockResolvedValue({
+        id: 'tenant-new',
+        name: 'New Business',
+        email: 'business@example.com',
+        phone: '+5511999999999',
+        saasPlanId: 'plan-123',
+        saasStatus: 'ACTIVE',
+      } as any);
+
+      const result = await service.onboard(
+        { ...onboardDto, createSubscription: false },
+        'user-1',
+      );
+
+      expect(result.tenant.id).toBe('tenant-new');
+      expect(result.subscription).toBeUndefined();
+      expect(saasService.createSubscription).not.toHaveBeenCalled();
     });
   });
 
@@ -148,3 +233,4 @@ describe('TenantsService', () => {
     });
   });
 });
+

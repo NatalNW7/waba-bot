@@ -23,8 +23,32 @@ export interface SubscribeResponse {
   externalId: string;
 }
 
+export interface OnboardTenantRequest {
+  name: string;
+  email: string;
+  phone: string;
+  saasPlanId: string;
+  createSubscription?: boolean;
+}
+
+export interface OnboardTenantResponse {
+  tenant: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    saasPlanId: string;
+    saasStatus: string;
+  };
+  subscription?: {
+    initPoint: string;
+    externalId: string;
+  };
+}
+
 /**
  * Create a new tenant
+ * @deprecated Use onboardTenant instead for consolidated onboarding
  */
 export async function createTenant(
   data: CreateTenantRequest,
@@ -52,6 +76,7 @@ export async function createTenant(
 
 /**
  * Create SaaS subscription for tenant and get Mercado Pago payment URL
+ * @deprecated Use onboardTenant instead for consolidated onboarding
  */
 export async function createSubscription(
   tenantId: string,
@@ -75,3 +100,83 @@ export async function createSubscription(
 
   return response.json() as Promise<SubscribeResponse>;
 }
+
+/**
+ * Consolidated onboarding - creates tenant AND subscription in one request
+ */
+export async function onboardTenant(
+  data: OnboardTenantRequest,
+): Promise<OnboardTenantResponse> {
+  const token = getAuthToken();
+
+  const response = await fetch(`${BACKEND_URL}/tenants/onboard`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(
+      (error as { message?: string }).message || "Falha ao criar negócio",
+    );
+  }
+
+  return response.json() as Promise<OnboardTenantResponse>;
+}
+
+/**
+ * Send email verification code
+ */
+export async function sendVerificationEmail(): Promise<{ message: string }> {
+  const token = getAuthToken();
+
+  const response = await fetch(`${BACKEND_URL}/auth/send-verification`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(
+      (error as { message?: string }).message ||
+        "Falha ao enviar código de verificação",
+    );
+  }
+
+  return response.json() as Promise<{ message: string }>;
+}
+
+/**
+ * Verify email with code
+ */
+export async function verifyEmail(
+  code: string,
+): Promise<{ verified: boolean }> {
+  const token = getAuthToken();
+
+  const response = await fetch(`${BACKEND_URL}/auth/verify-email`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(
+      (error as { message?: string }).message || "Código inválido ou expirado",
+    );
+  }
+
+  return response.json() as Promise<{ verified: boolean }>;
+}
+
