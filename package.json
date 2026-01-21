@@ -15,6 +15,7 @@
     "clean": "turbo clean && rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {
+    "eslint-module-utils": "^2.12.1",
     "prettier": "^3.4.2",
     "turbo": "^2.7.3"
   },
