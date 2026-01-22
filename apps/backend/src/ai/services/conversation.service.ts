@@ -7,6 +7,7 @@ import {
   CustomerContext,
   ServiceInfo,
   OperatingHourInfo,
+  CustomerInfo,
 } from '../interfaces/conversation.interface';
 
 /**
@@ -26,9 +27,9 @@ export class ConversationService {
    */
   async getOrCreateContext(
     tenantId: string,
-    customerPhone: string,
+    customerInfo: CustomerInfo,
   ): Promise<ConversationContext> {
-    const cacheKey = this.getCacheKey(tenantId, customerPhone);
+    const cacheKey = this.getCacheKey(tenantId, customerInfo.phone);
 
     // Check cache first
     const cached = this.conversationCache.get(cacheKey);
@@ -38,7 +39,9 @@ export class ConversationService {
 
     // Build new context
     const tenant = await this.fetchTenantContext(tenantId);
-    const customer = await this.findOrCreateCustomer(tenantId, customerPhone);
+    const customer = await this.findOrCreateCustomer(tenantId, customerInfo);
+    this.logger.log(`Fetched tenant context: ${JSON.stringify(tenant)}`);
+    this.logger.log(`Fetched customer context: ${JSON.stringify(customer)}`);
 
     const context: ConversationContext = {
       conversationId: `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -106,7 +109,6 @@ export class ConversationService {
         operatingHours: true,
       },
     });
-
     if (!tenant) {
       throw new Error(`Tenant not found: ${tenantId}`);
     }
@@ -117,6 +119,7 @@ export class ConversationService {
       price: Number(s.price),
       duration: s.duration,
     }));
+    this.logger.log(`Fetched tenant services: ${JSON.stringify(services)}`);
 
     const operatingHours: OperatingHourInfo[] = tenant.operatingHours.map(
       (oh) => ({
@@ -125,6 +128,9 @@ export class ConversationService {
         endTime: oh.endTime,
         isClosed: oh.isClosed,
       }),
+    );
+    this.logger.log(
+      `Fetched tenant operating hours: ${JSON.stringify(operatingHours)}`,
     );
 
     return {
@@ -138,20 +144,20 @@ export class ConversationService {
 
   private async findOrCreateCustomer(
     tenantId: string,
-    phone: string,
+    customerInfo: CustomerInfo,
   ): Promise<CustomerContext> {
     // First, try to find existing customer
     let customer = await this.prisma.customer.findUnique({
-      where: { phone },
+      where: { phone: customerInfo.phone },
     });
 
     if (!customer) {
       // Create new customer
       customer = await this.prisma.customer.create({
-        data: { phone },
+        data: { phone: customerInfo.phone, name: customerInfo.name },
       });
       this.logger.log(
-        `Created new customer: ${customer.id} for phone: ${phone}`,
+        `Created new customer: ${customer.id} for phone: ${customerInfo.phone}`,
       );
     }
 

@@ -86,6 +86,6 @@ Até lá! 💇‍♀️`;
    * Format error message for user.
    */
   formatErrorMessage(): string {
-    return '😔 Desculpe, ocorreu um problema. Por favor, tente novamente em alguns instantes.';
+    return '😔 Nosso serviço está temporariamente indisponível. Por favor, tente novamente em alguns instantes.';
   }
 }

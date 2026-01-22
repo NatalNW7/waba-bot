@@ -15,7 +15,10 @@ import {
  */
 export interface ProcessMessageInput {
   tenantId: string;
-  customerPhone: string;
+  customerInfo: {
+    name: string;
+    phone: string;
+  };
   messageText: string;
 }
 
@@ -54,16 +57,16 @@ export class LLMOrchestratorService {
   async processMessage(
     input: ProcessMessageInput,
   ): Promise<ProcessMessageResult> {
-    const { tenantId, customerPhone, messageText } = input;
+    const { tenantId, customerInfo, messageText } = input;
 
     this.logger.debug(
-      `Processing message from ${customerPhone} for tenant ${tenantId}`,
+      `Processing message from ${customerInfo.phone} for tenant ${tenantId}`,
     );
 
     // Get or create conversation context
     const context = await this.conversationService.getOrCreateContext(
       tenantId,
-      customerPhone,
+      customerInfo,
     );
 
     // Add user message to context
@@ -75,6 +78,7 @@ export class LLMOrchestratorService {
 
     // Build system prompt
     const systemPrompt = this.promptBuilder.buildSystemPrompt(context.tenant);
+    this.logger.debug(`System prompt: ${systemPrompt}`);
 
     // Get available tools
     const tools = this.toolCoordinator.hasTools()

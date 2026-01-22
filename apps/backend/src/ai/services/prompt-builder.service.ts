@@ -16,7 +16,8 @@ export class PromptBuilderService {
     const servicesText = this.formatServices(tenant.services);
     const hoursText = this.formatOperatingHours(tenant);
 
-    return `Você é o assistente virtual do salão "${tenant.tenantName}".
+    return `Hoje é dia ${new Date().toLocaleDateString('pt-BR')}.
+Você é o assistente virtual do salão "${tenant.tenantName}".
 Seu objetivo é ajudar clientes a agendar serviços de forma simpática e eficiente.
 
 ## Sua Personalidade

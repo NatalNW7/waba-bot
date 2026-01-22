@@ -67,6 +67,11 @@ export interface CustomerContext {
   name?: string;
 }
 
+export interface CustomerInfo {
+  phone: string;
+  name?: string;
+}
+
 /**
  * Full conversation context combining tenant and customer.
  */

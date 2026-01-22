@@ -40,7 +40,10 @@ export class MessageRouterService {
 
       const message = value.messages[0];
       const phoneNumberId = value.metadata.phone_number_id;
-      const customerPhone = message.from;
+      const customerInfo = {
+        name: value.contacts?.[0]?.profile?.name,
+        phone: message.from,
+      };
 
       // Get message text
       const messageText = this.extractMessageText(message);
@@ -72,7 +75,7 @@ export class MessageRouterService {
       this.logger.debug(`Routing message to AI for tenant ${tenant.id}`);
       const aiResult = await this.llmOrchestrator.processMessage({
         tenantId: tenant.id,
-        customerPhone,
+        customerInfo,
         messageText,
       });
 

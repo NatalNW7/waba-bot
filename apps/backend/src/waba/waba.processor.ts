@@ -41,7 +41,10 @@ export class WabaProcessor {
 
       if (!result.success) {
         this.logger.warn(`Message routing failed: ${result.error}`);
-        // Could send error message to user here
+        // Send error message to user
+        const wabaApi = WabaAPI();
+        const errorMessage = this.messageFormatter.formatErrorMessage();
+        await wabaApi.sendMessage(phoneId, customerPhone, errorMessage);
         return;
       }
 

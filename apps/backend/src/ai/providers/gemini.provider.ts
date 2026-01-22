@@ -22,7 +22,7 @@ export class GeminiProvider implements ILLMProvider {
     }
 
     this.client = new GoogleGenAI({ apiKey });
-    this.modelName = process.env.AI_DEFAULT_MODEL || 'gemini-1.5-flash';
+    this.modelName = process.env.AI_DEFAULT_MODEL || 'gemini-2.0-flash';
   }
 
   getProviderName(): string {
@@ -36,10 +36,10 @@ export class GeminiProvider implements ILLMProvider {
   async generateResponse(params: GenerateParams): Promise<LLMResponse> {
     const { messages, systemPrompt, tools, maxTokens } = params;
 
-    try {
-      const contents = this.formatMessages(messages);
-      const functionDeclarations = tools ? this.formatTools(tools) : undefined;
+    const contents = this.formatMessages(messages);
+    const functionDeclarations = tools ? this.formatTools(tools) : undefined;
 
+    const operation = async () => {
       const response = await this.client.models.generateContent({
         model: this.modelName,
         contents,
@@ -49,12 +49,59 @@ export class GeminiProvider implements ILLMProvider {
           tools: functionDeclarations ? [{ functionDeclarations }] : undefined,
         },
       });
-
       return this.parseResponse(response);
-    } catch (error) {
-      this.logger.error('Gemini API error:', error);
-      throw error;
+    };
+
+    return this.withRetry(operation);
+  }
+
+  /**
+   * Execute an operation with exponential backoff retry logic.
+   */
+  private async withRetry<T>(operation: () => Promise<T>): Promise<T> {
+    const maxRetries = parseInt(process.env.AI_MAX_RETRIES || '3', 10);
+    const baseDelay = 1000;
+    const maxDelay = 30000;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        const isRetryable = this.isRetryableError(error);
+        const isLastAttempt = attempt === maxRetries;
+
+        if (!isRetryable || isLastAttempt) {
+          this.logger.error('Gemini API error:', error);
+          throw error;
+        }
+
+        const jitter = Math.random() * 1000;
+        const delay = Math.min(
+          baseDelay * Math.pow(2, attempt) + jitter,
+          maxDelay,
+        );
+        this.logger.warn(
+          `Rate limit hit. Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`,
+        );
+        await this.sleep(delay);
+      }
     }
+    throw new Error('Max retries exceeded');
+  }
+
+  /**
+   * Check if an error is retryable (rate limit or transient server error).
+   */
+  private isRetryableError(error: any): boolean {
+    const status = error?.status || error?.response?.status;
+    return [429, 500, 503].includes(status);
+  }
+
+  /**
+   * Sleep for a given number of milliseconds.
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private formatMessages(
