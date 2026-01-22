@@ -104,6 +104,17 @@ export class TenantEntity {
   @ApiProperty({ type: () => [PaymentEntity], required: false })
   payments?: PaymentEntity[];
 
+  /** Whether AI assistant is enabled */
+  @ApiProperty({ example: true, default: true })
+  aiEnabled: boolean;
+
+  /** Custom system prompt for this tenant */
+  @ApiProperty({
+    example: 'Voce é um assistente de barbearia...',
+    required: false,
+  })
+  aiCustomPrompt?: string;
+
   /** Creation timestamp */
   @ApiProperty()
   createdAt: Date;

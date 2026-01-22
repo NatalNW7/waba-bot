@@ -31,5 +31,26 @@ export class OnboardTenantDto {
   })
   @IsOptional()
   @IsBoolean()
+  @ApiPropertyOptional({
+    description:
+      'Whether to create subscription and get payment URL (default: true)',
+    default: true,
+  })
   createSubscription?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({
+    description: 'Whether to enable the AI assistant (default: true)',
+    default: true,
+  })
+  aiEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Custom system prompt for the AI assistant',
+    example: 'Você é um assistente de barbearia...',
+  })
+  @IsOptional()
+  @IsString()
+  aiCustomPrompt?: string;
 }

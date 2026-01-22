@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsEnum,
   IsDateString,
+  IsBoolean,
 } from 'class-validator';
 import { SubscriptionStatus } from '@prisma/client';
 
@@ -115,4 +116,20 @@ export class CreateTenantDto {
   @IsString()
   @IsNotEmpty()
   saasPlanId: string;
+
+  /**
+   * Whether AI assistant is enabled
+   * @example true
+   */
+  @IsBoolean()
+  @IsOptional()
+  aiEnabled?: boolean;
+
+  /**
+   * Custom system prompt for this tenant
+   * @example "Voce é um assistente de barbearia..."
+   */
+  @IsString()
+  @IsOptional()
+  aiCustomPrompt?: string;
 }
