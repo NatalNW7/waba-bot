@@ -165,6 +165,14 @@ model Tenant {
   operatingHours OperatingHour[]
   payments       Payment[]
 
+  // AI Configuration (platform manages provider globally)
+  aiEnabled      Boolean @default(true) @map("ai_enabled")
+  aiCustomPrompt String? @map("ai_custom_prompt")
+
+  // AI Relations
+  conversationMessages ConversationMessage[]
+  aiUsage              AIUsage[]
+
   // User authentication link
   user User?
 
@@ -280,8 +288,9 @@ model Customer {
   // Um cliente pode estar em vários salões
   tenantLinks TenantCustomer[]
 
-  appointments Appointment[]
-  payments     Payment[]
+  appointments         Appointment[]
+  payments             Payment[]
+  conversationMessages ConversationMessage[]
 
   // User authentication link
   user User?
@@ -380,4 +389,42 @@ model Payment {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("payments")
+}
+
+// --------------------------------------
+// AI MODELS
+// --------------------------------------
+
+model ConversationMessage {
+  id        String   @id @default(uuid())
+  role      String   // 'user' | 'assistant' | 'system' | 'tool'
+  content   String
+  toolCalls Json?    @map("tool_calls")
+
+  tenantId   String   @map("tenant_id")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, customerId, createdAt])
+  @@map("conversation_messages")
+}
+
+model AIUsage {
+  id               String   @id @default(uuid())
+  promptTokens     Int      @map("prompt_tokens")
+  completionTokens Int      @map("completion_tokens")
+  model            String
+  billingMonth     String   @map("billing_month") // "2026-01"
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, billingMonth])
+  @@map("ai_usage")
 }
