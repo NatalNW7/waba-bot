@@ -34,11 +34,11 @@ export function PlanSelectionStep({
   onBack,
 }: PlanSelectionStepProps) {
   const [selectedInterval, setSelectedInterval] = useState<PaymentInterval>(
-    PaymentInterval.MONTHLY
+    PaymentInterval.MONTHLY,
   );
 
   const filteredPlans = plans.filter(
-    (plan) => plan.interval === selectedInterval
+    (plan) => plan.interval === selectedInterval,
   );
 
   return (

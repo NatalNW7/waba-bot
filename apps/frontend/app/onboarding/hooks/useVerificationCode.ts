@@ -6,7 +6,10 @@ interface UseVerificationCodeReturn {
   code: string[];
   inputRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
   handleChange: (index: number, value: string) => void;
-  handleKeyDown: (index: number, e: React.KeyboardEvent<HTMLInputElement>) => void;
+  handleKeyDown: (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => void;
   handlePaste: (e: React.ClipboardEvent) => void;
   reset: () => void;
   isComplete: boolean;
@@ -19,19 +22,22 @@ export function useVerificationCode(): UseVerificationCodeReturn {
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleChange = useCallback((index: number, value: string) => {
-    // Only allow digits
-    if (!/^\d*$/.test(value)) return;
+  const handleChange = useCallback(
+    (index: number, value: string) => {
+      // Only allow digits
+      if (!/^\d*$/.test(value)) return;
 
-    const newCode = [...code];
-    newCode[index] = value.slice(-1); // Only take last digit
-    setCode(newCode);
+      const newCode = [...code];
+      newCode[index] = value.slice(-1); // Only take last digit
+      setCode(newCode);
 
-    // Auto-focus next input
-    if (value && index < CODE_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  }, [code]);
+      // Auto-focus next input
+      if (value && index < CODE_LENGTH - 1) {
+        inputRefs.current[index + 1]?.focus();
+      }
+    },
+    [code],
+  );
 
   const handleKeyDown = useCallback(
     (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -39,13 +45,13 @@ export function useVerificationCode(): UseVerificationCodeReturn {
         inputRefs.current[index - 1]?.focus();
       }
     },
-    [code]
+    [code],
   );
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").slice(0, CODE_LENGTH);
-    
+
     if (/^\d+$/.test(pastedData)) {
       const newCode = Array(CODE_LENGTH).fill("");
       pastedData.split("").forEach((char, i) => {

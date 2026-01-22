@@ -200,5 +200,3 @@ export async function getEmailStatus(): Promise<{ emailVerified: boolean }> {
 
   return response.json() as Promise<{ emailVerified: boolean }>;
 }
-
-

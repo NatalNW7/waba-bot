@@ -23,11 +23,11 @@ const STEPS: OnboardingStep[] = ["business", "email", "plan", "confirmation"];
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
-  
+
   // Step management
   const [step, setStep] = useState<OnboardingStep>("business");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  
+
   // Form state
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
     name: "",
@@ -35,7 +35,7 @@ export default function OnboardingPage() {
   });
   const [selectedPlan, setSelectedPlan] = useState<ISaasPlan | null>(null);
   const [plans, setPlans] = useState<ISaasPlan[]>([]);
-  
+
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
