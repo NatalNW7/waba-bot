@@ -20,9 +20,14 @@ export class GeminiProvider implements ILLMProvider {
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY environment variable is not set');
     }
-
-    this.client = new GoogleGenAI({ apiKey });
-    this.modelName = process.env.AI_DEFAULT_MODEL || 'gemini-2.0-flash';
+    const modelName = process.env.AI_DEFAULT_MODEL;
+    if (!modelName) {
+      throw new Error('AI_DEFAULT_MODEL environment variable is not set');
+    }
+    this.client = new GoogleGenAI({
+      apiKey,
+    });
+    this.modelName = modelName;
   }
 
   getProviderName(): string {
