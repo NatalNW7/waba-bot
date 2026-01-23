@@ -1,0 +1,246 @@
+/**
+ * Client-side API functions
+ * Used with React Query for data fetching in client components
+ */
+
+/**
+ * Get the base API URL for client-side requests
+ */
+const getApiUrl = () => {
+  // In the browser, use relative URL to leverage Next.js proxy or same-origin
+  // The actual backend URL is configured in next.config.js rewrites
+  return process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+};
+
+/**
+ * Get auth token from session/cookies for client-side requests
+ */
+const getAuthToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+
+  // Get token from localStorage or cookie (set during login)
+  return localStorage.getItem("accessToken");
+};
+
+/**
+ * Custom error class for API errors
+ */
+export class ClientApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public statusText: string,
+    public data?: unknown,
+  ) {
+    super(message);
+    this.name = "ClientApiError";
+  }
+}
+
+/**
+ * Base fetch wrapper for client-side API calls
+ */
+async function clientFetch<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const baseUrl = getApiUrl();
+  const url = `${baseUrl}${endpoint}`;
+  const token = getAuthToken();
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  if (token) {
+    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    let errorData: unknown;
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = null;
+    }
+    throw new ClientApiError(
+      `API request failed: ${response.statusText}`,
+      response.status,
+      response.statusText,
+      errorData,
+    );
+  }
+
+  // Handle 204 No Content
+  if (response.status === 204) {
+    return null as T;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+import {
+  IAppointment,
+  ICreateAppointment,
+  IUpdateAppointment,
+  ICustomer,
+  ICreateCustomer,
+  IUpdateCustomer,
+  IService,
+  ICreateService,
+  IUpdateService,
+  IPlan,
+  ICreatePlan,
+  IUpdatePlan,
+  IPayment,
+  IOperatingHour,
+  IUpdateOperatingHour,
+  ICalendar,
+  ITenant,
+  IUpdateTenant,
+} from "@repo/api-types";
+
+// ... (keep generic helper functions like clientFetch unchanged if not modifying them specifically yet, assuming they are fine)
+
+// ============================================
+// Appointments API
+// ============================================
+
+export interface AppointmentFilters {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  customerId?: string;
+}
+
+export const appointmentsApi = {
+  list: (filters?: AppointmentFilters) => {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.set("startDate", filters.startDate);
+    if (filters?.endDate) params.set("endDate", filters.endDate);
+    if (filters?.status) params.set("status", filters.status);
+    if (filters?.customerId) params.set("customerId", filters.customerId);
+
+    const query = params.toString();
+    return clientFetch<IAppointment[]>(
+      `/appointments${query ? `?${query}` : ""}`,
+    );
+  },
+
+  get: (id: string) => clientFetch<IAppointment>(`/appointments/${id}`),
+
+  create: (data: Omit<ICreateAppointment, "tenantId">) =>
+    clientFetch<IAppointment>("/appointments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // ...
+
+  create: (data: Omit<ICreateCustomer, "tenantId">) =>
+    clientFetch<ICustomer>("/customers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // ...
+
+  create: (data: Omit<ICreateService, "tenantId">) =>
+    clientFetch<IService>("/services", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // ...
+
+  create: (data: Omit<ICreatePlan, "tenantId">) =>
+    clientFetch<IPlan>("/plans", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: IUpdatePlan) =>
+    clientFetch<IPlan>(`/plans/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    clientFetch<void>(`/plans/${id}`, { method: "DELETE" }),
+};
+
+// ============================================
+// Dashboard Stats API
+// ============================================
+
+export interface DashboardStats {
+  totalAppointments: number;
+  totalCustomers: number;
+  totalRevenue: number;
+  appointmentsByStatus: Record<string, number>;
+  recentAppointments: IAppointment[];
+}
+
+export const dashboardApi = {
+  getStats: () => clientFetch<DashboardStats>("/dashboard/stats"),
+};
+
+// ============================================
+// Payments API
+// ============================================
+
+export const paymentsApi = {
+  list: () => clientFetch<IPayment[]>("/payments"),
+  get: (id: string) => clientFetch<IPayment>(`/payments/${id}`),
+};
+
+// ============================================
+// Operating Hours API
+// ============================================
+
+export const operatingHoursApi = {
+  list: () => clientFetch<IOperatingHour[]>("/operating-hours"),
+  update: (id: string, data: IUpdateOperatingHour) =>
+    clientFetch<IOperatingHour>(`/operating-hours/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  bulkUpdate: (data: IUpdateOperatingHour[]) =>
+    clientFetch<IOperatingHour[]>("/operating-hours/bulk", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ============================================
+// Calendars API
+// ============================================
+
+export const calendarsApi = {
+  get: () => clientFetch<ICalendar>("/calendars"),
+  connect: (provider: string) =>
+    clientFetch<ICalendar>(`/calendars/connect/${provider}`, {
+      method: "POST",
+    }),
+  disconnect: () =>
+    clientFetch<void>("/calendars/disconnect", { method: "POST" }),
+};
+
+// ============================================
+// Tenant API (current user's tenant)
+// ============================================
+
+export const tenantApi = {
+  getCurrent: () => clientFetch<ITenant>("/tenants/me"),
+  update: (data: IUpdateTenant) =>
+    clientFetch<ITenant>("/tenants/me", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+};

@@ -135,44 +135,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border
+          fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] w-64 bg-card border-r border-border
           transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0 lg:static lg:z-auto
+          lg:relative lg:top-0 lg:h-auto lg:translate-x-0 lg:z-auto
+          flex flex-col
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        {/* Logo/Brand */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">
-                C
-              </span>
-            </div>
-            <span className="font-semibold text-foreground">Cliqtree</span>
-          </Link>
-          <button
-            onClick={onClose}
-            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="p-4 space-y-1">
+        {/* Navigation - takes remaining space */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
@@ -197,29 +168,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             );
           })}
         </nav>
-
-        {/* Bottom section */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
-          <Link
-            href="/profile"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-            <span className="font-medium">Meu Perfil</span>
-          </Link>
-        </div>
       </aside>
     </>
   );

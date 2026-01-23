@@ -1,17 +1,23 @@
 "use client";
 
-import { mockTenant, mockPayments } from "@/lib/dashboard/mocks";
+import { useCurrentTenant, usePayments } from "@/lib/hooks";
 import {
   SubscriptionStatus,
   subscriptionStatusColors,
   paymentIntervalLabels,
 } from "@/lib/dashboard/types";
+import type { DashboardTenant, DashboardPayment } from "@/lib/dashboard/types";
 
 export default function FinanceSettingsPage() {
-  const tenant = mockTenant;
-  const payments = mockPayments;
+  // Fetch data using React Query
+  const { data: tenantData, isLoading: tenantLoading } = useCurrentTenant();
+  const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
 
-  const hasMercadoPago = !!tenant.mpAccessToken;
+  const tenant = (tenantData as DashboardTenant) || null;
+  const payments = (paymentsData as DashboardPayment[]) || [];
+  const isLoading = tenantLoading || paymentsLoading;
+
+  const hasMercadoPago = !!tenant?.mpAccessToken;
 
   const statusLabels: Record<SubscriptionStatus, string> = {
     [SubscriptionStatus.ACTIVE]: "Ativa",
@@ -19,6 +25,33 @@ export default function FinanceSettingsPage() {
     [SubscriptionStatus.CANCELED]: "Cancelada",
     [SubscriptionStatus.EXPIRED]: "Expirada",
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-5 w-64 bg-muted rounded mt-2 animate-pulse" />
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="bg-card rounded-xl border border-border p-6 animate-pulse">
+            <div className="h-32 bg-muted rounded" />
+          </div>
+          <div className="bg-card rounded-xl border border-border p-6 animate-pulse">
+            <div className="h-32 bg-muted rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tenant) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        Erro ao carregar dados do tenant
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

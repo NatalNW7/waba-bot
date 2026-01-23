@@ -109,7 +109,7 @@ export default function GlobalError({
                   padding: "0.75rem 1rem",
                   borderRadius: "0.5rem",
                   fontWeight: 500,
-                  background: "#25D366",
+                  background: "#1E3A5F",
                   color: "white",
                   border: "none",
                   cursor: "pointer",
@@ -117,10 +117,10 @@ export default function GlobalError({
                   transition: "background 0.2s",
                 }}
                 onMouseOver={(e) =>
-                  (e.currentTarget.style.background = "#20b858")
+                  (e.currentTarget.style.background = "#162d4a")
                 }
                 onMouseOut={(e) =>
-                  (e.currentTarget.style.background = "#25D366")
+                  (e.currentTarget.style.background = "#1E3A5F")
                 }
               >
                 <svg

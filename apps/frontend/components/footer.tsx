@@ -131,7 +131,7 @@ export function Footer() {
               href="https://wa.me/5511913339320?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Cliqtree"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-whatsapp-dark transition-all hover:scale-105"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-barber-red transition-all hover:scale-105"
             >
               <MessageCircle className="w-5 h-5" />
               Começar a agendar no WhatsApp

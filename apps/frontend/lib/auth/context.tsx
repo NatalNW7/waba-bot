@@ -201,7 +201,7 @@ export function getAuthToken(): string | null {
 
   // Return null if token is expired
   if (token && isTokenExpired(token)) {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
     return null;
   }
 

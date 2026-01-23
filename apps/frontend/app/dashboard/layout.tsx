@@ -39,16 +39,16 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebar.isOpen} onClose={sidebar.close} />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header at the very top - full width */}
+      <DashboardHeader onMenuClick={sidebar.toggle} />
 
-      {/* Main content area */}
-      <div className="lg:ml-64 min-h-screen flex flex-col">
-        {/* Header */}
-        <DashboardHeader onMenuClick={sidebar.toggle} />
+      {/* Content area with sidebar */}
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <Sidebar isOpen={sidebar.isOpen} onClose={sidebar.close} />
 
-        {/* Page content */}
+        {/* Main content area */}
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>

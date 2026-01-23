@@ -1,8 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { mockServices, mockPlans } from "@/lib/dashboard/mocks";
+import {
+  useServices,
+  usePlans,
+  useCreateService,
+  useUpdateService,
+  useDeleteService,
+  useCreatePlan,
+  useUpdatePlan,
+  useDeletePlan,
+} from "@/lib/hooks";
 import type { DashboardService, DashboardPlan } from "@/lib/dashboard/types";
+import { PaymentInterval } from "@repo/api-types";
 
 type Tab = "services" | "plans";
 
@@ -14,6 +24,14 @@ export default function CatalogPage() {
   const [editingPlan, setEditingPlan] = useState<DashboardPlan | null>(null);
   const [showNewServiceModal, setShowNewServiceModal] = useState(false);
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
+
+  // Fetch data using React Query
+  const { data: servicesData, isLoading: servicesLoading } = useServices();
+  const { data: plansData, isLoading: plansLoading } = usePlans();
+
+  const services = (servicesData as DashboardService[]) || [];
+  const plans = (plansData as DashboardPlan[]) || [];
+  const isLoading = servicesLoading || plansLoading;
 
   return (
     <div className="space-y-6">
@@ -61,7 +79,7 @@ export default function CatalogPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            Serviços ({mockServices.length})
+            Serviços ({isLoading ? "..." : services.length})
           </button>
           <button
             onClick={() => setActiveTab("plans")}
@@ -71,16 +89,24 @@ export default function CatalogPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            Planos ({mockPlans.length})
+            Planos ({isLoading ? "..." : plans.length})
           </button>
         </div>
       </div>
 
       {/* Content */}
       {activeTab === "services" ? (
-        <ServicesTab services={mockServices} onEdit={setEditingService} />
+        <ServicesTab
+          services={services}
+          onEdit={setEditingService}
+          isLoading={servicesLoading}
+        />
       ) : (
-        <PlansTab plans={mockPlans} onEdit={setEditingPlan} />
+        <PlansTab
+          plans={plans}
+          onEdit={setEditingPlan}
+          isLoading={plansLoading}
+        />
       )}
 
       {/* Modals */}
@@ -110,10 +136,33 @@ export default function CatalogPage() {
 function ServicesTab({
   services,
   onEdit,
+  isLoading = false,
 }: {
   services: DashboardService[];
   onEdit: (service: DashboardService) => void;
+  isLoading?: boolean;
 }) {
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-card rounded-xl border border-border p-4 animate-pulse"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="h-5 w-32 bg-muted rounded mb-2" />
+                <div className="h-4 w-20 bg-muted rounded" />
+              </div>
+            </div>
+            <div className="h-8 w-24 bg-muted rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {services.map((service) => (
@@ -178,10 +227,34 @@ function ServicesTab({
 function PlansTab({
   plans,
   onEdit,
+  isLoading = false,
 }: {
   plans: DashboardPlan[];
   onEdit: (plan: DashboardPlan) => void;
+  isLoading?: boolean;
 }) {
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-card rounded-xl border border-border p-4 animate-pulse"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="h-5 w-32 bg-muted rounded mb-2" />
+                <div className="h-4 w-16 bg-muted rounded" />
+              </div>
+            </div>
+            <div className="h-8 w-24 bg-muted rounded mb-3" />
+            <div className="h-4 w-full bg-muted rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((plan) => (
@@ -287,12 +360,50 @@ function ServiceModal({
   service: DashboardService | null;
   onClose: () => void;
 }) {
+  const createMutation = useCreateService();
+  const updateMutation = useUpdateService();
+  const deleteMutation = useDeleteService();
+
   const isEdit = !!service;
   const [name, setName] = useState(service?.name || "");
   const [price, setPrice] = useState(service?.price.toString() || "");
   const [duration, setDuration] = useState(
     service?.duration.toString() || "30",
   );
+
+  const isLoading =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
+
+  const handleSubmit = () => {
+    const data = {
+      name,
+      price: parseFloat(price),
+      duration: parseInt(duration),
+    };
+
+    if (isEdit && service) {
+      updateMutation.mutate(
+        { id: service.id, data },
+        {
+          onSuccess: () => onClose(),
+        },
+      );
+    } else {
+      createMutation.mutate(data, {
+        onSuccess: () => onClose(),
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    if (service && confirm("Tem certeza que deseja excluir este serviço?")) {
+      deleteMutation.mutate(service.id, {
+        onSuccess: () => onClose(),
+      });
+    }
+  };
 
   return (
     <>
@@ -371,19 +482,32 @@ function ServiceModal({
 
         <div className="p-4 border-t border-border flex gap-2">
           {isEdit && (
-            <button className="px-4 py-2.5 text-destructive font-medium hover:bg-destructive/10 rounded-lg transition-colors">
-              Excluir
+            <button
+              onClick={handleDelete}
+              disabled={isLoading}
+              className="px-4 py-2.5 text-destructive font-medium hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
             </button>
           )}
           <div className="flex-1" />
           <button
             onClick={onClose}
-            className="px-4 py-2.5 border border-border rounded-lg text-foreground font-medium hover:bg-muted transition-colors"
+            disabled={isLoading}
+            className="px-4 py-2.5 border border-border rounded-lg text-foreground font-medium hover:bg-muted transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
-          <button className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-            {isEdit ? "Salvar" : "Criar"}
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading || !name || !price}
+            className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {createMutation.isPending || updateMutation.isPending
+              ? "Salvando..."
+              : isEdit
+                ? "Salvar"
+                : "Criar"}
           </button>
         </div>
       </div>
@@ -398,6 +522,10 @@ function PlanModal({
   plan: DashboardPlan | null;
   onClose: () => void;
 }) {
+  const createMutation = useCreatePlan();
+  const updateMutation = useUpdatePlan();
+  const deleteMutation = useDeletePlan();
+
   const isEdit = !!plan;
   const [name, setName] = useState(plan?.name || "");
   const [description, setDescription] = useState(plan?.description || "");
@@ -406,6 +534,42 @@ function PlanModal({
   const [maxAppointments, setMaxAppointments] = useState(
     plan?.maxAppointments.toString() || "-1",
   );
+
+  const isLoading =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
+
+  const handleSubmit = () => {
+    const data = {
+      name,
+      description,
+      price: parseFloat(price),
+      interval: interval as PaymentInterval,
+      maxAppointments: parseInt(maxAppointments),
+    };
+
+    if (isEdit && plan) {
+      updateMutation.mutate(
+        { id: plan.id, data },
+        {
+          onSuccess: () => onClose(),
+        },
+      );
+    } else {
+      createMutation.mutate(data, {
+        onSuccess: () => onClose(),
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    if (plan && confirm("Tem certeza que deseja excluir este plano?")) {
+      deleteMutation.mutate(plan.id, {
+        onSuccess: () => onClose(),
+      });
+    }
+  };
 
   return (
     <>
@@ -512,19 +676,32 @@ function PlanModal({
 
         <div className="p-4 border-t border-border flex gap-2">
           {isEdit && (
-            <button className="px-4 py-2.5 text-destructive font-medium hover:bg-destructive/10 rounded-lg transition-colors">
-              Excluir
+            <button
+              onClick={handleDelete}
+              disabled={isLoading}
+              className="px-4 py-2.5 text-destructive font-medium hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
             </button>
           )}
           <div className="flex-1" />
           <button
             onClick={onClose}
-            className="px-4 py-2.5 border border-border rounded-lg text-foreground font-medium hover:bg-muted transition-colors"
+            disabled={isLoading}
+            className="px-4 py-2.5 border border-border rounded-lg text-foreground font-medium hover:bg-muted transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
-          <button className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-            {isEdit ? "Salvar" : "Criar"}
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading || !name || !price}
+            className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {createMutation.isPending || updateMutation.isPending
+              ? "Salvando..."
+              : isEdit
+                ? "Salvar"
+                : "Criar"}
           </button>
         </div>
       </div>

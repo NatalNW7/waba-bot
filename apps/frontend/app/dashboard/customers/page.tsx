@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { mockCustomers, mockPlans } from "@/lib/dashboard/mocks";
+import { useCustomers, usePlans } from "@/lib/hooks";
 import type { DashboardCustomer, DashboardPlan } from "@/lib/dashboard/types";
 import { SubscriptionStatus } from "@/lib/dashboard/types";
+import { StatCard } from "@/components/dashboard/stat-card";
 
 type StatusFilter = "all" | "subscriber" | "past_due" | "canceled" | "walkin";
 
@@ -13,9 +14,23 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] =
     useState<DashboardCustomer | null>(null);
 
+  // Fetch data using React Query
+  const { data: customersData, isLoading: customersLoading } = useCustomers();
+  const { data: plansData, isLoading: plansLoading } = usePlans();
+
+  const customers = useMemo(
+    () => (customersData as DashboardCustomer[]) || [],
+    [customersData],
+  );
+  const plans = useMemo(
+    () => (plansData as DashboardPlan[]) || [],
+    [plansData],
+  );
+  const isLoading = customersLoading || plansLoading;
+
   // Filter customers
   const filteredCustomers = useMemo(() => {
-    return mockCustomers.filter((customer) => {
+    return customers.filter((customer) => {
       // Search filter
       const matchesSearch =
         customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -46,25 +61,24 @@ export default function CustomersPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, statusFilter]);
+  }, [customers, searchQuery, statusFilter]);
 
   // Stats
   const stats = useMemo(
     () => ({
-      total: mockCustomers.length,
-      active: mockCustomers.filter(
+      total: customers.length,
+      active: customers.filter(
         (c) =>
           c.tenantCustomer?.subscription?.status === SubscriptionStatus.ACTIVE,
       ).length,
-      pastDue: mockCustomers.filter(
+      pastDue: customers.filter(
         (c) =>
           c.tenantCustomer?.subscription?.status ===
           SubscriptionStatus.PAST_DUE,
       ).length,
-      walkin: mockCustomers.filter((c) => !c.tenantCustomer?.subscription)
-        .length,
+      walkin: customers.filter((c) => !c.tenantCustomer?.subscription).length,
     }),
-    [],
+    [customers],
   );
 
   return (
@@ -97,22 +111,30 @@ export default function CustomersPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-          <p className="text-sm text-muted-foreground">Total de Clientes</p>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-          <p className="text-sm text-muted-foreground">Assinantes Ativos</p>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-2xl font-bold text-yellow-600">{stats.pastDue}</p>
-          <p className="text-sm text-muted-foreground">Inadimplentes</p>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-2xl font-bold text-gray-600">{stats.walkin}</p>
-          <p className="text-sm text-muted-foreground">Walk-in</p>
-        </div>
+        <StatCard
+          label="Total de Clientes"
+          value={stats.total}
+          color="blue"
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Assinantes Ativos"
+          value={stats.active}
+          color="green"
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Inadimplentes"
+          value={stats.pastDue}
+          color="yellow"
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Walk-in"
+          value={stats.walkin}
+          color="gray"
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Filters */}
@@ -307,7 +329,7 @@ export default function CustomersPage() {
       {selectedCustomer && (
         <CustomerModal
           customer={selectedCustomer}
-          plans={mockPlans}
+          plans={plans}
           onClose={() => setSelectedCustomer(null)}
         />
       )}

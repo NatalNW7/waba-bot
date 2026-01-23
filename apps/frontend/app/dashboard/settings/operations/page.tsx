@@ -1,14 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { mockCalendar, mockOperatingHours } from "@/lib/dashboard/mocks";
+import { useState, useEffect } from "react";
+import { useOperatingHours, useCalendar } from "@/lib/hooks";
 import { DayOfWeek, dayOfWeekLabels } from "@/lib/dashboard/types";
-import type { DashboardOperatingHour } from "@/lib/dashboard/types";
+import type {
+  DashboardOperatingHour,
+  DashboardCalendar,
+} from "@/lib/dashboard/types";
 
 export default function OperationsSettingsPage() {
-  const calendar = mockCalendar;
-  const [operatingHours, setOperatingHours] =
-    useState<DashboardOperatingHour[]>(mockOperatingHours);
+  // Fetch data using React Query
+  const { data: calendarData, isLoading: calendarLoading } = useCalendar();
+  const { data: hoursData, isLoading: hoursLoading } = useOperatingHours();
+
+  const calendar = useMemo(
+    () => (calendarData as DashboardCalendar) || null,
+    [calendarData],
+  );
+  const fetchedHours = useMemo(
+    () => (hoursData as DashboardOperatingHour[]) || [],
+    [hoursData],
+  );
+  const isLoading = calendarLoading || hoursLoading;
+
+  const [operatingHours, setOperatingHours] = useState<
+    DashboardOperatingHour[]
+  >([]);
+
+  // Sync fetched hours with local state when data loads
+  const [prevFetchedHours, setPrevFetchedHours] = useState<
+    DashboardOperatingHour[]
+  >([]);
+
+  if (fetchedHours !== prevFetchedHours && fetchedHours.length > 0) {
+    setPrevFetchedHours(fetchedHours);
+    setOperatingHours(fetchedHours);
+  }
 
   const isCalendarConnected = calendar?.isConnected && !!calendar.accessToken;
 
@@ -36,6 +63,23 @@ export default function OperationsSettingsPage() {
   const sortedHours = orderedDays
     .map((day) => operatingHours.find((h) => h.day === day))
     .filter(Boolean) as DashboardOperatingHour[];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-5 w-64 bg-muted rounded mt-2 animate-pulse" />
+        </div>
+        <div className="bg-card rounded-xl border border-border p-6 animate-pulse">
+          <div className="h-24 bg-muted rounded" />
+        </div>
+        <div className="bg-card rounded-xl border border-border p-6 animate-pulse">
+          <div className="h-64 bg-muted rounded" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

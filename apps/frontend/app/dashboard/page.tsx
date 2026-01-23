@@ -1,30 +1,92 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
-import {
-  mockDashboardStats,
-  mockAppointments,
-  mockCustomers,
-} from "@/lib/dashboard/mocks";
+import { useAppointments, useCustomers } from "@/lib/hooks";
 import {
   AppointmentStatus,
   appointmentStatusColors,
 } from "@/lib/dashboard/types";
+import type {
+  DashboardAppointment,
+  DashboardCustomer,
+} from "@/lib/dashboard/types";
+import {
+  Skeleton,
+  ListSkeleton,
+  AppointmentSkeleton,
+} from "@/components/ui/skeleton";
+import { StatCard } from "@/components/dashboard/stat-card";
 
 export default function DashboardPage() {
-  const stats = mockDashboardStats;
+  // Fetch real data using React Query hooks
+  const {
+    data: appointmentsData,
+    isLoading: appointmentsLoading,
+    error: appointmentsError,
+  } = useAppointments();
 
-  // Get today's appointments
-  const todayAppointments = mockAppointments
-    .filter((a) => {
+  const {
+    data: customersData,
+    isLoading: customersLoading,
+    error: customersError,
+  } = useCustomers();
+
+  // Type the data
+  const appointments = useMemo(
+    () => (appointmentsData as DashboardAppointment[]) || [],
+    [appointmentsData],
+  );
+  const customers = useMemo(
+    () => (customersData as DashboardCustomer[]) || [],
+    [customersData],
+  );
+
+  // Calculate today's appointments
+  const todayAppointments = useMemo(() => {
+    const today = new Date();
+    return appointments
+      .filter((a) => {
+        const date = new Date(a.date);
+        return (
+          date.toDateString() === today.toDateString() &&
+          a.status !== AppointmentStatus.CANCELED
+        );
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [appointments]);
+
+  // Calculate week's appointments
+  const weekAppointments = useMemo(() => {
+    const today = new Date();
+    const weekFromNow = new Date();
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+    return appointments.filter((a) => {
       const date = new Date(a.date);
-      const today = new Date();
       return (
-        date.toDateString() === today.toDateString() &&
+        date >= today &&
+        date <= weekFromNow &&
         a.status !== AppointmentStatus.CANCELED
       );
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    });
+  }, [appointments]);
+
+  // Calculate stats
+  const stats = useMemo(
+    () => ({
+      todayAppointments: todayAppointments.length,
+      weekAppointments: weekAppointments.length,
+      activeSubscribers: customers.filter(
+        (c) => c.tenantCustomer?.subscription?.status === "ACTIVE",
+      ).length,
+      totalCustomers: customers.length,
+    }),
+    [todayAppointments.length, weekAppointments.length, customers],
+  );
+
+  const isLoading = appointmentsLoading || customersLoading;
+  const hasError = appointmentsError || customersError;
 
   return (
     <div className="space-y-6">
@@ -34,11 +96,19 @@ export default function DashboardPage() {
         <p className="text-muted-foreground mt-1">Visão geral do seu negócio</p>
       </div>
 
+      {/* Error state */}
+      {hasError && (
+        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
+          <p>Erro ao carregar dados. Por favor, tente novamente.</p>
+        </div>
+      )}
+
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Agendamentos Hoje"
           value={stats.todayAppointments}
+          isLoading={isLoading}
           icon={
             <svg
               className="w-5 h-5"
@@ -59,6 +129,7 @@ export default function DashboardPage() {
         <StatCard
           label="Esta Semana"
           value={stats.weekAppointments}
+          isLoading={isLoading}
           icon={
             <svg
               className="w-5 h-5"
@@ -79,6 +150,7 @@ export default function DashboardPage() {
         <StatCard
           label="Assinantes Ativos"
           value={stats.activeSubscribers}
+          isLoading={isLoading}
           icon={
             <svg
               className="w-5 h-5"
@@ -99,6 +171,7 @@ export default function DashboardPage() {
         <StatCard
           label="Total Clientes"
           value={stats.totalCustomers}
+          isLoading={isLoading}
           icon={
             <svg
               className="w-5 h-5"
@@ -132,7 +205,9 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {todayAppointments.length === 0 ? (
+          {isLoading ? (
+            <AppointmentSkeleton />
+          ) : todayAppointments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>Nenhum agendamento para hoje</p>
             </div>
@@ -188,41 +263,45 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <div className="space-y-3">
-            {mockCustomers.slice(0, 5).map((customer) => (
-              <div
-                key={customer.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="font-medium text-primary">
-                    {customer.name?.charAt(0) || "?"}
+          {isLoading ? (
+            <ListSkeleton />
+          ) : (
+            <div className="space-y-3">
+              {customers.slice(0, 5).map((customer) => (
+                <div
+                  key={customer.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="font-medium text-primary">
+                      {customer.name?.charAt(0) || "?"}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">
+                      {customer.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {customer.phone}
+                    </p>
+                  </div>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      customer.statusColor === "green"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : customer.statusColor === "yellow"
+                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                          : customer.statusColor === "red"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                    }`}
+                  >
+                    {customer.statusLabel}
                   </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">
-                    {customer.name}
-                  </p>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {customer.phone}
-                  </p>
-                </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    customer.statusColor === "green"
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : customer.statusColor === "yellow"
-                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                        : customer.statusColor === "red"
-                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                          : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
-                  }`}
-                >
-                  {customer.statusLabel}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -309,39 +388,7 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  color: "blue" | "green" | "purple" | "orange";
-}) {
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-    green:
-      "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
-    purple:
-      "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
-    orange:
-      "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
-  };
-
-  return (
-    <div className="bg-card rounded-xl border border-border p-4">
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>{icon}</div>
-        <div>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ... (StatCard definition removed)
 
 function QuickAction({
   href,

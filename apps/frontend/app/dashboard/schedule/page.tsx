@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { mockAppointments } from "@/lib/dashboard/mocks";
+import {
+  useAppointments,
+  useConfirmAppointment,
+  useCancelAppointment,
+} from "@/lib/hooks";
 import {
   AppointmentStatus,
   appointmentStatusColors,
@@ -15,6 +19,10 @@ export default function SchedulePage() {
   const [view, setView] = useState<CalendarView>("week");
   const [selectedAppointment, setSelectedAppointment] =
     useState<DashboardAppointment | null>(null);
+
+  // Fetch appointments using React Query
+  const { data: appointmentsData, isLoading, error } = useAppointments();
+  const appointments = (appointmentsData as DashboardAppointment[]) || [];
 
   // Navigate calendar
   const navigate = (direction: "prev" | "next") => {
@@ -169,21 +177,21 @@ export default function SchedulePage() {
         {view === "week" && (
           <WeekView
             currentDate={currentDate}
-            appointments={mockAppointments}
+            appointments={appointments}
             onAppointmentClick={setSelectedAppointment}
           />
         )}
         {view === "day" && (
           <DayView
             currentDate={currentDate}
-            appointments={mockAppointments}
+            appointments={appointments}
             onAppointmentClick={setSelectedAppointment}
           />
         )}
         {view === "month" && (
           <MonthView
             currentDate={currentDate}
-            appointments={mockAppointments}
+            appointments={appointments}
             onAppointmentClick={setSelectedAppointment}
           />
         )}
@@ -476,6 +484,28 @@ function AppointmentModal({
   appointment: DashboardAppointment;
   onClose: () => void;
 }) {
+  const confirmMutation = useConfirmAppointment();
+  const cancelMutation = useCancelAppointment();
+
+  const handleConfirm = () => {
+    confirmMutation.mutate(appointment.id, {
+      onSuccess: () => onClose(),
+    });
+  };
+
+  const handleCancel = () => {
+    if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
+      cancelMutation.mutate(
+        { id: appointment.id },
+        {
+          onSuccess: () => onClose(),
+        },
+      );
+    }
+  };
+
+  const isLoading = confirmMutation.isPending || cancelMutation.isPending;
+
   const statusLabels: Record<AppointmentStatus, string> = {
     [AppointmentStatus.PENDING]: "Pendente",
     [AppointmentStatus.CONFIRMED]: "Confirmado",
@@ -588,14 +618,28 @@ function AppointmentModal({
         <div className="p-4 border-t border-border flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-border rounded-lg text-foreground font-medium hover:bg-muted transition-colors"
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 border border-border rounded-lg text-foreground font-medium hover:bg-muted transition-colors disabled:opacity-50"
           >
             Fechar
           </button>
           {appointment.status === AppointmentStatus.PENDING && (
-            <button className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-              Confirmar
-            </button>
+            <>
+              <button
+                onClick={handleCancel}
+                disabled={isLoading}
+                className="flex-1 px-4 py-2 border border-destructive text-destructive rounded-lg font-medium hover:bg-destructive/10 transition-colors disabled:opacity-50"
+              >
+                {cancelMutation.isPending ? "Cancelando..." : "Cancelar"}
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={isLoading}
+                className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {confirmMutation.isPending ? "Confirmando..." : "Confirmar"}
+              </button>
+            </>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 
 interface HeaderProps {
@@ -11,35 +12,38 @@ export function DashboardHeader({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth();
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
-      {/* Mobile menu button */}
-      <button
-        onClick={onMenuClick}
-        className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-        aria-label="Abrir menu"
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+      {/* Left side - Logo and mobile menu */}
+      <div className="flex items-center gap-3">
+        {/* Mobile menu button */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+          aria-label="Abrir menu"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-      </button>
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
 
-      {/* Page title - hidden on mobile */}
-      <div className="hidden lg:block">
-        <h1 className="text-lg font-semibold text-foreground">Dashboard</h1>
+        {/* Logo/Brand */}
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">C</span>
+          </div>
+          <span className="font-semibold text-foreground">Cliqtree</span>
+        </Link>
       </div>
-
-      {/* Spacer for mobile */}
-      <div className="lg:hidden flex-1" />
 
       {/* User menu */}
       <div className="flex items-center gap-3">
