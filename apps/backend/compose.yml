@@ -1,4 +1,8 @@
 version: '3.8'
+
+volumes:
+  postgres_data:
+
 services:
   redis:
     environment:
@@ -21,6 +25,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       TZ: America/Sao_Paulo
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro  
 
