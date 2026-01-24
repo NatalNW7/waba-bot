@@ -28,7 +28,7 @@ export class BookAppointmentTool implements ITool {
     return {
       name: this.name,
       description:
-        'Agenda um horário para o cliente. Use SOMENTE após confirmar todos os dados com o cliente: serviço, data e horário.',
+        'Agenda um horário para o cliente. A data DEVE estar no formato YYYY-MM-DD (ex: 2026-01-27) e o horário no formato HH:mm (ex: 15:00). Use SOMENTE após: 1) verificar disponibilidade com check_availability, 2) confirmar todos os dados com o cliente.',
       parameters: {
         type: 'object',
         properties: {

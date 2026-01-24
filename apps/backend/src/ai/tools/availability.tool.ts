@@ -32,7 +32,7 @@ export class CheckAvailabilityTool implements ITool {
     return {
       name: this.name,
       description:
-        'Verifica os horários disponíveis para agendamento em uma data específica. Retorna uma lista de horários livres.',
+        'Verifica os horários disponíveis para agendamento. A data DEVE estar no formato YYYY-MM-DD (ex: 2026-01-27). Retorna horários livres e sugere alternativas se o horário pedido não estiver disponível.',
       parameters: {
         type: 'object',
         properties: {

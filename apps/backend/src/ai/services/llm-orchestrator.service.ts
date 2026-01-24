@@ -77,7 +77,10 @@ export class LLMOrchestratorService {
     this.conversationService.appendMessage(context, userMessage);
 
     // Build system prompt
-    const systemPrompt = this.promptBuilder.buildSystemPrompt(context.tenant);
+    const systemPrompt = this.promptBuilder.buildSystemPrompt(
+      context.tenant,
+      context.customer,
+    );
     this.logger.debug(`System prompt: ${systemPrompt}`);
 
     // Get available tools
