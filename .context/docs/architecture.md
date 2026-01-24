@@ -1,6 +1,6 @@
 ---
 status: filled
-generated: 2026-01-13
+generated: 2026-01-24
 ---
 
 # Architecture Notes
@@ -31,6 +31,69 @@ The system is organized as a monorepo containing a NestJS backend and a Next.js 
 - **Multi-Tenancy**: Data is partitioned by `tenant_id` at the database level.
 - **Asynchronous Processing**: External API interactions (WABA webhooks, Payment updates) are handled via message queues (BullMQ) to ensure system resilience.
 - **Contract-First**: Shared interfaces in `packages/api-types` define the boundary between frontend and backend.
+- **AI-Powered Interactions** (NEW): Conversational AI with tool-calling capabilities for natural language booking via WhatsApp.
+
+## AI Module Architecture (NEW)
+
+The AI module (`apps/backend/src/ai/`) provides conversational AI capabilities for automated customer interactions through WhatsApp.
+
+### AI Module Components
+
+```
+apps/backend/src/ai/
+├── ai.module.ts              # Module definition & tool registration
+├── index.ts                  # Public exports
+├── entities/                 # AI-related database entities
+├── interfaces/
+│   ├── conversation.interface.ts  # Conversation context types
+│   ├── llm-provider.interface.ts  # LLM abstraction
+│   └── tool.interface.ts          # Tool calling contracts
+├── providers/
+│   └── gemini.provider.ts    # Google Gemini integration
+├── services/
+│   ├── ai-analytics.service.ts    # Usage tracking
+│   ├── conversation.service.ts    # Context management
+│   ├── llm-orchestrator.service.ts # Main orchestrator
+│   ├── prompt-builder.service.ts  # Tenant-aware prompts
+│   └── tool-coordinator.service.ts # Tool registration & execution
+└── tools/
+    ├── availability.tool.ts  # Check available slots
+    ├── booking.tool.ts       # Create appointments
+    └── services.tool.ts      # List tenant services
+```
+
+### AI Data Flow
+
+```mermaid
+sequenceDiagram
+    participant WA as WhatsApp
+    participant WABA as WabaProcessor
+    participant LLM as LLMOrchestrator
+    participant AI as GeminiProvider
+    participant Tools as ToolCoordinator
+
+    WA->>WABA: Incoming Message
+    WABA->>LLM: processMessage(tenantId, customerInfo, text)
+    LLM->>LLM: Get/Create conversation context
+    LLM->>LLM: Build system prompt
+    LLM->>AI: Generate response (with tools)
+    AI-->>LLM: Response with tool calls
+    LLM->>Tools: Execute tool calls
+    Tools-->>LLM: Tool results
+    LLM->>AI: Follow-up with results
+    AI-->>LLM: Final response
+    LLM-->>WABA: Response text
+    WABA-->>WA: Send reply
+```
+
+### Available AI Tools
+
+| Tool | Purpose | Parameters |
+|------|---------|------------|
+| `check_availability` | Check available appointment slots | `date` (YYYY-MM-DD), `serviceId?` |
+| `list_services` | List tenant's available services | none |
+| `book_appointment` | Create a new appointment | `date`, `time`, `serviceId`, `customerName?`, `notes?` |
+
 
 ## Architectural Layers
 ### Controllers

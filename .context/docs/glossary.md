@@ -1,6 +1,6 @@
 ---
 status: filled
-generated: 2026-01-13
+generated: 2026-01-24
 ---
 
 # Glossary & Domain Concepts
@@ -12,6 +12,8 @@ List project-specific terminology, acronyms, domain entities, and user personas.
 - **BrazilianDDD** (interface) — [`BrazilianDDD`](apps/frontend/lib/constants/brazilian-ddd.ts#L6)
 - **Change** (interface) — [`Change`](apps/backend/src/waba/waba.interface.ts#L11)
 - **Contact** (interface) — [`Contact`](apps/backend/src/waba/waba.interface.ts#L28)
+- **ConversationContext** (interface) — [`ConversationContext`](apps/backend/src/ai/interfaces/conversation.interface.ts) (NEW)
+- **ConversationMessage** (interface) — [`ConversationMessage`](apps/backend/src/ai/interfaces/conversation.interface.ts) (NEW)
 - **CreateTenantRequest** (interface) — [`CreateTenantRequest`](apps/frontend/lib/api/tenant.ts#L5)
 - **CreateTenantResponse** (interface) — [`CreateTenantResponse`](apps/frontend/lib/api/tenant.ts#L12)
 - **Entry** (interface) — [`Entry`](apps/backend/src/waba/waba.interface.ts#L6)
@@ -39,6 +41,7 @@ List project-specific terminology, acronyms, domain entities, and user personas.
 - **IService** (interface) — [`IService`](packages/api-types/src/interfaces/service.ts#L4)
 - **ISubscription** (interface) — [`ISubscription`](packages/api-types/src/interfaces/subscription.ts#L6)
 - **ITenant** (interface) — [`ITenant`](packages/api-types/src/interfaces/tenant.ts#L6)
+- **ITool** (interface) — [`ITool`](apps/backend/src/ai/interfaces/tool.interface.ts) (NEW)
 - **IUpdateAppointment** (interface) — [`IUpdateAppointment`](packages/api-types/src/interfaces/appointment.ts#L42)
 - **IUpdateCalendar** (interface) — [`IUpdateCalendar`](packages/api-types/src/interfaces/calendar.ts#L33)
 - **IUpdateCustomer** (interface) — [`IUpdateCustomer`](packages/api-types/src/interfaces/customer.ts#L25)
@@ -55,11 +58,15 @@ List project-specific terminology, acronyms, domain entities, and user personas.
 - **JwtPayload** (interface) — [`JwtPayload`](apps/backend/src/auth/interfaces/jwt-payload.interface.ts#L1)
 - **Message** (interface) — [`Message`](apps/backend/src/waba/waba.interface.ts#L37)
 - **Metadata** (interface) — [`Metadata`](apps/backend/src/waba/waba.interface.ts#L23)
+- **ProcessMessageInput** (interface) — [`ProcessMessageInput`](apps/backend/src/ai/services/llm-orchestrator.service.ts#L16) (NEW)
+- **ProcessMessageResult** (interface) — [`ProcessMessageResult`](apps/backend/src/ai/services/llm-orchestrator.service.ts#L28) (NEW)
 - **Profile** (interface) — [`Profile`](apps/backend/src/waba/waba.interface.ts#L33)
 - **SpecialMappings** (type) — [`SpecialMappings`](apps/backend/src/common/utils/prisma-include.util.ts#L1)
 - **SubscribeResponse** (interface) — [`SubscribeResponse`](apps/frontend/lib/api/tenant.ts#L21)
 - **Text** (interface) — [`Text`](apps/backend/src/waba/waba.interface.ts#L45)
 - **TokenErrorCode** (type) — [`TokenErrorCode`](apps/frontend/lib/auth/token-utils.ts#L17)
+- **ToolExecutionContext** (interface) — [`ToolExecutionContext`](apps/backend/src/ai/interfaces/tool.interface.ts) (NEW)
+- **ToolExecutionResult** (interface) — [`ToolExecutionResult`](apps/backend/src/ai/interfaces/tool.interface.ts) (NEW)
 - **Value** (interface) — [`Value`](apps/backend/src/waba/waba.interface.ts#L16)
 - **WebhookPayload** (interface) — [`WebhookPayload`](apps/backend/src/waba/waba.interface.ts#L1)
 
@@ -84,7 +91,17 @@ List project-specific terminology, acronyms, domain entities, and user personas.
 - **Appointment**: A confirmed booking for a specific service at a specific time.
 - **WABA**: WhatsApp Business API, the communication channel for notifications and booking.
 
+### AI Terms (NEW)
+- **LLM Orchestrator**: Central service that coordinates AI message processing, tool execution, and response generation.
+- **Conversation Context**: In-memory state holding customer, tenant, and message history for a conversation.
+- **Tool Calling**: Pattern where the AI can invoke predefined functions (tools) to perform actions or retrieve data.
+- **AI Tool**: A class implementing `ITool` interface that provides a specific capability to the AI (e.g., check availability, book appointment).
+- **Prompt Builder**: Service that constructs tenant-aware system prompts for the LLM.
+- **Token Usage**: Metric tracking prompt and completion tokens for cost monitoring.
+
 ## Acronyms & Abbreviations
+- **AI**: Artificial Intelligence.
+- **LLM**: Large Language Model (e.g., Gemini, GPT).
 - **MP**: Mercado Pago (Payment Gateway).
 - **WABA**: WhatsApp Business API.
 - **PIX**: Brazilian instant payment system.
@@ -94,9 +111,12 @@ List project-specific terminology, acronyms, domain entities, and user personas.
 - **Admin**: System administrator overseeing the entire SaaS platform.
 - **Tenant Owner**: Manages their own salon/barbershop, configures services, and views analytics.
 - **Customer**: Books appointments and manages their own subscriptions via web or WhatsApp.
+- **AI Assistant**: Conversational agent that helps customers book appointments via natural language (NEW).
 
 ## Domain Rules & Invariants
 - **Multi-Tenancy**: A Tenant can only see its own data (Customers, Appointments, Finances).
 - **Subscription Lock**: Certain features (or unlimited appointments) may be restricted if the Tenant's SaaS subscription is not `ACTIVE`.
 - **Payment Integrity**: Appointment prices are snapshotted at the time of booking to ensure historical accuracy even if the Service price changes later.
 - **WhatsApp Identification**: Customers are primarily identified by their phone number (`customers.phone`).
+- **AI Context Scope**: Conversation context is scoped to tenant and customer, ensuring data isolation (NEW).
+

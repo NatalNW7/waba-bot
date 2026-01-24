@@ -1,6 +1,6 @@
 ---
 status: unfilled
-generated: 2026-01-13
+generated: 2026-01-24
 ---
 
 # Mobile Specialist Agent Playbook

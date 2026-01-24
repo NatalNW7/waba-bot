@@ -1,6 +1,6 @@
 ---
-status: unfilled
-generated: 2026-01-13
+status: filled
+generated: 2026-01-24
 ---
 
 # Frontend Specialist Agent Playbook
@@ -29,10 +29,21 @@ Describe how the frontend specialist agent supports the team and when to engage 
 - Contributor guide: [CONTRIBUTING.md](../../CONTRIBUTING.md)
 
 ## Repository Starting Points
-- `apps/` — TODO: Describe the purpose of this directory.
-- `coverage/` — TODO: Describe the purpose of this directory.
-- `implementations/` — TODO: Describe the purpose of this directory.
-- `packages/` — TODO: Describe the purpose of this directory.
+- `apps/frontend/` — Next.js application with App Router.
+- `apps/frontend/app/` — Page components and routing.
+- `apps/frontend/components/` — Reusable UI components.
+- `apps/frontend/lib/` — Utilities, hooks, and API client.
+- `packages/api-types/` — Shared TypeScript interfaces.
+
+## Dashboard Integration (NEW)
+The dashboard (`apps/frontend/app/dashboard/`) uses React Query for data fetching:
+- **API Client**: [`apiClient`](apps/frontend/lib/api/client.ts) - Type-safe API wrapper
+- **Dashboard Hooks**: [`useDashboard`](apps/frontend/lib/hooks/use-dashboard.ts) - React Query hooks for:
+  - `useDashboardStats()` - Dashboard statistics
+  - `useAppointments()` - Appointment data
+  - `useCustomers()` - Customer list
+  - `useServices()` - Service catalog
+- **Dashboard Pages**: Home, Schedule, Customers, Catalog, Settings
 
 ## Key Files
 **Entry Points:**
@@ -105,7 +116,12 @@ UI components and views
 - **Symbols**: 13 total
 - **Key exports**: [`WhatIsCliqtree`](apps/frontend/components/what-is-cliqtree.tsx#L3), [`ThemeProvider`](apps/frontend/components/theme-provider.tsx#L9), [`HeroSection`](apps/frontend/components/hero-section.tsx#L4), [`Header`](apps/frontend/components/header.tsx#L5), [`BenefitsSection`](apps/frontend/components/benefits-section.tsx#L39), [`Home`](apps/frontend/app/page.tsx#L10), [`TermsOfServicePage`](apps/frontend/app/termos-de-servico/page.tsx#L10)
 ## Key Symbols for This Agent
-- *No relevant symbols detected.*
+- [`useDashboard`](apps/frontend/lib/hooks/use-dashboard.ts) (hook) - Dashboard data fetching
+- [`apiClient`](apps/frontend/lib/api/client.ts) (object) - Type-safe API wrapper
+- [`ApiError`](apps/frontend/lib/api/config.ts#L24) (class) - API error handling
+- [`AuthProvider`](apps/frontend/lib/auth/context.tsx#L37) (component) - Auth context
+- [`Header`](apps/frontend/components/header.tsx#L5) (component) - App header
+- [`HeroSection`](apps/frontend/components/hero-section.tsx#L4) (component) - Landing page hero*
 
 ## Documentation Touchpoints
 - [Documentation Index](../docs/README.md)
