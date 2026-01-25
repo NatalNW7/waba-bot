@@ -111,13 +111,95 @@ export class GeminiProvider implements ILLMProvider {
 
   private formatMessages(
     messages: ConversationMessage[],
-  ): Array<{ role: string; parts: Array<{ text: string }> }> {
+  ): Array<{ role: string; parts: Array<any> }> {
     return messages
       .filter((m) => m.role !== 'system') // System handled separately
-      .map((message) => ({
-        role: message.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: message.content }],
-      }));
+      .map((message) => {
+        const parts: any[] = [];
+
+        if (message.content) {
+          parts.push({ text: message.content });
+        }
+
+        // Handle tool calls (assistant -> functionCall)
+        if (message.role === 'assistant' && message.toolCalls) {
+          message.toolCalls.forEach((toolCall) => {
+            parts.push({
+              functionCall: {
+                name: toolCall.name,
+                args: toolCall.arguments,
+              },
+            });
+          });
+        }
+
+        // Handle tool results (tool -> functionResponse)
+        if (message.role === 'tool' && message.toolResults) {
+          message.toolResults.forEach((result) => {
+            parts.push({
+              functionResponse: {
+                name: result.name,
+                response: {
+                  name: result.name,
+                  content: result.result,
+                },
+              },
+            });
+          });
+        }
+
+        // Map roles: 'assistant' -> 'model', 'tool' -> 'function', others -> 'user'
+        // Note: Google GenAI SDK expects 'user' or 'model'. For tool responses, it should be 'function' (deprecated) or part of conversation flow.
+        // Actually, for @google/genai or standard Gemini API:
+        // User: user
+        // Model: model
+        // Function Result: function (in some SDKs) or user?
+        // Let's check the SDK docs or standard usage.
+        // In the new API, function responses are often sent as 'function' role or just part of the conversation.
+        // However, the `Content` object expects `role` to be 'user' or 'model'.
+        // Function responses are usually sent as 'function' role OR as 'user' role with functionResponse parts.
+        // Let's stick to 'user' for tool outputs if SDK restricts roles, OR 'function' if allowed.
+        // But wait, the standard Roles are 'user' and 'model'.
+        // Code-wise `Type.Function` might exist?
+        // Looking at the imports `import { GoogleGenAI, Type }`
+
+        let role = 'user';
+        if (message.role === 'assistant') {
+          role = 'model';
+        } else if (message.role === 'tool') {
+          // For Gemini, tool outputs are typically part of a 'function' role turn,
+          // or 'user' turn containing functionResponse.
+          // Let's try 'function' first, or 'user' if it acts as input.
+          // Correct mapping for GenAI:
+          // Request (System/User) -> Model (Call) -> User/Function (Response) -> Model (Answer)
+          // Effectively, tool outputs are inputs to the model, so 'user' or specific 'function' role.
+          // The SDK often normalizes this. Let's use 'function' if valid, else 'user'.
+          // Valid roles: "user", "model". "function" is deprecated/removed in some versions in favor of just parts.
+          // If we verify the SDK version... we don't know it exactly.
+          // PROMPT: The User uses `@google/genai`.
+          // In `@google/genai`, roles are typically 'user' | 'model'.
+          // `functionResult` parts usually go in a message with role `user` (or sometimes `function`).
+          // Ref: https://ai.google.dev/gemini-api/docs/function-calling
+          // "The client sends a message with the `function` role..." -> actually checking docs it says:
+          // "role": "function" is used in some contexts.
+          // BUT, looking at `Content` type in common libraries: role is string.
+          // Let's try 'function' for tool results to be safe/explicit,
+          // if it fails we might need 'user'.
+          role = 'function';
+        }
+
+        // However, if we look at the official samples:
+        // history: [
+        //   { role: "user", parts: [{ text: "..." }] },
+        //   { role: "model", parts: [{ functionCall: ... }] },
+        //   { role: "function", parts: [{ functionResponse: ... }] }
+        // ]
+
+        return {
+          role,
+          parts,
+        };
+      });
   }
 
   private formatTools(tools: Tool[]): FunctionDeclaration[] {

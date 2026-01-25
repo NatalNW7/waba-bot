@@ -5,10 +5,7 @@ import { PromptBuilderService } from './prompt-builder.service';
 import { ToolCoordinatorService } from './tool-coordinator.service';
 import { AIAnalyticsService } from './ai-analytics.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  ConversationContext,
-  ConversationMessage,
-} from '../interfaces/conversation.interface';
+import { ConversationMessage } from '../interfaces/conversation.interface';
 
 /**
  * Input for processing a customer message.
@@ -81,39 +78,114 @@ export class LLMOrchestratorService {
       context.tenant,
       context.customer,
     );
-    this.logger.debug(`System prompt: ${systemPrompt}`);
+    this.logger.debug(`System prompt lengths: ${systemPrompt.length}`);
 
     // Get available tools
     const tools = this.toolCoordinator.hasTools()
       ? this.toolCoordinator.getToolDefinitions()
       : undefined;
 
-    // Generate LLM response
-    let response = await this.geminiProvider.generateResponse({
-      messages: this.conversationService.getRecentMessages(context),
-      systemPrompt,
-      tools,
-      tenantContext: context.tenant,
-    });
+    let response: Awaited<ReturnType<GeminiProvider['generateResponse']>>;
+    let iterations = 0;
+    const MAX_ITERATIONS = 5;
 
-    // Handle tool calls if present
-    if (response.toolCalls && response.toolCalls.length > 0) {
-      response = await this.handleToolCalls(context, response, systemPrompt);
+    // Recursive loop for handling function calls
+    while (iterations < MAX_ITERATIONS) {
+      iterations++;
+
+      // Generate LLM response
+      response = await this.geminiProvider.generateResponse({
+        messages: this.conversationService.getRecentMessages(context),
+        systemPrompt,
+        tools,
+        tenantContext: context.tenant,
+      });
+
+      // Check for tool calls
+      if (response.toolCalls && response.toolCalls.length > 0) {
+        this.logger.debug(
+          `Received ${response.toolCalls.length} tool calls (Iteration ${iterations})`,
+        );
+
+        // Add assistant message with tool calls to history
+        const assistantMessage: ConversationMessage = {
+          role: 'assistant',
+          content: response.content || '', // Content might be empty if just tool calls
+          toolCalls: response.toolCalls,
+        };
+        this.conversationService.appendMessage(context, assistantMessage);
+
+        // Execute tools
+        const toolResults = await Promise.all(
+          response.toolCalls.map(async (toolCall) => {
+            const result = await this.toolCoordinator.executeToolCall(
+              toolCall,
+              {
+                tenantId: context.tenant.tenantId,
+                customerId: context.customer.customerId,
+              },
+            );
+            return {
+              toolCallId: toolCall.id,
+              name: toolCall.name,
+              result: result.success ? result.data : { error: result.error },
+              isError: !result.success,
+            };
+          }),
+        );
+
+        // Add tool results to history
+        const toolMessage: ConversationMessage = {
+          role: 'tool',
+          content: JSON.stringify(toolResults), // For fallback/logging
+          toolResults, // For provider formatting
+        };
+        this.conversationService.appendMessage(context, toolMessage);
+
+        // Loop continues to feed results back to AI
+        continue;
+      }
+
+      // If no tool calls, we have the final text response
+      break;
     }
 
-    // Extract final response text
-    const responseText =
-      response.content || 'Desculpe, não consegui processar sua mensagem.';
+    if (iterations >= MAX_ITERATIONS) {
+      this.logger.warn(
+        `Max iterations (${MAX_ITERATIONS}) reached for conversation ${context.conversationId}`,
+      );
+      // Fallback: use the last response content or a safe error message
+      if (!response! || (!response.content && !response.toolCalls)) {
+        return {
+          response:
+            'Desculpe, estou tendo dificuldades para processar seu pedido no momento.',
+          conversationId: context.conversationId,
+          usage: { promptTokens: 0, completionTokens: 0 },
+        };
+      }
+    }
 
-    // Add assistant message to context
+    // Extract final response text and clean internal tags
+    let responseText =
+      response!.content || 'Desculpe, não consegui processar sua mensagem.';
+
+    // Remove <reasoning> blocks and markdown reasoning blocks
+    responseText = responseText
+      .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '')
+      .replace(/```reasoning[\s\S]*?```/gi, '')
+      .trim();
+
+    // Add final assistant message to context
     const assistantMessage: ConversationMessage = {
       role: 'assistant',
       content: responseText,
     };
     this.conversationService.appendMessage(context, assistantMessage);
 
-    // Track usage (async, don't await)
-    this.trackUsage(tenantId, response.usage).catch((err) => {
+    // Track usage (async, don't await) specific only for final turn or aggregate?
+    // Ideally we track total usage, but provider returns usage per turn.
+    // For now, we track the last turn's usage.
+    this.trackUsage(tenantId, response!.usage).catch((err) => {
       this.logger.error('Failed to track AI usage:', err);
     });
 
@@ -121,52 +193,10 @@ export class LLMOrchestratorService {
       response: responseText,
       conversationId: context.conversationId,
       usage: {
-        promptTokens: response.usage.promptTokens,
-        completionTokens: response.usage.completionTokens,
+        promptTokens: response!.usage.promptTokens,
+        completionTokens: response!.usage.completionTokens,
       },
     };
-  }
-
-  private async handleToolCalls(
-    context: ConversationContext,
-    initialResponse: Awaited<ReturnType<GeminiProvider['generateResponse']>>,
-    systemPrompt: string,
-  ): Promise<Awaited<ReturnType<GeminiProvider['generateResponse']>>> {
-    const toolCalls = initialResponse.toolCalls!;
-
-    // Execute all tool calls
-    const toolResults = await Promise.all(
-      toolCalls.map(async (toolCall) => {
-        const result = await this.toolCoordinator.executeToolCall(toolCall, {
-          tenantId: context.tenant.tenantId,
-          customerId: context.customer.customerId,
-        });
-        return {
-          toolCallId: toolCall.id,
-          name: toolCall.name,
-          result: result.success ? result.data : { error: result.error },
-          isError: !result.success,
-        };
-      }),
-    );
-
-    // Add tool results to context
-    const toolMessage: ConversationMessage = {
-      role: 'tool',
-      content: JSON.stringify(toolResults),
-      toolResults,
-    };
-    this.conversationService.appendMessage(context, toolMessage);
-
-    // Generate follow-up response with tool results
-    const followUpResponse = await this.geminiProvider.generateResponse({
-      messages: this.conversationService.getRecentMessages(context),
-      systemPrompt,
-      tools: this.toolCoordinator.getToolDefinitions(),
-      tenantContext: context.tenant,
-    });
-
-    return followUpResponse;
   }
 
   private async trackUsage(

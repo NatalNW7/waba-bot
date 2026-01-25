@@ -65,6 +65,8 @@ export class WabaProcessor {
       const wabaApi = WabaAPI();
 
       this.logger.debug(`Sending AI response to ${customerPhone}`);
+      this.logger.debug(`AI response: ${formattedResponse}`);
+
       const sendResult = await wabaApi.sendMessage(
         phoneId,
         customerPhone,

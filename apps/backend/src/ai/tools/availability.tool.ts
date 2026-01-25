@@ -44,7 +44,7 @@ export class CheckAvailabilityTool implements ITool {
           serviceId: {
             type: 'string',
             description:
-              'ID do serviço (opcional). Se fornecido, considera a duração do serviço.',
+              'ID UUID do serviço (opcional). Se fornecido, considera a duração do serviço. Use o ID listado no contexto de serviços.',
           },
         },
         required: ['date'],
@@ -68,7 +68,11 @@ export class CheckAvailabilityTool implements ITool {
         };
       }
 
-      const requestedDate = new Date(date);
+      // Parse date components manually to ensure Local Time usage
+      // new Date('YYYY-MM-DD') parses as UTC, which might be previous day in local time
+      const [year, month, day] = date.split('-').map(Number);
+      const requestedDate = new Date(year, month - 1, day);
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 

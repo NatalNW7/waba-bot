@@ -29,7 +29,7 @@ describe('PromptBuilderService', () => {
       const prompt = service.buildSystemPrompt(tenant, mockCustomer);
 
       expect(prompt).toContain('Salão da Maria');
-      expect(prompt).toContain('assistente virtual');
+      expect(prompt).toContain('assistente virtual inteligente');
     });
 
     it('should include customer name in prompt', () => {
@@ -117,7 +117,7 @@ describe('PromptBuilderService', () => {
 
       const prompt = service.buildSystemPrompt(tenant, mockCustomer);
 
-      expect(prompt).toContain('português brasileiro');
+      expect(prompt).toContain('Português Brasileiro');
     });
 
     it('should include tool usage instructions', () => {
@@ -131,12 +131,13 @@ describe('PromptBuilderService', () => {
 
       const prompt = service.buildSystemPrompt(tenant, mockCustomer);
 
+      expect(prompt).toContain('# TOOL USE PROTOCOL');
       expect(prompt).toContain('list_services');
       expect(prompt).toContain('check_availability');
       expect(prompt).toContain('book_appointment');
     });
 
-    it('should include booking flow instructions', () => {
+    it('should include response guidelines', () => {
       const tenant: TenantContext = {
         tenantId: 'tenant-123',
         tenantName: 'Test Salon',
@@ -147,12 +148,12 @@ describe('PromptBuilderService', () => {
 
       const prompt = service.buildSystemPrompt(tenant, mockCustomer);
 
-      expect(prompt).toContain('Fluxo de Agendamento');
-      expect(prompt).toContain('Cumprimente');
-      expect(prompt).toContain('serviço desejado');
+      expect(prompt).toContain('# RESPONSE GUIDELINES');
+      expect(prompt).toContain('Se precisar usar uma ferramenta');
+      expect(prompt).toContain('Seja conciso');
     });
 
-    it('should include Chain-of-Thought reasoning section', () => {
+    it('should include reasoning process with private tags', () => {
       const tenant: TenantContext = {
         tenantId: 'tenant-123',
         tenantName: 'Test Salon',
@@ -163,9 +164,9 @@ describe('PromptBuilderService', () => {
 
       const prompt = service.buildSystemPrompt(tenant, mockCustomer);
 
-      expect(prompt).toContain('PENSAMENTO OBRIGATÓRIO');
-      expect(prompt).toContain('<PENSAMENTO>');
-      expect(prompt).toContain('2. Consultando o CALENDÁRIO acima');
+      expect(prompt).toContain('# REASONING PROCESS');
+      expect(prompt).toContain('<reasoning>');
+      expect(prompt).toContain('pensar passo-a-passo');
     });
   });
 

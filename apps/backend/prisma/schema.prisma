@@ -396,13 +396,13 @@ model Payment {
 // --------------------------------------
 
 model ConversationMessage {
-  id        String   @id @default(uuid())
-  role      String   // 'user' | 'assistant' | 'system' | 'tool'
+  id        String @id @default(uuid())
+  role      String // 'user' | 'assistant' | 'system' | 'tool'
   content   String
-  toolCalls Json?    @map("tool_calls")
+  toolCalls Json?  @map("tool_calls")
 
-  tenantId   String   @map("tenant_id")
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   customerId String   @map("customer_id")
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -414,11 +414,11 @@ model ConversationMessage {
 }
 
 model AIUsage {
-  id               String   @id @default(uuid())
-  promptTokens     Int      @map("prompt_tokens")
-  completionTokens Int      @map("completion_tokens")
+  id               String @id @default(uuid())
+  promptTokens     Int    @map("prompt_tokens")
+  completionTokens Int    @map("completion_tokens")
   model            String
-  billingMonth     String   @map("billing_month") // "2026-01"
+  billingMonth     String @map("billing_month") // "2026-01"
 
   tenantId String @map("tenant_id")
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
