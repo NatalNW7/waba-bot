@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -61,10 +65,35 @@ export class PaymentsService {
     if (!appointment) {
       throw new NotFoundException('Appointment not found');
     }
+    if (!appointment.service) {
+      throw new BadRequestException('Appointment must have a service assigned');
+    }
 
-    return this.preferenceService.createAppointmentPreference(
-      appointment as any,
-    );
+    const result = await this.preferenceService.createAppointmentPreference({
+      id: appointment.id,
+      tenantId: appointment.tenantId,
+      price: Number(appointment.price),
+      customerId: appointment.customerId,
+      service: { name: appointment.service.name },
+      customer: {
+        email: appointment.customer.email,
+        name: appointment.customer.name,
+        phone: appointment.customer.phone,
+      },
+      tenant: {
+        preferredPaymentProvider: appointment.tenant.preferredPaymentProvider,
+        infinitePayTag: appointment.tenant.infinitePayTag,
+      },
+    });
+
+    if (result.provider === 'INFINITE_PAY' && 'paymentId' in result) {
+      await this.prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { paymentId: result.paymentId },
+      });
+    }
+
+    return result;
   }
 
   findAll() {

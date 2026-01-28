@@ -68,12 +68,19 @@ enum PaymentType {
 enum PaymentMethod {
   PIX
   CREDIT_CARD
+  DEBIT_CARD
+  OTHER
 }
 
 enum UserRole {
   ADMIN
   TENANT
   CUSTOMER
+}
+
+enum PaymentProvider {
+  MERCADO_PAGO
+  INFINITE_PAY
 }
 
 // --------------------------------------
@@ -146,6 +153,10 @@ model Tenant {
   mpAccessToken String? @map("mp_access_token")
   mpPublicKey   String? @map("mp_public_key")
   mpRefToken    String? @map("mp_ref_token")
+
+  // Integração InfinitePay
+  infinitePayTag           String?          @map("infinite_pay_tag")
+  preferredPaymentProvider PaymentProvider? @map("preferred_payment_provider")
 
   // Gestão da Assinatura do SaaS (Relacionamento com SaasPlan)
   saasStatus          SubscriptionStatus @default(ACTIVE) @map("saas_status")
@@ -370,9 +381,11 @@ model Payment {
   netAmount Decimal? @map("net_amount") @db.Decimal(10, 2)
   fee       Decimal? @db.Decimal(10, 2)
 
-  status PaymentStatus @default(PENDING)
+  status PaymentStatus  @default(PENDING)
   type   PaymentType
-  method PaymentMethod
+  method PaymentMethod?
+
+  infinitePaySlug String? @map("infinite_pay_slug")
 
   tenantId String @map("tenant_id")
   tenant   Tenant @relation(fields: [tenantId], references: [id])

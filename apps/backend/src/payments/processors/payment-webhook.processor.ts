@@ -11,6 +11,8 @@ import {
   PaymentInterval,
 } from '@prisma/client';
 import { PaymentRepository } from '../payment-repository.service';
+import { InfinitePayService } from '../infinite-pay.service';
+import { InfinitePayWebhookPayload } from '../dto/infinite-pay.dto';
 
 @Processor('payment-notifications')
 export class PaymentQueueProcessor {
@@ -20,13 +22,19 @@ export class PaymentQueueProcessor {
     private readonly prisma: PrismaService,
     private readonly mpService: MercadoPagoService,
     private readonly paymentRepo: PaymentRepository,
+    private readonly infinitePayService: InfinitePayService,
   ) {}
 
   @Process('handle-notification')
   async handleNotification(
-    job: Job<{ topic: string; resourceId: string; targetId: string }>,
+    job: Job<{
+      topic: string;
+      resourceId: string;
+      targetId: string;
+      payload?: any;
+    }>,
   ) {
-    const { topic, resourceId, targetId } = job.data;
+    const { topic, resourceId, targetId, payload } = job.data;
     this.logger.log(
       `Processing notification for ${targetId}: ${topic} - ${resourceId}`,
     );
@@ -45,6 +53,13 @@ export class PaymentQueueProcessor {
           await this.handleSubscriptionNotification(
             resourceId,
             client,
+            targetId,
+          );
+          break;
+        case 'infinitepay_payment':
+          await this.handleInfinitePayNotification(
+            resourceId,
+            payload,
             targetId,
           );
           break;
@@ -247,6 +262,14 @@ export class PaymentQueueProcessor {
     return 'CREDIT_CARD';
   }
 
+  private mapInfinitePayMethod(captureMethod?: string): PaymentMethod {
+    const method = captureMethod?.toLowerCase() || '';
+    if (method.includes('pix')) return PaymentMethod.PIX;
+    if (method.includes('debit')) return PaymentMethod.DEBIT_CARD;
+    if (method.includes('credit')) return PaymentMethod.CREDIT_CARD;
+    return PaymentMethod.OTHER;
+  }
+
   private calculateNextBilling(interval: PaymentInterval | string): Date {
     const now = new Date();
     switch (interval) {
@@ -257,6 +280,62 @@ export class PaymentQueueProcessor {
       case 'MONTHLY':
       default:
         return new Date(now.setMonth(now.getMonth() + 1));
+    }
+  }
+
+  private async handleInfinitePayNotification(
+    orderNsu: string,
+    payload: InfinitePayWebhookPayload,
+    targetId: string,
+  ) {
+    try {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: targetId },
+      });
+
+      const data = await this.infinitePayService.processWebhookNotification(
+        targetId,
+        orderNsu,
+        payload,
+        tenant?.infinitePayTag || null,
+      );
+
+      // Determine status
+      let paymentStatus: PaymentStatus = PaymentStatus.PENDING;
+      if (data.paid === true || data.success === true) {
+        paymentStatus = PaymentStatus.APPROVED;
+      } else if (data.status === 'failed' || data.status === 'rejected') {
+        paymentStatus = PaymentStatus.FAILED;
+      }
+
+      // Update Database
+      const existingPayment = await this.paymentRepo.findUnique({
+        where: { id: orderNsu },
+      });
+
+      if (existingPayment) {
+        await this.paymentRepo.update(orderNsu, {
+          status: paymentStatus,
+          infinitePaySlug: data.invoice_slug || data.slug,
+          netAmount: data.amount ? Number(data.amount) / 100 : undefined,
+          amount: data.amount
+            ? Number(data.amount) / 100
+            : existingPayment.amount,
+          method: this.mapInfinitePayMethod(data.capture_method),
+          externalId: data.transaction_nsu,
+        });
+
+        this.logger.log(
+          `Updated InfinitePay payment ${orderNsu} to ${paymentStatus}`,
+        );
+      } else {
+        this.logger.warn(
+          `Payment ${orderNsu} not found for InfinitePay update`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Error handling InfinitePay notification: ${error}`);
+      throw error;
     }
   }
 }
