@@ -3,7 +3,7 @@
  * Centralized configuration for backend API calls with authentication
  */
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8081";
+const BACKEND_URL = process.env.BACKEND_URL;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -13,8 +13,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 export const apiConfig = {
   baseUrl: BACKEND_URL,
   endpoints: {
-    login: "/auth/login",
-    saasPlans: "/saas-plans",
+    login: "auth/login",
+    saasPlans: "saas-plans",
   },
 } as const;
 
@@ -58,7 +58,7 @@ async function getAuthToken(): Promise<string> {
       cache: "no-store",
     },
   );
-
+  console.log(response);
   if (!response.ok) {
     throw new ApiError(
       "Authentication failed",

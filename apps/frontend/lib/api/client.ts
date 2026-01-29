@@ -3,13 +3,34 @@
  * Used with React Query for data fetching in client components
  */
 
+import {
+  IAppointment,
+  ICreateAppointment,
+  IUpdateAppointment,
+  ICustomer,
+  ICreateCustomer,
+  IUpdateCustomer,
+  IService,
+  ICreateService,
+  IUpdateService,
+  IPlan,
+  ICreatePlan,
+  IUpdatePlan,
+  IPayment,
+  IOperatingHour,
+  IUpdateOperatingHour,
+  ICalendar,
+  ITenant,
+  IUpdateTenant,
+} from "@repo/api-types";
+
 /**
  * Get the base API URL for client-side requests
  */
 const getApiUrl = () => {
   // In the browser, use relative URL to leverage Next.js proxy or same-origin
   // The actual backend URL is configured in next.config.js rewrites
-  return process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+  return process.env.NEXT_PUBLIC_BACKEND_URL;
 };
 
 /**
@@ -18,8 +39,8 @@ const getApiUrl = () => {
 const getAuthToken = (): string | null => {
   if (typeof window === "undefined") return null;
 
-  // Get token from localStorage or cookie (set during login)
-  return localStorage.getItem("accessToken");
+  // Get token from localStorage (set during login via AuthContext)
+  return localStorage.getItem("auth_token");
 };
 
 /**
@@ -85,29 +106,6 @@ async function clientFetch<T>(
   return response.json() as Promise<T>;
 }
 
-import {
-  IAppointment,
-  ICreateAppointment,
-  IUpdateAppointment,
-  ICustomer,
-  ICreateCustomer,
-  IUpdateCustomer,
-  IService,
-  ICreateService,
-  IUpdateService,
-  IPlan,
-  ICreatePlan,
-  IUpdatePlan,
-  IPayment,
-  IOperatingHour,
-  IUpdateOperatingHour,
-  ICalendar,
-  ITenant,
-  IUpdateTenant,
-} from "@repo/api-types";
-
-// ... (keep generic helper functions like clientFetch unchanged if not modifying them specifically yet, assuming they are fine)
-
 // ============================================
 // Appointments API
 // ============================================
@@ -141,7 +139,49 @@ export const appointmentsApi = {
       body: JSON.stringify(data),
     }),
 
-  // ...
+  update: (id: string, data: IUpdateAppointment) =>
+    clientFetch<IAppointment>(`/appointments/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    clientFetch<void>(`/appointments/${id}`, { method: "DELETE" }),
+
+  confirm: (id: string) =>
+    clientFetch<IAppointment>(`/appointments/${id}/confirm`, {
+      method: "POST",
+    }),
+
+  cancel: (id: string, reason?: string) =>
+    clientFetch<IAppointment>(`/appointments/${id}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+};
+
+// ============================================
+// Customers API
+// ============================================
+
+export interface CustomerFilters {
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export const customersApi = {
+  list: (filters?: CustomerFilters) => {
+    const params = new URLSearchParams();
+    if (filters?.search) params.set("search", filters.search);
+    if (filters?.limit) params.set("limit", String(filters.limit));
+    if (filters?.offset) params.set("offset", String(filters.offset));
+
+    const query = params.toString();
+    return clientFetch<ICustomer[]>(`/customers${query ? `?${query}` : ""}`);
+  },
+
+  get: (id: string) => clientFetch<ICustomer>(`/customers/${id}`),
 
   create: (data: Omit<ICreateCustomer, "tenantId">) =>
     clientFetch<ICustomer>("/customers", {
@@ -149,7 +189,24 @@ export const appointmentsApi = {
       body: JSON.stringify(data),
     }),
 
-  // ...
+  update: (id: string, data: IUpdateCustomer) =>
+    clientFetch<ICustomer>(`/customers/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    clientFetch<void>(`/customers/${id}`, { method: "DELETE" }),
+};
+
+// ============================================
+// Services API
+// ============================================
+
+export const servicesApi = {
+  list: () => clientFetch<IService[]>("/services"),
+
+  get: (id: string) => clientFetch<IService>(`/services/${id}`),
 
   create: (data: Omit<ICreateService, "tenantId">) =>
     clientFetch<IService>("/services", {
@@ -157,7 +214,24 @@ export const appointmentsApi = {
       body: JSON.stringify(data),
     }),
 
-  // ...
+  update: (id: string, data: IUpdateService) =>
+    clientFetch<IService>(`/services/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    clientFetch<void>(`/services/${id}`, { method: "DELETE" }),
+};
+
+// ============================================
+// Plans API
+// ============================================
+
+export const plansApi = {
+  list: () => clientFetch<IPlan[]>("/plans"),
+
+  get: (id: string) => clientFetch<IPlan>(`/plans/${id}`),
 
   create: (data: Omit<ICreatePlan, "tenantId">) =>
     clientFetch<IPlan>("/plans", {

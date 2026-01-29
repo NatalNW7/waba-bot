@@ -22,6 +22,7 @@ import { SaasPlansService } from './saas-plans.service';
 import { CreateSaasPlanDto } from './dto/create-saas-plan.dto';
 import { UpdateSaasPlanDto } from './dto/update-saas-plan.dto';
 import { SaasPlanEntity } from './entities/saas-plan.entity';
+import { Public } from '../auth';
 
 @ApiTags('SaaS Plans')
 @ApiBearerAuth('JWT')
@@ -42,6 +43,7 @@ export class SaasPlansController {
   }
 
   /** Get all SaaS plans */
+  @Public()
   @Get()
   @ApiOperation({ summary: 'List all SaaS plans' })
   @ApiOkResponse({ type: [SaasPlanEntity], description: 'List of SaaS plans' })
