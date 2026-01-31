@@ -45,6 +45,14 @@ export class PaymentEntity {
   @ApiProperty({ enum: PaymentMethod, example: 'PIX' })
   method: PaymentMethod;
 
+  /** InfinitePay payment slug */
+  @ApiProperty({
+    example: 'txn_abc123',
+    required: false,
+    description: 'InfinitePay transaction identifier',
+  })
+  infinitePaySlug?: string;
+
   /** Tenant ID */
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
   tenantId: string;

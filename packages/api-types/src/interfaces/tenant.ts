@@ -44,4 +44,4 @@ export interface ICreateTenant {
 /**
  * Update tenant request interface
  */
-export interface IUpdateTenant extends Partial<ICreateTenant> {}
+export interface IUpdateTenant extends Partial<ITenant> {}

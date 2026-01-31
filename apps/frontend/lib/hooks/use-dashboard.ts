@@ -19,6 +19,7 @@ import {
   type AppointmentFilters,
   type CustomerFilters,
 } from "@/lib/api/client";
+import { useAuth } from "@/lib/auth/context";
 import {
   ICreateAppointment,
   IUpdateAppointment,
@@ -392,9 +393,13 @@ export function useDisconnectCalendar() {
 // ============================================
 
 export function useCurrentTenant() {
+  const { user } = useAuth();
+  const tenantId = user?.tenantId;
+
   return useQuery({
     queryKey: queryKeys.tenant.current(),
-    queryFn: () => tenantApi.getCurrent(),
+    queryFn: () => tenantApi.getCurrent(tenantId!, "saasPlan"),
+    enabled: !!tenantId,
   });
 }
 

@@ -53,6 +53,18 @@ export class TenantEntity {
   @ApiProperty({ example: 'TG-...', required: false })
   mpRefToken?: string;
 
+  /** InfinitePay merchant tag */
+  @ApiProperty({ example: 'barbershop-sp', required: false })
+  infinitePayTag?: string;
+
+  /** Preferred payment provider */
+  @ApiProperty({
+    enum: ['MERCADO_PAGO', 'INFINITE_PAY'],
+    example: 'MERCADO_PAGO',
+    required: false,
+  })
+  preferredPaymentProvider?: 'MERCADO_PAGO' | 'INFINITE_PAY';
+
   /** SaaS subscription status */
   @ApiProperty({ enum: SubscriptionStatus, example: 'ACTIVE' })
   saasStatus: SubscriptionStatus;

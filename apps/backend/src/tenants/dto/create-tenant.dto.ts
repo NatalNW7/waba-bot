@@ -7,7 +7,7 @@ import {
   IsDateString,
   IsBoolean,
 } from 'class-validator';
-import { SubscriptionStatus } from '@prisma/client';
+import { SubscriptionStatus, PaymentProvider } from '@prisma/client';
 
 /**
  * Data required to create a new tenant (WhatsApp Business account holder)
@@ -92,6 +92,22 @@ export class CreateTenantDto {
   @IsEnum(SubscriptionStatus)
   @IsOptional()
   saasStatus?: SubscriptionStatus;
+
+  /**
+   * InfinitePay merchant tag
+   * @example "barbershop-sp"
+   */
+  @IsString()
+  @IsOptional()
+  infinitePayTag?: string;
+
+  /**
+   * Preferred payment provider
+   * @example "MERCADO_PAGO"
+   */
+  @IsEnum(PaymentProvider)
+  @IsOptional()
+  preferredPaymentProvider?: PaymentProvider;
 
   /**
    * Next SaaS billing date (auto-calculated if not provided)

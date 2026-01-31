@@ -68,6 +68,14 @@ export class CreatePaymentDto {
   method: PaymentMethod;
 
   /**
+   * InfinitePay transaction slug
+   * @example "txn_abc123"
+   */
+  @IsString()
+  @IsOptional()
+  infinitePaySlug?: string;
+
+  /**
    * ID of the tenant
    * @example "550e8400-e29b-41d4-a716-446655440000"
    */
