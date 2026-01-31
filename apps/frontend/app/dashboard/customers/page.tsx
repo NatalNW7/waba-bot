@@ -5,6 +5,7 @@ import { useCustomers, usePlans } from "@/lib/hooks";
 import type { DashboardCustomer, DashboardPlan } from "@/lib/dashboard/types";
 import { SubscriptionStatus } from "@/lib/dashboard/types";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { StatusBadge } from "@/components/dashboard/status-badge";
 
 type StatusFilter = "all" | "subscriber" | "past_due" | "canceled" | "walkin";
 
@@ -130,7 +131,7 @@ export default function CustomersPage() {
           isLoading={isLoading}
         />
         <StatCard
-          label="Walk-in"
+          label="Avulsos"
           value={stats.walkin}
           color="gray"
           isLoading={isLoading}
@@ -173,7 +174,7 @@ export default function CustomersPage() {
           <option value="subscriber">Assinantes Ativos</option>
           <option value="past_due">Inadimplentes</option>
           <option value="canceled">Cancelados</option>
-          <option value="walkin">Walk-in</option>
+          <option value="walkin">Avulsos</option>
         </select>
       </div>
 
@@ -334,25 +335,6 @@ export default function CustomersPage() {
         />
       )}
     </div>
-  );
-}
-
-function StatusBadge({ status, color }: { status: string; color: string }) {
-  const colorClasses = {
-    green:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    yellow:
-      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    red: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    gray: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
-  };
-
-  return (
-    <span
-      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${colorClasses[color as keyof typeof colorClasses]}`}
-    >
-      {status}
-    </span>
   );
 }
 

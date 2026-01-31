@@ -25,6 +25,7 @@ import {
   PaymentMethod,
   DayOfWeek,
   CalendarProvider,
+  PaymentProvider,
 } from "@repo/api-types";
 
 // Re-export enums for convenience
@@ -37,6 +38,7 @@ export {
   PaymentMethod,
   DayOfWeek,
   CalendarProvider,
+  PaymentProvider,
 };
 
 // ============================================
@@ -61,7 +63,7 @@ export interface DashboardCustomer extends ICustomer {
       plan?: IPlan;
     };
   };
-  statusLabel: "Assinante" | "Inadimplente" | "Cancelado" | "Walk-in";
+  statusLabel: "Assinante" | "Inadimplente" | "Cancelado" | "Avulsos";
   statusColor: "green" | "yellow" | "red" | "gray";
 }
 

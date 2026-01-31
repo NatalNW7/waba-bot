@@ -1,4 +1,4 @@
-import { SubscriptionStatus } from '../enums';
+import { SubscriptionStatus, PaymentProvider } from '../enums';
 
 /**
  * Tenant entity interface
@@ -18,6 +18,8 @@ export interface ITenant {
   saasNextBilling?: Date | string | null;
   saasPaymentMethodId?: string | null;
   saasPlanId: string;
+  infinitePayTag?: string | null;
+  preferredPaymentProvider?: PaymentProvider | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

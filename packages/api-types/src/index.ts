@@ -16,6 +16,7 @@ export {
   PaymentType,
   PaymentMethod,
   UserRole,
+  PaymentProvider,
 } from './enums';
 
 // Export all interfaces

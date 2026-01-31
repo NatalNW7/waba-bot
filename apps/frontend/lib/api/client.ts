@@ -313,9 +313,11 @@ export const calendarsApi = {
 export const tenantApi = {
   getCurrent: (id: string, query?: string) =>
     clientFetch<ITenant>(`/tenants/${id}?include=${query}`),
-  update: (data: IUpdateTenant) =>
-    clientFetch<ITenant>(`/tenants/${data.id}`, {
+  update: (data: IUpdateTenant) => {
+    const { id, ...rest } = data;
+    return clientFetch<ITenant>(`/tenants/${id}`, {
       method: "PATCH",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(rest),
+    });
+  },
 };

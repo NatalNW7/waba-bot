@@ -71,3 +71,9 @@ export enum UserRole {
   TENANT = 'TENANT',
   CUSTOMER = 'CUSTOMER',
 }
+
+// Payment provider
+export enum PaymentProvider {
+  MERCADO_PAGO = 'MERCADO_PAGO',
+  INFINITE_PAY = 'INFINITE_PAY',
+}
