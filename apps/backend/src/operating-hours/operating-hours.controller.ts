@@ -41,10 +41,7 @@ export class OperatingHoursController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createOperatingHourDto: CreateOperatingHourDto,
   ) {
-    return this.operatingHoursService.create({
-      ...createOperatingHourDto,
-      tenantId: user.tenantId!,
-    });
+    return this.operatingHoursService.create(createOperatingHourDto, user);
   }
 
   /** Get all operating hours */

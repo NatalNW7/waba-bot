@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CommonModule } from './common';
 import { WabaModule } from './waba/waba.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SaasPlansModule } from './saas-plans/saas-plans.module';
@@ -20,6 +21,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
 
 @Module({
   imports: [
+    CommonModule,
     AuthModule,
     WabaModule,
     PrismaModule,

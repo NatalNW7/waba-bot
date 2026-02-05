@@ -1,15 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TenantAuthorizationService } from '../common';
 import { CreateOperatingHourDto } from './dto/create-operating-hour.dto';
 import { UpdateOperatingHourDto } from './dto/update-operating-hour.dto';
+import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class OperatingHoursService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantAuth: TenantAuthorizationService,
+  ) {}
 
-  create(data: CreateOperatingHourDto & { tenantId: string }) {
+  create(dto: CreateOperatingHourDto, user: AuthenticatedUser) {
+    const tenantId = this.tenantAuth.resolveTenantId(dto, user);
     return this.prisma.operatingHour.create({
-      data,
+      data: { ...dto, tenantId },
     });
   }
 
