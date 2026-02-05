@@ -1,17 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useOperatingHours, useCalendar } from "@/lib/hooks";
+import { useState, useMemo } from "react";
+import {
+  useOperatingHours,
+  useCalendar,
+  useCreateOperatingHour,
+} from "@/lib/hooks";
 import { DayOfWeek, dayOfWeekLabels } from "@/lib/dashboard/types";
 import type {
   DashboardOperatingHour,
   DashboardCalendar,
 } from "@/lib/dashboard/types";
 
+interface NewOperatingHourForm {
+  day: DayOfWeek;
+  startTime: string;
+  endTime: string;
+  isClosed: boolean;
+  onlyForSubscribers: boolean;
+}
+
 export default function OperationsSettingsPage() {
   // Fetch data using React Query
   const { data: calendarData, isLoading: calendarLoading } = useCalendar();
   const { data: hoursData, isLoading: hoursLoading } = useOperatingHours();
+  const createOperatingHour = useCreateOperatingHour();
 
   const calendar = useMemo(
     () => (calendarData as DashboardCalendar) || null,
@@ -26,6 +39,16 @@ export default function OperationsSettingsPage() {
   const [operatingHours, setOperatingHours] = useState<
     DashboardOperatingHour[]
   >([]);
+
+  // Modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newHourForm, setNewHourForm] = useState<NewOperatingHourForm>({
+    day: DayOfWeek.MONDAY,
+    startTime: "09:00",
+    endTime: "18:00",
+    isClosed: false,
+    onlyForSubscribers: false,
+  });
 
   // Sync fetched hours with local state when data loads
   const [prevFetchedHours, setPrevFetchedHours] = useState<
@@ -47,6 +70,21 @@ export default function OperationsSettingsPage() {
     setOperatingHours((prev) =>
       prev.map((h) => (h.id === id ? { ...h, [field]: value } : h)),
     );
+  };
+
+  const handleCreateOperatingHour = () => {
+    createOperatingHour.mutate(newHourForm, {
+      onSuccess: () => {
+        setIsAddModalOpen(false);
+        setNewHourForm({
+          day: DayOfWeek.MONDAY,
+          startTime: "09:00",
+          endTime: "18:00",
+          isClosed: false,
+          onlyForSubscribers: false,
+        });
+      },
+    });
   };
 
   // Order days
@@ -85,7 +123,7 @@ export default function OperationsSettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Operações</h1>
+        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
         <p className="text-muted-foreground mt-1">
           Configure suas integrações e horários de funcionamento
         </p>
@@ -151,13 +189,34 @@ export default function OperationsSettingsPage() {
 
       {/* Operating Hours */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h3 className="font-semibold text-foreground">
-            Horário de Funcionamento
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Defina quando seu estabelecimento está aberto para agendamentos
-          </p>
+        <div className="p-4 border-b border-border flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-foreground">
+              Horário de Funcionamento
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Defina quando seu estabelecimento está aberto para agendamentos
+            </p>
+          </div>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm flex-shrink-0"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Novo Horário
+          </button>
         </div>
 
         {/* Mobile view */}
@@ -252,7 +311,7 @@ export default function OperationsSettingsPage() {
                   className="hover:bg-muted/30 transition-colors"
                 >
                   <td className="px-4 py-3 font-medium text-foreground">
-                    {hour.dayLabel}
+                    {dayOfWeekLabels[hour.day]}
                   </td>
                   <td className="px-4 py-3">
                     <input
@@ -280,24 +339,32 @@ export default function OperationsSettingsPage() {
                       }`}
                     />
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={hour.isClosed}
-                      onChange={(e) =>
-                        handleHourChange(hour.id, "isClosed", e.target.checked)
-                      }
-                      className="w-5 h-5 rounded border-border text-primary focus:ring-primary/50"
-                    />
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={hour.isClosed}
+                        onChange={(e) =>
+                          handleHourChange(
+                            hour.id,
+                            "isClosed",
+                            e.target.checked,
+                          )
+                        }
+                        className="w-5 h-5 rounded border-border text-primary focus:ring-primary/50"
+                      />
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    {hour.onlyForSubscribers ? (
-                      <span className="inline-flex px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                        Sim
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center">
+                      {hour.onlyForSubscribers ? (
+                        <span className="inline-flex px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                          Sim
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -311,6 +378,149 @@ export default function OperationsSettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* Add Operating Hour Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl border border-border shadow-xl w-full max-w-md">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h3 className="font-semibold text-foreground">
+                Novo Horário de Funcionamento
+              </h3>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-muted transition-colors"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Day Select */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Dia da Semana
+                </label>
+                <select
+                  value={newHourForm.day}
+                  onChange={(e) =>
+                    setNewHourForm({
+                      ...newHourForm,
+                      day: e.target.value as DayOfWeek,
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  {Object.entries(dayOfWeekLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Time Inputs */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Abertura
+                  </label>
+                  <input
+                    type="time"
+                    value={newHourForm.startTime}
+                    onChange={(e) =>
+                      setNewHourForm({
+                        ...newHourForm,
+                        startTime: e.target.value,
+                      })
+                    }
+                    disabled={newHourForm.isClosed}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Fechamento
+                  </label>
+                  <input
+                    type="time"
+                    value={newHourForm.endTime}
+                    onChange={(e) =>
+                      setNewHourForm({
+                        ...newHourForm,
+                        endTime: e.target.value,
+                      })
+                    }
+                    disabled={newHourForm.isClosed}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Toggles */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">Fechado</span>
+                <input
+                  type="checkbox"
+                  checked={newHourForm.isClosed}
+                  onChange={(e) =>
+                    setNewHourForm({
+                      ...newHourForm,
+                      isClosed: e.target.checked,
+                    })
+                  }
+                  className="w-5 h-5 rounded border-border text-primary focus:ring-primary/50"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">
+                  Apenas Assinantes
+                </span>
+                <input
+                  type="checkbox"
+                  checked={newHourForm.onlyForSubscribers}
+                  onChange={(e) =>
+                    setNewHourForm({
+                      ...newHourForm,
+                      onlyForSubscribers: e.target.checked,
+                    })
+                  }
+                  className="w-5 h-5 rounded border-border text-primary focus:ring-primary/50"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-border flex justify-end gap-2">
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-4 py-2 rounded-lg font-medium text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateOperatingHour}
+                disabled={createOperatingHour.isPending}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {createOperatingHour.isPending ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

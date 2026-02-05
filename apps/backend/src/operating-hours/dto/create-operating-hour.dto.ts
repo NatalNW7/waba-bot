@@ -51,10 +51,11 @@ export class CreateOperatingHourDto {
   onlyForSubscribers?: boolean;
 
   /**
-   * ID of the tenant this operating hour belongs to
+   * ID of the tenant this operating hour belongs to.
+   * Optional in request body - will be injected from authenticated user.
    * @example "550e8400-e29b-41d4-a716-446655440000"
    */
   @IsString()
-  @IsNotEmpty()
-  tenantId: string;
+  @IsOptional()
+  tenantId?: string;
 }

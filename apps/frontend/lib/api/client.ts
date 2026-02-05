@@ -18,6 +18,7 @@ import {
   IUpdatePlan,
   IPayment,
   IOperatingHour,
+  ICreateOperatingHour,
   IUpdateOperatingHour,
   ICalendar,
   ITenant,
@@ -280,6 +281,11 @@ export const paymentsApi = {
 
 export const operatingHoursApi = {
   list: () => clientFetch<IOperatingHour[]>("/operating-hours"),
+  create: (data: Omit<ICreateOperatingHour, "tenantId">) =>
+    clientFetch<IOperatingHour>("/operating-hours", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   update: (id: string, data: IUpdateOperatingHour) =>
     clientFetch<IOperatingHour>(`/operating-hours/${id}`, {
       method: "PATCH",

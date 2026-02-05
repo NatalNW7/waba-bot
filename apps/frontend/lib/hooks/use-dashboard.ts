@@ -29,6 +29,7 @@ import {
   IUpdateService,
   ICreatePlan,
   IUpdatePlan,
+  ICreateOperatingHour,
   IUpdateOperatingHour,
   IUpdateTenant,
 } from "@repo/api-types";
@@ -351,6 +352,20 @@ export function useUpdateOperatingHours() {
   return useMutation({
     mutationFn: (data: IUpdateOperatingHour[]) =>
       operatingHoursApi.bulkUpdate(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.operatingHours.all });
+    },
+  });
+}
+
+/**
+ * Create a new operating hour entry
+ */
+export function useCreateOperatingHour() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<ICreateOperatingHour, "tenantId">) =>
+      operatingHoursApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.operatingHours.all });
     },

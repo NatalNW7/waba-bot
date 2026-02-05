@@ -20,6 +20,8 @@ import { OperatingHoursService } from './operating-hours.service';
 import { CreateOperatingHourDto } from './dto/create-operating-hour.dto';
 import { UpdateOperatingHourDto } from './dto/update-operating-hour.dto';
 import { OperatingHourEntity } from './entities/operating-hour.entity';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Operating Hours')
 @ApiBearerAuth('JWT')
@@ -35,8 +37,14 @@ export class OperatingHoursController {
     description: 'Operating hour created successfully',
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  create(@Body() createOperatingHourDto: CreateOperatingHourDto) {
-    return this.operatingHoursService.create(createOperatingHourDto);
+  create(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() createOperatingHourDto: CreateOperatingHourDto,
+  ) {
+    return this.operatingHoursService.create({
+      ...createOperatingHourDto,
+      tenantId: user.tenantId!,
+    });
   }
 
   /** Get all operating hours */

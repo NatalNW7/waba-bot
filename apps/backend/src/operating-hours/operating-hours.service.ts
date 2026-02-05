@@ -7,9 +7,9 @@ import { UpdateOperatingHourDto } from './dto/update-operating-hour.dto';
 export class OperatingHoursService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createOperatingHourDto: CreateOperatingHourDto) {
+  create(data: CreateOperatingHourDto & { tenantId: string }) {
     return this.prisma.operatingHour.create({
-      data: createOperatingHourDto,
+      data,
     });
   }
 

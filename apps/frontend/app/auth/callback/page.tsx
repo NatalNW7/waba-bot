@@ -40,7 +40,7 @@ function AuthCallbackContent() {
       if (user.onboardingStatus === "PENDING") {
         router.push("/onboarding");
       } else {
-        router.push("/profile");
+        router.push("/dashboard");
       }
     }
   }, [user, isLoading, router]);

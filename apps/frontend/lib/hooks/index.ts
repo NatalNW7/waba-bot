@@ -42,6 +42,7 @@ export {
 
   // Operating Hours
   useOperatingHours,
+  useCreateOperatingHour,
   useUpdateOperatingHours,
 
   // Calendar
