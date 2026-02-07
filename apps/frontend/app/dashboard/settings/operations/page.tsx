@@ -20,6 +20,22 @@ interface NewOperatingHourForm {
   onlyForSubscribers: boolean;
 }
 
+const INITIAL_FORM: NewOperatingHourForm = {
+  day: DayOfWeek.MONDAY,
+  startTime: "09:00",
+  endTime: "18:00",
+  isClosed: false,
+  onlyForSubscribers: false,
+};
+
+/**
+ * Extracts error message from API error response
+ */
+function extractErrorMessage(error: unknown, fallback: string): string {
+  const apiError = error as { data?: { message?: string }; message?: string };
+  return apiError?.data?.message || apiError?.message || fallback;
+}
+
 export default function OperationsSettingsPage() {
   // Fetch data using React Query
   const { data: calendarData, isLoading: calendarLoading } = useCalendar();
@@ -42,13 +58,10 @@ export default function OperationsSettingsPage() {
 
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newHourForm, setNewHourForm] = useState<NewOperatingHourForm>({
-    day: DayOfWeek.MONDAY,
-    startTime: "09:00",
-    endTime: "18:00",
-    isClosed: false,
-    onlyForSubscribers: false,
-  });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [newHourForm, setNewHourForm] = useState<NewOperatingHourForm>(
+    INITIAL_FORM,
+  );
 
   // Sync fetched hours with local state when data loads
   const [prevFetchedHours, setPrevFetchedHours] = useState<
@@ -73,16 +86,25 @@ export default function OperationsSettingsPage() {
   };
 
   const handleCreateOperatingHour = () => {
+    // Client-side validation for time range
+    if (!newHourForm.isClosed && newHourForm.endTime <= newHourForm.startTime) {
+      setFormError(
+        "O horário de fechamento deve ser posterior ao horário de abertura",
+      );
+      return;
+    }
+    setFormError(null);
+
     createOperatingHour.mutate(newHourForm, {
       onSuccess: () => {
         setIsAddModalOpen(false);
-        setNewHourForm({
-          day: DayOfWeek.MONDAY,
-          startTime: "09:00",
-          endTime: "18:00",
-          isClosed: false,
-          onlyForSubscribers: false,
-        });
+        setFormError(null);
+        setNewHourForm(INITIAL_FORM);
+      },
+      onError: (error: Error) => {
+        setFormError(
+          extractErrorMessage(error, "Erro ao criar horário de funcionamento"),
+        );
       },
     });
   };
@@ -98,9 +120,9 @@ export default function OperationsSettingsPage() {
     DayOfWeek.SUNDAY,
   ];
 
-  const sortedHours = orderedDays
-    .map((day) => operatingHours.find((h) => h.day === day))
-    .filter(Boolean) as DashboardOperatingHour[];
+  const sortedHours = orderedDays.flatMap((day) =>
+    operatingHours.filter((h) => h.day === day),
+  );
 
   if (isLoading) {
     return (
@@ -408,6 +430,12 @@ export default function OperationsSettingsPage() {
             </div>
 
             <div className="p-4 space-y-4">
+              {/* Error Alert */}
+              {formError && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  {formError}
+                </div>
+              )}
               {/* Day Select */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
