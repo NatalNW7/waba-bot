@@ -71,7 +71,7 @@ export class AppointmentPaymentHandlerService {
       return null;
     }
 
-    return appointment;
+    return appointment as any;
   }
 
   private buildNotificationData(appointment: {
@@ -147,7 +147,7 @@ export class AppointmentPaymentHandlerService {
     );
 
     // Send failure notification (fire-and-forget)
-    this.notificationService
+    await this.notificationService
       .sendPaymentFailureNotification(
         data.appointment,
         data.customer,

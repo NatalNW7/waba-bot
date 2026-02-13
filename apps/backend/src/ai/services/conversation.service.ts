@@ -184,7 +184,7 @@ export class ConversationService {
     return {
       customerId: customer.id,
       phone: customer.phone,
-      name: customer.name || undefined,
+      name: customer.name,
     };
   }
 }

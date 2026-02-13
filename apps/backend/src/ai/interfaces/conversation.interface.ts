@@ -64,7 +64,7 @@ export interface OperatingHourInfo {
 export interface CustomerContext {
   customerId: string;
   phone: string;
-  name?: string;
+  name: string;
 }
 
 export interface CustomerInfo {
