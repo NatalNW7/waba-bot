@@ -84,6 +84,20 @@ export class BookAppointmentTool implements ITool {
         };
       }
 
+      // Check if customer has email (REQUIRED before booking)
+      const customer = await this.prisma.customer.findUnique({
+        where: { id: context.customerId },
+        select: { email: true },
+      });
+
+      if (!customer?.email) {
+        return {
+          success: false,
+          error:
+            'O cliente ainda não tem email cadastrado. Peça o email ao cliente e use a ferramenta update_customer_email antes de agendar.',
+        };
+      }
+
       // Get the service
       const service = await this.prisma.service.findUnique({
         where: { id: serviceId },

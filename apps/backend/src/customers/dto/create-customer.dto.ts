@@ -13,12 +13,12 @@ export class CreateCustomerDto {
   phone: string;
 
   /**
-   * Customer name (optional)
+   * Customer full name
    * @example "João Silva"
    */
   @IsString()
-  @IsOptional()
-  name?: string;
+  @IsNotEmpty()
+  name: string;
 
   /**
    * Customer email address (optional)

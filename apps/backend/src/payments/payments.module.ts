@@ -12,6 +12,7 @@ import { PaymentQueueProcessor } from './processors/payment-webhook.processor';
 import { PaymentRepository } from './payment-repository.service';
 import { PaymentPreferenceService } from './payment-preference.service';
 import { InfinitePayService } from './infinite-pay.service';
+import { NotificationModule } from '../notifications/notification.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { InfinitePayService } from './infinite-pay.service';
     BullModule.registerQueue({
       name: 'payment-notifications',
     }),
+    NotificationModule,
   ],
   controllers: [
     PaymentsController,
@@ -35,6 +37,11 @@ import { InfinitePayService } from './infinite-pay.service';
     PaymentPreferenceService,
     InfinitePayService,
   ],
-  exports: [MercadoPagoService, PaymentRepository, InfinitePayService],
+  exports: [
+    MercadoPagoService,
+    PaymentRepository,
+    InfinitePayService,
+    PaymentPreferenceService,
+  ],
 })
 export class PaymentsModule {}

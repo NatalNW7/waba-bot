@@ -69,7 +69,7 @@ export interface CustomerContext {
 
 export interface CustomerInfo {
   phone: string;
-  name?: string;
+  name: string;
 }
 
 /**

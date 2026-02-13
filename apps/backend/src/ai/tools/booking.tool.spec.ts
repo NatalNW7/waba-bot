@@ -66,6 +66,9 @@ describe('BookAppointmentTool', () => {
 
     it('should create appointment successfully', async () => {
       const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue(mockService as any);
       prisma.appointment.findFirst.mockResolvedValue(null);
       prisma.appointment.create.mockResolvedValue(mockAppointment as any);
@@ -79,6 +82,23 @@ describe('BookAppointmentTool', () => {
       expect(result.data?.appointmentId).toBe('apt-1');
       expect(result.data?.service).toBe('Corte');
       expect(result.data?.price).toBe('R$ 50.00');
+    });
+
+    it('should reject booking when customer has no email', async () => {
+      const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        id: 'customer-123',
+        email: null,
+      } as any);
+
+      const result = await tool.execute(
+        { serviceId: 'svc-1', date: futureDate, time: '14:00' },
+        { tenantId: 'tenant-123', customerId: 'customer-123' },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('email');
+      expect(result.error).toContain('update_customer_email');
     });
 
     it('should reject missing required fields', async () => {
@@ -113,6 +133,9 @@ describe('BookAppointmentTool', () => {
     });
 
     it('should reject past appointments', async () => {
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue(mockService as any);
 
       const result = await tool.execute(
@@ -126,6 +149,9 @@ describe('BookAppointmentTool', () => {
 
     it('should reject non-existent service', async () => {
       const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue(null);
 
       const result = await tool.execute(
@@ -139,6 +165,9 @@ describe('BookAppointmentTool', () => {
 
     it('should reject service from different tenant', async () => {
       const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue({
         ...mockService,
         tenantId: 'different-tenant',
@@ -155,6 +184,9 @@ describe('BookAppointmentTool', () => {
 
     it('should reject conflicting appointments', async () => {
       const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue(mockService as any);
       prisma.appointment.findFirst.mockResolvedValue({
         id: 'existing-apt',
@@ -173,6 +205,9 @@ describe('BookAppointmentTool', () => {
 
     it('should create appointment with correct data', async () => {
       const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue(mockService as any);
       prisma.appointment.findFirst.mockResolvedValue(null);
       prisma.appointment.create.mockResolvedValue(mockAppointment as any);
@@ -196,6 +231,9 @@ describe('BookAppointmentTool', () => {
 
     it('should include confirmation message in response', async () => {
       const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue(mockService as any);
       prisma.appointment.findFirst.mockResolvedValue(null);
       prisma.appointment.create.mockResolvedValue(mockAppointment as any);
@@ -213,6 +251,9 @@ describe('BookAppointmentTool', () => {
 
     it('should handle database errors', async () => {
       const futureDate = getFutureDate();
+      prisma.customer.findUnique.mockResolvedValue({
+        email: 'test@email.com',
+      } as any);
       prisma.service.findUnique.mockResolvedValue(mockService as any);
       prisma.appointment.findFirst.mockResolvedValue(null);
       prisma.appointment.create.mockRejectedValue(new Error('Database error'));

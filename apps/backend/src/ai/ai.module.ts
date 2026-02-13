@@ -8,10 +8,13 @@ import { AIAnalyticsService } from './services/ai-analytics.service';
 import { CheckAvailabilityTool } from './tools/availability.tool';
 import { ListServicesTool } from './tools/services.tool';
 import { BookAppointmentTool } from './tools/booking.tool';
+import { UpdateCustomerEmailTool } from './tools/update-customer-email.tool';
+import { GeneratePaymentLinkTool } from './tools/generate-payment-link.tool';
 import { PrismaModule } from '../prisma/prisma.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, PaymentsModule],
   providers: [
     GeminiProvider,
     ConversationService,
@@ -23,6 +26,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     CheckAvailabilityTool,
     ListServicesTool,
     BookAppointmentTool,
+    UpdateCustomerEmailTool,
+    GeneratePaymentLinkTool,
   ],
   exports: [LLMOrchestratorService, ConversationService, AIAnalyticsService],
 })
@@ -32,6 +37,8 @@ export class AIModule implements OnModuleInit {
     private readonly checkAvailabilityTool: CheckAvailabilityTool,
     private readonly listServicesTool: ListServicesTool,
     private readonly bookAppointmentTool: BookAppointmentTool,
+    private readonly updateCustomerEmailTool: UpdateCustomerEmailTool,
+    private readonly generatePaymentLinkTool: GeneratePaymentLinkTool,
   ) {}
 
   onModuleInit() {
@@ -39,5 +46,7 @@ export class AIModule implements OnModuleInit {
     this.toolCoordinator.registerTool(this.checkAvailabilityTool);
     this.toolCoordinator.registerTool(this.listServicesTool);
     this.toolCoordinator.registerTool(this.bookAppointmentTool);
+    this.toolCoordinator.registerTool(this.updateCustomerEmailTool);
+    this.toolCoordinator.registerTool(this.generatePaymentLinkTool);
   }
 }

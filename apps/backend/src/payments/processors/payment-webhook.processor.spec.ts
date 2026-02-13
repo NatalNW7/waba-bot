@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MercadoPagoService } from '../mercadopago.service';
 import { Payment, PreApproval } from 'mercadopago';
 import { PaymentRepository } from '../payment-repository.service';
+import { InfinitePayService } from '../infinite-pay.service';
+import { AppointmentPaymentHandlerService } from '../../notifications/appointment-payment-handler.service';
 
 jest.mock('mercadopago');
 
@@ -43,6 +45,18 @@ describe('PaymentQueueProcessor', () => {
           useValue: {
             getPlatformClient: jest.fn().mockReturnValue({}),
             getTenantClient: jest.fn().mockReturnValue({}),
+          },
+        },
+        {
+          provide: InfinitePayService,
+          useValue: {
+            processWebhookNotification: jest.fn(),
+          },
+        },
+        {
+          provide: AppointmentPaymentHandlerService,
+          useValue: {
+            handlePaymentResult: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

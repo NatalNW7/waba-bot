@@ -13,7 +13,9 @@ export type ToolName =
   | 'list_services'
   | 'book_appointment'
   | 'cancel_appointment'
-  | 'get_customer_appointments';
+  | 'get_customer_appointments'
+  | 'update_customer_email'
+  | 'generate_payment_link';
 
 /**
  * Result from executing a tool.
@@ -47,4 +49,18 @@ export interface ITool {
     args: Record<string, unknown>,
     context: ToolExecutionContext,
   ): Promise<ToolExecutionResult>;
+}
+
+/**
+ * Arguments for the update_customer_email tool.
+ */
+export interface UpdateCustomerEmailArgs {
+  email: string;
+}
+
+/**
+ * Arguments for the generate_payment_link tool.
+ */
+export interface GeneratePaymentLinkArgs {
+  appointmentId: string;
 }

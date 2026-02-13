@@ -101,9 +101,9 @@ test.describe("Operations Settings - Operating Hours", () => {
 
       // Should show conflict error from backend
       // Note: This requires backend to be running
-      await expect(
-        page.getByText(/conflita|já existe/i),
-      ).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText(/conflita|já existe/i)).toBeVisible({
+        timeout: 5000,
+      });
     });
 
     test("should allow canceling modal", async ({ page }) => {

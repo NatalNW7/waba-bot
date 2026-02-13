@@ -13,6 +13,7 @@ import {
 import { PaymentRepository } from '../payment-repository.service';
 import { InfinitePayService } from '../infinite-pay.service';
 import { InfinitePayWebhookPayload } from '../dto/infinite-pay.dto';
+import { AppointmentPaymentHandlerService } from '../../notifications/appointment-payment-handler.service';
 
 @Processor('payment-notifications')
 export class PaymentQueueProcessor {
@@ -23,6 +24,7 @@ export class PaymentQueueProcessor {
     private readonly mpService: MercadoPagoService,
     private readonly paymentRepo: PaymentRepository,
     private readonly infinitePayService: InfinitePayService,
+    private readonly appointmentPaymentHandler: AppointmentPaymentHandlerService,
   ) {}
 
   @Process('handle-notification')
@@ -98,7 +100,7 @@ export class PaymentQueueProcessor {
       if (existingPayments.length > 0) {
         const paymentData = data as any;
         await this.paymentRepo.update(existingPayments[0].id, {
-          status: this.mapStatus(data.status || 'pending'),
+          status: this.mapStatus(data.status!),
           netAmount: paymentData.net_received_amount,
           fee: paymentData.fee_details?.[0]?.amount,
         });
@@ -118,7 +120,7 @@ export class PaymentQueueProcessor {
             amount: Number(data.transaction_amount || 0),
             netAmount: paymentData.net_received_amount,
             fee: paymentData.fee_details?.[0]?.amount,
-            status: this.mapStatus(data.status || 'pending'),
+            status: this.mapStatus(data.status!),
             type: 'SAAS_FEE',
             method: this.mapPaymentMethod(data.payment_method_id ?? ''),
             tenantId: tenant.id,
@@ -137,12 +139,13 @@ export class PaymentQueueProcessor {
 
         if (appointment) {
           const paymentData = data as any;
+          const paymentStatus = this.mapStatus(data.status!);
           const newPayment = await this.paymentRepo.create({
             externalId: paymentId,
             amount: Number(data.transaction_amount || 0),
             netAmount: paymentData.net_received_amount,
             fee: paymentData.fee_details?.[0]?.amount,
-            status: this.mapStatus(data.status || 'pending'),
+            status: paymentStatus,
             type: 'APPOINTMENT',
             method: this.mapPaymentMethod(data.payment_method_id ?? ''),
             tenantId: appointment.tenantId,
@@ -155,6 +158,12 @@ export class PaymentQueueProcessor {
               data: { paymentId: newPayment.id },
             });
           }
+
+          // Update appointment status and send notifications
+          await this.appointmentPaymentHandler.handlePaymentResult(
+            appointment.id,
+            paymentStatus,
+          );
         }
       }
     } catch (error: unknown) {
@@ -328,6 +337,19 @@ export class PaymentQueueProcessor {
         this.logger.log(
           `Updated InfinitePay payment ${orderNsu} to ${paymentStatus}`,
         );
+
+        // If this payment is linked to an appointment, handle status + notifications
+        if (existingPayment.type === 'APPOINTMENT') {
+          const appointment = await this.prisma.appointment.findFirst({
+            where: { paymentId: existingPayment.id },
+          });
+          if (appointment) {
+            await this.appointmentPaymentHandler.handlePaymentResult(
+              appointment.id,
+              paymentStatus,
+            );
+          }
+        }
       } else {
         this.logger.warn(
           `Payment ${orderNsu} not found for InfinitePay update`,

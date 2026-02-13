@@ -59,9 +59,8 @@ export default function OperationsSettingsPage() {
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [newHourForm, setNewHourForm] = useState<NewOperatingHourForm>(
-    INITIAL_FORM,
-  );
+  const [newHourForm, setNewHourForm] =
+    useState<NewOperatingHourForm>(INITIAL_FORM);
 
   // Sync fetched hours with local state when data loads
   const [prevFetchedHours, setPrevFetchedHours] = useState<
