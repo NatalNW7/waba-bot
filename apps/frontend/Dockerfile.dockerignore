@@ -1,0 +1,62 @@
+# ====================================
+# Dockerfile.dockerignore for frontend
+# Context: repo root
+# ====================================
+
+# --- Exclude backend entirely ---
+apps/backend
+
+# --- Dependencies (installed inside Docker) ---
+**/node_modules
+
+# --- Build artifacts & caches ---
+**/.next
+**/.swc
+**/.turbo
+**/dist
+**/coverage
+
+# --- Testing ---
+apps/frontend/e2e
+apps/frontend/test-results
+apps/frontend/playwright-report
+**/*.spec.ts
+**/*.spec.tsx
+apps/frontend/jest.config.ts
+apps/frontend/jest.setup.ts
+apps/frontend/playwright.config.ts
+
+# --- Environment files ---
+**/.env
+**/.env.*
+
+# --- IDE & OS ---
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+**/.DS_Store
+**/Thumbs.db
+
+# --- Git ---
+.git
+.gitignore
+
+# --- Docs & context ---
+**/*.md
+.context
+.agent
+
+# --- Docker (prevent recursive copy) ---
+**/Dockerfile
+**/Dockerfile.dockerignore
+**/.dockerignore
+
+# --- TypeScript build info ---
+**/tsconfig.tsbuildinfo
+
+# --- CI/CD ---
+.github
+
+# --- Stale lockfiles (should not exist, but just in case) ---
+apps/frontend/pnpm-lock.yaml
