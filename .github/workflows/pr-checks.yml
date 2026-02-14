@@ -24,10 +24,10 @@ jobs:
         uses: ./.github/actions/setup-node
 
       - name: Run linting
-        run: pnpm turbo lint --filter="${{ env.TURBO_SCM_BASE }}..."
+        run: pnpm turbo lint --affected
 
       - name: Run format check
-        run: pnpm turbo format --filter="${{ env.TURBO_SCM_BASE }}..."
+        run: pnpm turbo format --affected
 
   test:
     name: Run Tests
@@ -42,7 +42,7 @@ jobs:
         uses: ./.github/actions/setup-node
 
       - name: Run tests
-        run: pnpm turbo test --filter="${{ env.TURBO_SCM_BASE }}..."
+        run: pnpm turbo test --affected
 
   build:
     name: Build Verification
@@ -57,7 +57,7 @@ jobs:
         uses: ./.github/actions/setup-node
 
       - name: Build projects
-        run: pnpm turbo build --filter="${{ env.TURBO_SCM_BASE }}..."
+        run: pnpm turbo build --affected
     
 
   all-checks-pass:
