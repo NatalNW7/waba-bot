@@ -1,0 +1,75 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches:
+     - develop
+     - main
+    types: [opened, synchronize, reopened]
+
+env:
+  TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+
+jobs:
+  lint-format:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node dependencies
+        uses: ./.github/actions/setup-node
+
+      - name: Run linting
+        run: pnpm turbo lint --filter="${{ env.TURBO_SCM_BASE }}..."
+
+      - name: Run format check
+        run: pnpm turbo format --filter="${{ env.TURBO_SCM_BASE }}..."
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node dependencies
+        uses: ./.github/actions/setup-node
+
+      - name: Run tests
+        run: pnpm turbo test --filter="${{ env.TURBO_SCM_BASE }}..."
+
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node dependencies
+        uses: ./.github/actions/setup-node
+
+      - name: Build projects
+        run: pnpm turbo build --filter="${{ env.TURBO_SCM_BASE }}..."
+    
+
+  all-checks-pass:
+    name: All Checks Pass
+    runs-on: ubuntu-latest
+    needs: [lint-format, test, build]
+    if: always()
+    steps:
+      - name: Verify all checks passed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "One or more checks failed or were cancelled"
+          exit 1
+      - name: All checks passed
+        run: echo "All PR checks passed successfully!"
