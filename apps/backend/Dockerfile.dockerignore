@@ -1,0 +1,54 @@
+# ====================================
+# Dockerfile.dockerignore for backend
+# Context: repo root
+# ====================================
+
+# --- Exclude frontend entirely ---
+apps/frontend
+
+# --- Dependencies (installed inside Docker) ---
+**/node_modules
+
+# --- Build artifacts & caches ---
+**/.turbo
+**/dist
+**/coverage
+
+# --- Testing ---
+apps/backend/test
+**/*.spec.ts
+apps/backend/jest.config.ts
+
+# --- Environment files ---
+**/.env
+**/.env.*
+
+# --- IDE & OS ---
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+**/.DS_Store
+**/Thumbs.db
+
+# --- Git ---
+.git
+.gitignore
+
+# --- Docs & context ---
+**/*.md
+.context
+.agent
+.agents
+
+# --- Docker (prevent recursive copy) ---
+**/Dockerfile
+**/Dockerfile.dockerignore
+**/.dockerignore
+**/compose.yml
+
+# --- TypeScript build info ---
+**/tsconfig.tsbuildinfo
+
+# --- CI/CD ---
+.github
