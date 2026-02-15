@@ -81,4 +81,4 @@ COPY --from=build --chown=nestjs:nodejs /app/prisma-client ./node_modules/.prism
 
 EXPOSE 8081
 
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/main.js"]

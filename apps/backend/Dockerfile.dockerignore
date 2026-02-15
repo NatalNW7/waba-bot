@@ -49,6 +49,7 @@ apps/backend/jest.config.ts
 
 # --- TypeScript build info ---
 **/tsconfig.tsbuildinfo
+**/tsconfig.build.tsbuildinfo
 
 # --- CI/CD ---
 .github
