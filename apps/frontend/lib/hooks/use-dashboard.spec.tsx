@@ -18,6 +18,18 @@ import {
   queryKeys,
 } from "./use-dashboard";
 
+// Mock the auth context
+jest.mock("@/lib/auth/context", () => ({
+  useAuth: () => ({
+    user: { tenantId: "tenant-1" },
+    isLoading: false,
+    isAuthenticated: true,
+    login: jest.fn(),
+    logout: jest.fn(),
+    refreshSession: jest.fn(),
+  }),
+}));
+
 // Mock the API client
 jest.mock("@/lib/api/client", () => ({
   appointmentsApi: {

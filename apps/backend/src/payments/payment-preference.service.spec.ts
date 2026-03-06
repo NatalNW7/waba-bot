@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentPreferenceService } from './payment-preference.service';
 import { MercadoPagoService } from './mercadopago.service';
+import { PaymentRepository } from './payment-repository.service';
+import { InfinitePayService } from './infinite-pay.service';
+import { ConfigService } from '@nestjs/config';
 import { Preference } from 'mercadopago';
 import { BadRequestException } from '@nestjs/common';
 
@@ -18,6 +21,25 @@ describe('PaymentPreferenceService', () => {
           provide: MercadoPagoService,
           useValue: {
             getTenantClient: jest.fn().mockReturnValue({}),
+          },
+        },
+        {
+          provide: PaymentRepository,
+          useValue: {
+            create: jest.fn(),
+            findById: jest.fn(),
+          },
+        },
+        {
+          provide: InfinitePayService,
+          useValue: {
+            createCheckoutLink: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('http://test-url'),
           },
         },
       ],
@@ -50,6 +72,10 @@ describe('PaymentPreferenceService', () => {
         price: 50,
         service: { name: 'Svc' },
         customer: { email: 'c@c.com', name: 'Cust' },
+        tenant: {
+          preferredPaymentProvider: 'MERCADO_PAGO',
+          infinitePayTag: null,
+        },
       };
 
       const result = await service.createAppointmentPreference(appointment);

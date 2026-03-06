@@ -54,10 +54,10 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       expect(context).toBeDefined();
       expect(context.tenant.tenantId).toBe('tenant-123');
@@ -74,14 +74,14 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context1 = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
-      const context2 = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context1 = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
+      const context2 = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       expect(context1.conversationId).toBe(context2.conversationId);
       expect(prisma.tenant.findUnique).toHaveBeenCalledTimes(1);
@@ -97,13 +97,13 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       expect(prisma.customer.create).toHaveBeenCalledWith({
-        data: { phone: '5511999999999' },
+        data: { phone: '5511999999999', name: 'João Silva' },
       });
       expect(prisma.tenantCustomer.create).toHaveBeenCalled();
       expect(context.customer.customerId).toBe('customer-123');
@@ -113,7 +113,10 @@ describe('ConversationService', () => {
       prisma.tenant.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.getOrCreateContext('nonexistent', '5511999999999'),
+        service.getOrCreateContext('nonexistent', {
+          phone: '5511999999999',
+          name: 'João Silva',
+        }),
       ).rejects.toThrow('Tenant not found: nonexistent');
     });
 
@@ -125,10 +128,10 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       expect(context.tenant.services).toHaveLength(2);
       expect(context.tenant.services[0]).toEqual({
@@ -149,10 +152,10 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       service.appendMessage(context, {
         role: 'user',
@@ -172,10 +175,10 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       service.appendMessage(context, { role: 'user', content: 'Olá' });
       service.appendMessage(context, {
@@ -195,10 +198,10 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
       const initialTime = context.updatedAt;
 
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -219,10 +222,10 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       // Add 15 messages
       for (let i = 0; i < 15; i++) {
@@ -247,10 +250,10 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
       service.appendMessage(context, { role: 'user', content: 'Hello' });
       service.appendMessage(context, { role: 'assistant', content: 'Hi!' });
 
@@ -269,16 +272,16 @@ describe('ConversationService', () => {
         customerId: 'customer-123',
       } as any);
 
-      const context1 = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context1 = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
       service.clearContext('tenant-123', '5511999999999');
 
-      const context2 = await service.getOrCreateContext(
-        'tenant-123',
-        '5511999999999',
-      );
+      const context2 = await service.getOrCreateContext('tenant-123', {
+        phone: '5511999999999',
+        name: 'João Silva',
+      });
 
       expect(context1.conversationId).not.toBe(context2.conversationId);
     });
