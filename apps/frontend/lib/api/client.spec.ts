@@ -115,22 +115,22 @@ describe("API Client", () => {
       expect(options.method).toBe("PATCH");
     });
 
-    it("should call confirm endpoint with PATCH", async () => {
+    it("should call confirm endpoint with POST", async () => {
       const { appointmentsApi } = await import("../api/client");
       await appointmentsApi.confirm("123");
 
       const [url, options] = mockFetch.mock.calls[0];
       expect(url).toContain("/appointments/123/confirm");
-      expect(options.method).toBe("PATCH");
+      expect(options.method).toBe("POST");
     });
 
-    it("should call cancel endpoint with PATCH", async () => {
+    it("should call cancel endpoint with POST", async () => {
       const { appointmentsApi } = await import("../api/client");
       await appointmentsApi.cancel("123", "No show");
 
       const [url, options] = mockFetch.mock.calls[0];
       expect(url).toContain("/appointments/123/cancel");
-      expect(options.method).toBe("PATCH");
+      expect(options.method).toBe("POST");
     });
   });
 
@@ -232,20 +232,20 @@ describe("API Client", () => {
 
     it("should call getCurrent endpoint", async () => {
       const { tenantApi } = await import("../api/client");
-      await tenantApi.getCurrent();
+      await tenantApi.getCurrent("tenant-1", "saasPlan");
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/tenants/me"),
+        expect.stringContaining("/tenants/tenant-1"),
         expect.any(Object),
       );
     });
 
     it("should call update endpoint with PATCH", async () => {
       const { tenantApi } = await import("../api/client");
-      await tenantApi.update({ name: "New Name" });
+      await tenantApi.update({ id: "tenant-1", name: "New Name" });
 
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toContain("/tenants/me");
+      expect(url).toContain("/tenants/tenant-1");
       expect(options.method).toBe("PATCH");
     });
   });

@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "turbo build",
+    "build:docker": "turbo build:docker",
     "dev": "turbo dev --parallel",
     "lint": "turbo lint",
     "test": "turbo test",
@@ -17,7 +18,7 @@
   "devDependencies": {
     "eslint-module-utils": "^2.12.1",
     "prettier": "^3.4.2",
-    "turbo": "^2.7.3"
+    "turbo": "^2.8.8"
   },
   "pnpm": {
     "overrides": {

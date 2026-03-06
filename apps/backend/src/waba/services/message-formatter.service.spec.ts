@@ -162,7 +162,7 @@ describe('MessageFormatterService', () => {
       const result = service.formatErrorMessage();
 
       expect(result).toContain('😔');
-      expect(result).toContain('Desculpe');
+      expect(result).toContain('temporariamente indisponível');
       expect(result).toContain('tente novamente');
     });
   });

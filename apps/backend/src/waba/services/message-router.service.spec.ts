@@ -149,7 +149,10 @@ describe('MessageRouterService', () => {
 
       expect(llmOrchestrator.processMessage).toHaveBeenCalledWith({
         tenantId: 'tenant-123',
-        customerPhone: '5511888888888',
+        customerInfo: {
+          name: 'João',
+          phone: '5511888888888',
+        },
         messageText: 'Quero agendar um corte',
       });
     });

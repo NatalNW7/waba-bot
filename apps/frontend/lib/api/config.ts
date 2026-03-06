@@ -3,7 +3,7 @@
  * Centralized configuration for backend API calls with authentication
  */
 
-const BACKEND_URL = process.env.BACKEND_URL;
+const BACKEND_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/`;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 

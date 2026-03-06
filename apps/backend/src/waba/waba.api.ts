@@ -1,8 +1,6 @@
-import 'dotenv/config';
-
 export default function WabaAPI() {
-  const token = process.env['WABA_TOKEN'];
-  const BASE_URL = process.env['WABA_URL'];
+  const token = process.env.WABA_TOKEN;
+  const BASE_URL = process.env.WABA_URL;
   const apiVersion = 'v24.0';
 
   return {

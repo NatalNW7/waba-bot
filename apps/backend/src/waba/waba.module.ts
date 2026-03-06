@@ -13,8 +13,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     AIModule,
     BullModule.forRoot({
       redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
+        host: process.env.REDIS_HOST!,
+        port: parseInt(process.env.REDIS_PORT!),
       },
     }),
     BullModule.registerQueue({

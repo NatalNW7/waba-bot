@@ -113,7 +113,18 @@ describe('PaymentsService', () => {
     });
 
     it('should delegate to preferenceService', async () => {
-      const mockApp = { id: 'app123' };
+      const mockApp = {
+        id: 'app123',
+        tenantId: 'tenant-1',
+        price: 50,
+        customerId: 'customer-1',
+        service: { name: 'Corte' },
+        customer: { email: 'c@c.com', name: 'Cust', phone: '11999999999' },
+        tenant: {
+          preferredPaymentProvider: 'MERCADO_PAGO',
+          infinitePayTag: null,
+        },
+      };
       jest
         .spyOn(prisma.appointment, 'findUnique')
         .mockResolvedValue(mockApp as any);
