@@ -10,6 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql" // Recomendado para SaaS. Mude para sqlite se for apenas dev local.
+  url      = env("DATABASE_URL")
 }
 
 // --------------------------------------
