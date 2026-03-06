@@ -60,6 +60,7 @@ RUN pnpm --filter @waba-bot/backend deploy --prod --legacy /prod/backend
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV TZ=America/Sao_Paulo
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs

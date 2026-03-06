@@ -151,7 +151,10 @@ describe('AI WhatsApp Integration (e2e)', () => {
 
     // Create test customer
     const testCustomer = await prisma.customer.create({
-      data: { phone: `5511888${Date.now().toString().slice(-7)}` },
+      data: {
+        phone: `5511888${Date.now().toString().slice(-7)}`,
+        name: 'E2E Test Customer',
+      },
     });
     testCustomerId = testCustomer.id;
 

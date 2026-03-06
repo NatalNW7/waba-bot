@@ -40,7 +40,7 @@ RUN pnpm --filter @waba-bot/frontend build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-
+ENV TZ=America/Sao_Paulo
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 USER nextjs
@@ -50,8 +50,8 @@ COPY --from=build --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/apps/frontend/.next/static ./apps/frontend/.next/static
 COPY --from=build --chown=nextjs:nodejs /app/apps/frontend/public ./apps/frontend/public
 
-EXPOSE 3000
+EXPOSE 8080
 ENV HOSTNAME="0.0.0.0"
-ENV PORT=3000
+ENV PORT=8080
 
 CMD ["node", "apps/frontend/server.js"]
