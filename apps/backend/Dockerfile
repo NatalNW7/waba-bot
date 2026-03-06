@@ -76,6 +76,7 @@ COPY --from=build --chown=nestjs:nodejs /prod/backend/node_modules ./node_module
 # Also copy package.json for Metadata
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/package.json ./package.json
+COPY --from=build --chown=nestjs:nodejs /app/apps/backend/prisma.config.ts ./prisma.config.ts
 
 # Copy the generated prisma client from our known location
 COPY --from=build --chown=nestjs:nodejs /app/prisma-client ./node_modules/.prisma
