@@ -49,7 +49,7 @@ RUN pnpm --filter @waba-bot/backend exec prisma generate
 RUN mkdir -p /app/prisma-client && cp -r $(find /app/node_modules -type d -name .prisma -print -quit)/* /app/prisma-client/
 
 # Compile prisma/seed.ts to JS so it can run with node in production (no tsx needed)
-RUN npx tsc apps/backend/prisma/seed.ts --outDir apps/backend/prisma --esModuleInterop --module nodenext --moduleResolution nodenext --target ES2023 --skipLibCheck
+RUN pnpm --filter @waba-bot/backend exec tsc prisma/seed.ts --outDir prisma --esModuleInterop --module nodenext --moduleResolution nodenext --target ES2023 --skipLibCheck
 
 # Build the NestJS application
 RUN pnpm --filter @waba-bot/backend build
