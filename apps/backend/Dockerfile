@@ -48,6 +48,9 @@ RUN pnpm --filter @waba-bot/backend exec prisma generate
 # Because pnpm stores it deep in node_modules/.pnpm, we find it dynamically
 RUN mkdir -p /app/prisma-client && cp -r $(find /app/node_modules -type d -name .prisma -print -quit)/* /app/prisma-client/
 
+# Compile prisma/seed.ts to JS so it can run with node in production (no tsx needed)
+RUN pnpm --filter @waba-bot/backend exec tsc prisma/seed.ts --outDir prisma --esModuleInterop --module nodenext --moduleResolution nodenext --target ES2023 --skipLibCheck
+
 # Build the NestJS application
 RUN pnpm --filter @waba-bot/backend build
 
@@ -72,7 +75,7 @@ COPY --from=build --chown=nestjs:nodejs /app/apps/backend/dist ./dist
 # Copy production-only node_modules from the deployed directory
 COPY --from=build --chown=nestjs:nodejs /prod/backend/node_modules ./node_modules
 
-# Copy Prisma schema + migrations (needed for prisma migrate deploy at runtime)
+# Copy Prisma schema, migrations, and compiled seed.js (needed at runtime)
 # Also copy package.json for Metadata
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/package.json ./package.json

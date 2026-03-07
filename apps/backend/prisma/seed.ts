@@ -1,4 +1,9 @@
-import 'dotenv/config';
+// Load .env for local development; in production env vars are injected by the platform
+try {
+  require('dotenv/config');
+} catch {
+  // dotenv is a devDependency, not available in production — that's fine
+}
 import { PrismaClient, PaymentInterval } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
