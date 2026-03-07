@@ -1,8 +1,3 @@
-try {
-  require('dotenv/config');
-} catch {
-  // dotenv is a devDependency, not available in production — that's fine
-}
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
