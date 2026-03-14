@@ -26,7 +26,8 @@
     "migrate:make": "prisma migrate dev --name",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:status": "prisma migrate status",
-    "wait-for-postgres": "node scripts/wait-for-postgres.js"
+    "wait-for-postgres": "node scripts/wait-for-postgres.js",
+    "db:test-connection": "npx tsx scripts/test-db-connection.ts"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
