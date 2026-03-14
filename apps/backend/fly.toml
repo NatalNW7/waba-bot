@@ -4,9 +4,6 @@ primary_region = "gru"
 [build]
   dockerfile = "Dockerfile"
 
-[deploy]
-  release_command = "npx prisma migrate deploy"
-
 [http_service]
   internal_port = 8081
   force_https = true
