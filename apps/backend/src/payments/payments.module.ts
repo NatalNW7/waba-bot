@@ -12,10 +12,12 @@ import { PaymentRepository } from './payment-repository.service';
 import { PaymentPreferenceService } from './payment-preference.service';
 import { InfinitePayService } from './infinite-pay.service';
 import { NotificationModule } from '../notifications/notification.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
     PrismaModule,
+    RedisModule,
     BullModule.registerQueue({
       name: 'payment-notifications',
     }),
