@@ -1,16 +1,9 @@
-import { execSync } from 'child_process';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  if (process.env.NODE_ENV === 'production') {
-    console.log('[Bootstrap] Running Prisma migrations...');
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-    console.log('[Bootstrap] Migrations complete.');
-  }
-
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS for frontend
