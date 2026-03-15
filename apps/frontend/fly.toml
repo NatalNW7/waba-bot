@@ -3,6 +3,8 @@ primary_region = "gru"
 
 [build]
   dockerfile = "Dockerfile"
+  [build.args]
+    NEXT_PUBLIC_BACKEND_URL = "https://waba-bot-backend.fly.dev"
 
 [http_service]
   internal_port = 8080
