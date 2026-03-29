@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MercadoPagoService } from '../payments/mercadopago.service';
 import { TenantRepository } from './tenant-repository.service';
 import { PreApproval } from 'mercadopago';
@@ -19,6 +24,7 @@ export class TenantSaasService {
   constructor(
     private readonly repo: TenantRepository,
     private readonly mpService: MercadoPagoService,
+    private readonly configService: ConfigService,
   ) {}
 
   async createSubscription(id: string) {
@@ -31,11 +37,21 @@ export class TenantSaasService {
       throw new NotFoundException(`Tenant with ID ${id} not found.`);
     }
 
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+
     const client = this.mpService.getPlatformClient();
     const preApproval = new PreApproval(client);
 
     // Map PaymentInterval to Mercado Pago frequency
     const freq = this.getFrequencyConfig(tenant.saasPlan.interval);
+
+    const backUrl = this.configService.get<string>('MP_BACK_URL');
+    if (!backUrl) {
+      throw new BadRequestException(
+        'MP_BACK_URL não está configurada. Defina a variável de ambiente MP_BACK_URL.',
+      );
+    }
 
     const result = await preApproval.create({
       body: {
@@ -46,8 +62,10 @@ export class TenantSaasService {
           transaction_amount: Number(tenant.saasPlan.price),
           currency_id: 'BRL',
         },
-        back_url: process.env.MP_BACK_URL || 'https://example.com',
-        payer_email: tenant.email,
+        back_url: backUrl,
+        payer_email: isProduction
+          ? tenant.email
+          : this.configService.get<string>('MP_TEST_USER_EMAIL'),
         external_reference: tenant.id,
       },
     });

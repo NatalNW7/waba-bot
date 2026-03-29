@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { MercadoPagoService } from '../payments/mercadopago.service';
 import { PreApproval } from 'mercadopago';
 
@@ -13,6 +13,13 @@ export class CustomerSubscriptionService {
     cardTokenId: string;
   }) {
     const { tenantId, plan, customer, cardTokenId } = options;
+
+    if (!customer.email) {
+      throw new BadRequestException(
+        'O email do cliente é obrigatório para criar uma assinatura no Mercado Pago.',
+      );
+    }
+
     const client = await this.mpService.getTenantClient(tenantId);
     const preApproval = new PreApproval(client);
 
@@ -30,7 +37,7 @@ export class CustomerSubscriptionService {
           transaction_amount: Number(plan.price),
           currency_id: 'BRL',
         },
-        payer_email: customer.email ?? undefined,
+        payer_email: customer.email,
         card_token_id: cardTokenId,
         status: 'authorized',
         external_reference: customer.id,

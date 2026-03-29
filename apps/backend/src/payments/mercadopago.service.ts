@@ -3,26 +3,33 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MercadoPagoConfig } from 'mercadopago';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class MercadoPagoService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /**
    * Returns a Mercado Pago client configured with the platform's credentials.
    * Used for SaaS subscription payments (Tenants paying the platform).
    */
   getPlatformClient(): MercadoPagoConfig {
-    const accessToken = process.env.MP_PLATFORM_ACCESS_TOKEN;
+    const accessToken = this.configService.get<string>(
+      'MP_PLATFORM_ACCESS_TOKEN',
+    );
 
     if (!accessToken) {
       throw new Error(
         'Mercado Pago Platform Access Token is not configured. Please set MP_PLATFORM_ACCESS_TOKEN in .env',
       );
     }
-
+    console.log('MP Access Token starts with:', accessToken?.substring(0, 10));
+    console.log('MP Access Token length:', accessToken?.length);
     return new MercadoPagoConfig({
       accessToken,
     });
@@ -51,5 +58,17 @@ export class MercadoPagoService {
     return new MercadoPagoConfig({
       accessToken: tenant.mpAccessToken,
     });
+  }
+
+  getClientId(): string {
+    return this.configService.get<string>('MP_CLIENT_ID')!;
+  }
+
+  getClientSecret(): string {
+    return this.configService.get<string>('MP_CLIENT_SECRET')!;
+  }
+
+  getRedirectUri(): string {
+    return this.configService.get<string>('MP_REDIRECT_URI')!;
   }
 }
