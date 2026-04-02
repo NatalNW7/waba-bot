@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MercadoPagoService } from '../payments/mercadopago.service';
 import { TenantRepository } from './tenant-repository.service';
 import { OAuth } from 'mercadopago';
@@ -8,11 +9,12 @@ export class TenantMpAuthService {
   constructor(
     private readonly repo: TenantRepository,
     private readonly mpService: MercadoPagoService,
+    private readonly configService: ConfigService,
   ) {}
 
   getMpAuthorizationUrl(tenantId: string) {
-    const clientId = process.env.MP_CLIENT_ID;
-    const redirectUri = process.env.MP_REDIRECT_URI;
+    const clientId = this.mpService.getClientId();
+    const redirectUri = this.mpService.getRedirectUri();
 
     if (!clientId || !redirectUri) {
       throw new BadRequestException(
@@ -26,9 +28,9 @@ export class TenantMpAuthService {
   }
 
   async exchangeMpCode(code: string, tenantId: string) {
-    const clientId = process.env.MP_CLIENT_ID;
-    const clientSecret = process.env.MP_CLIENT_SECRET;
-    const redirectUri = process.env.MP_REDIRECT_URI;
+    const clientId = this.mpService.getClientId();
+    const clientSecret = this.mpService.getClientSecret();
+    const redirectUri = this.mpService.getRedirectUri();
 
     const client = this.mpService.getPlatformClient();
     const oauth = new OAuth(client);
@@ -49,6 +51,7 @@ export class TenantMpAuthService {
           code,
           grant_type: 'authorization_code',
           redirect_uri: redirectUri,
+          test_token: this.configService.get('NODE_ENV') !== 'production',
         },
       });
 
@@ -59,7 +62,53 @@ export class TenantMpAuthService {
       });
     } catch (error) {
       throw new BadRequestException(
-        `Failed to exchange Mercado Pago code: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to exchange Mercado Pago code: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  async refreshTenantToken(tenantId: string): Promise<void> {
+    const tenant = await this.repo.findUnique({
+      where: { id: tenantId },
+      select: { mpRefToken: true },
+    });
+
+    if (!tenant?.mpRefToken) {
+      throw new BadRequestException(
+        `Tenant ${tenantId} does not have a refresh token.`,
+      );
+    }
+
+    const client = this.mpService.getPlatformClient();
+    const oauth = new OAuth(client);
+
+    try {
+      const oauthTyped = oauth as {
+        refresh: (args: { body: any }) => Promise<{
+          access_token: string;
+          refresh_token: string;
+        }>;
+      };
+
+      const result = await oauthTyped.refresh({
+        body: {
+          client_id: this.mpService.getClientId(),
+          client_secret: this.mpService.getClientSecret(),
+          refresh_token: tenant.mpRefToken,
+        },
+      });
+
+      await this.repo.update(tenantId, {
+        mpAccessToken: result.access_token,
+        mpRefToken: result.refresh_token,
+      });
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to refresh Mercado Pago token: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
   }

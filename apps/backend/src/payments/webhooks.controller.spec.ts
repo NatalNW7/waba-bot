@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WebhooksController } from './webhooks.controller';
 import { MercadoPagoWebhooksService } from './mercadopago-webhooks.service';
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import * as crypto from 'crypto';
 
 describe('WebhooksController', () => {
   let controller: WebhooksController;
   let service: MercadoPagoWebhooksService;
+  let configService: ConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -18,6 +20,12 @@ describe('WebhooksController', () => {
             handleNotification: jest.fn(),
           },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -25,6 +33,7 @@ describe('WebhooksController', () => {
     service = module.get<MercadoPagoWebhooksService>(
       MercadoPagoWebhooksService,
     );
+    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
@@ -38,7 +47,7 @@ describe('WebhooksController', () => {
     };
 
     it('should call service handleNotification if no signature validation is required', async () => {
-      process.env.MP_WEBHOOK_SECRET = '';
+      jest.spyOn(configService, 'get').mockReturnValue(undefined);
       await controller.handleWebhook('platform', mockBody, '', '');
       expect(service.handleNotification).toHaveBeenCalledWith(
         'payment',
@@ -48,7 +57,7 @@ describe('WebhooksController', () => {
     });
 
     it('should throw BadRequestException if signature is invalid', async () => {
-      process.env.MP_WEBHOOK_SECRET = 'secret';
+      jest.spyOn(configService, 'get').mockReturnValue('secret');
       const invalidSignature = 'ts=123,v1=wrong';
       await expect(
         controller.handleWebhook(
@@ -62,7 +71,7 @@ describe('WebhooksController', () => {
 
     it('should pass validation if signature is correct', async () => {
       const secret = 'test-secret';
-      process.env.MP_WEBHOOK_SECRET = secret;
+      jest.spyOn(configService, 'get').mockReturnValue(secret);
       const ts = '123456789';
       const resourceId = '123';
       const requestId = 'req-abc';

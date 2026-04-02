@@ -10,6 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { MercadoPagoWebhooksService } from './mercadopago-webhooks.service';
 import { Public } from '../auth/decorators/public.decorator';
 import * as crypto from 'crypto';
@@ -18,7 +19,10 @@ import * as crypto from 'crypto';
 @Controller('webhooks/mercadopago')
 @Public()
 export class WebhooksController {
-  constructor(private readonly webhooksService: MercadoPagoWebhooksService) {}
+  constructor(
+    private readonly webhooksService: MercadoPagoWebhooksService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /**
    * Universal Webhook for Mercado Pago
@@ -38,12 +42,19 @@ export class WebhooksController {
     const topic = queryTopic || body.type || body.topic;
     const resourceId = queryId || (body.data ? body.data.id : body.id);
 
+    const webhookSecret = this.configService.get<string>('MP_WEBHOOK_SECRET');
+
     // Signature Validation - MANDATORY when secret is configured
-    if (process.env.MP_WEBHOOK_SECRET) {
+    if (webhookSecret) {
       if (!signatureHeader) {
         throw new BadRequestException('Missing webhook signature header');
       }
-      this.validateSignature(signatureHeader, requestId, resourceId);
+      this.validateSignature(
+        signatureHeader,
+        requestId,
+        resourceId,
+        webhookSecret,
+      );
     }
 
     if (topic && resourceId) {
@@ -57,6 +68,7 @@ export class WebhooksController {
     signatureHeader: string,
     requestId: string,
     resourceId: string,
+    secret: string,
   ) {
     const parts = signatureHeader.split(',');
     const tsPart = parts.find((p) => p.startsWith('ts='));
@@ -68,7 +80,6 @@ export class WebhooksController {
 
     const ts = tsPart.split('=')[1];
     const v1 = v1Part.split('=')[1];
-    const secret = process.env.MP_WEBHOOK_SECRET || '';
 
     const manifest = `id:${resourceId};request-id:${requestId};ts:${ts};`;
     const hmac = crypto.createHmac('sha256', secret);

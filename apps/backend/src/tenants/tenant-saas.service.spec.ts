@@ -2,8 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TenantSaasService } from './tenant-saas.service';
 import { TenantRepository } from './tenant-repository.service';
 import { MercadoPagoService } from '../payments/mercadopago.service';
+import { ConfigService } from '@nestjs/config';
 import { PreApproval } from 'mercadopago';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 jest.mock('mercadopago');
 
@@ -29,6 +30,19 @@ describe('TenantSaasService', () => {
             getPlatformClient: jest.fn().mockReturnValue({}),
           },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              const config: Record<string, string> = {
+                MP_BACK_URL: 'http://localhost:8080/dashboard/settings/finance',
+                NODE_ENV: 'test',
+                MP_TEST_USER_EMAIL: 'test@testuser.com',
+              };
+              return config[key];
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -45,6 +59,7 @@ describe('TenantSaasService', () => {
         NotFoundException,
       );
     });
+
 
     it('should create a subscription and return initPoint', async () => {
       const mockTenant = {
