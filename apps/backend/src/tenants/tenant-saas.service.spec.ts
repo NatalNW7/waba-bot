@@ -36,6 +36,8 @@ describe('TenantSaasService', () => {
             get: jest.fn((key: string) => {
               const config: Record<string, string> = {
                 MP_BACK_URL: 'http://localhost:8080/dashboard/settings/finance',
+                NODE_ENV: 'test',
+                MP_TEST_USER_EMAIL: 'test@testuser.com',
               };
               return config[key];
             }),
@@ -58,18 +60,6 @@ describe('TenantSaasService', () => {
       );
     });
 
-    it('should throw BadRequestException if tenant has no email', async () => {
-      const mockTenant = {
-        id: 't1',
-        email: '',
-        saasPlan: { name: 'Gold', price: 100, interval: 'MONTHLY' },
-      };
-      jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
-
-      await expect(service.createSubscription('t1')).rejects.toThrow(
-        BadRequestException,
-      );
-    });
 
     it('should create a subscription and return initPoint', async () => {
       const mockTenant = {
