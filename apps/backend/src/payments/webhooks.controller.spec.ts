@@ -10,6 +10,9 @@ describe('WebhooksController', () => {
   let service: MercadoPagoWebhooksService;
   let configService: ConfigService;
 
+  const mockRequest = (queryOverrides: Record<string, string> = {}) =>
+    ({ query: { ...queryOverrides } }) as any;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WebhooksController],
@@ -41,14 +44,20 @@ describe('WebhooksController', () => {
   });
 
   describe('handleWebhook', () => {
-    const mockBody = {
-      type: 'payment',
-      data: { id: '123456' },
-    };
+    it('should resolve targetId as platform when user_id matches token', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'MP_PLATFORM_ACCESS_TOKEN')
+          return 'APP_USR-123-456-abc-257942709';
+        return undefined;
+      });
 
-    it('should call service handleNotification if no signature validation is required', async () => {
-      jest.spyOn(configService, 'get').mockReturnValue(undefined);
-      await controller.handleWebhook('platform', mockBody, '', '');
+      const body = {
+        type: 'payment',
+        data: { id: '123456' },
+        user_id: '257942709',
+      };
+
+      await controller.handleWebhook(mockRequest(), body, '', '');
       expect(service.handleNotification).toHaveBeenCalledWith(
         'payment',
         '123456',
@@ -56,14 +65,44 @@ describe('WebhooksController', () => {
       );
     });
 
+    it('should extract data.id from query params when available', async () => {
+      jest.spyOn(configService, 'get').mockReturnValue(undefined);
+
+      const body = { type: 'payment', data: { id: '999' } };
+      const req = mockRequest({ 'data.id': '123' });
+
+      await controller.handleWebhook(req, body, '', '', 'payment');
+      expect(service.handleNotification).toHaveBeenCalledWith(
+        'payment',
+        '123',
+        'platform',
+      );
+    });
+
+    it('should fall back to body.data.id when no query param', async () => {
+      jest.spyOn(configService, 'get').mockReturnValue(undefined);
+
+      const body = { type: 'payment', data: { id: '789' } };
+      await controller.handleWebhook(mockRequest(), body, '', '');
+      expect(service.handleNotification).toHaveBeenCalledWith(
+        'payment',
+        '789',
+        'platform',
+      );
+    });
+
     it('should throw BadRequestException if signature is invalid', async () => {
-      jest.spyOn(configService, 'get').mockReturnValue('secret');
-      const invalidSignature = 'ts=123,v1=wrong';
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'MP_WEBHOOK_SECRET') return 'secret';
+        return undefined;
+      });
+
+      const body = { type: 'payment', data: { id: '123' } };
       await expect(
         controller.handleWebhook(
-          'platform',
-          mockBody,
-          invalidSignature,
+          mockRequest(),
+          body,
+          'ts=123,v1=wrong',
           'req-1',
         ),
       ).rejects.toThrow(BadRequestException);
@@ -71,25 +110,45 @@ describe('WebhooksController', () => {
 
     it('should pass validation if signature is correct', async () => {
       const secret = 'test-secret';
-      jest.spyOn(configService, 'get').mockReturnValue(secret);
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'MP_WEBHOOK_SECRET') return secret;
+        return undefined;
+      });
+
       const ts = '123456789';
-      const resourceId = '123';
+      const dataId = '123';
       const requestId = 'req-abc';
 
-      const manifest = `id:${resourceId};request-id:${requestId};ts:${ts};`;
+      const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
       const hmac = crypto.createHmac('sha256', secret);
       hmac.update(manifest);
       const v1 = hmac.digest('hex');
       const signatureHeader = `ts=${ts},v1=${v1}`;
 
+      const req = mockRequest({ 'data.id': dataId });
       await controller.handleWebhook(
-        'platform',
-        { id: resourceId, topic: 'payment' },
+        req,
+        { topic: 'payment' },
         signatureHeader,
         requestId,
       );
 
       expect(service.handleNotification).toHaveBeenCalled();
+    });
+
+    it('should skip signature validation when no x-signature header', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'MP_WEBHOOK_SECRET') return 'secret';
+        return undefined;
+      });
+
+      const body = { type: 'payment', data: { id: '456' } };
+      await controller.handleWebhook(mockRequest(), body, '', '');
+      expect(service.handleNotification).toHaveBeenCalledWith(
+        'payment',
+        '456',
+        'platform',
+      );
     });
   });
 });
