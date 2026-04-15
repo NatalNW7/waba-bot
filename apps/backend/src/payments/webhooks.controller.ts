@@ -14,7 +14,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { MercadoPagoWebhooksService } from './mercadopago-webhooks.service';
 import { Public } from '../auth/decorators/public.decorator';
-import { Request } from 'express';
+import type { Request } from 'express';
 import * as crypto from 'crypto';
 
 @ApiTags('Webhooks')
