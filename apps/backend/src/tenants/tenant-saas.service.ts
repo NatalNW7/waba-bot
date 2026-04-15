@@ -55,6 +55,7 @@ export class TenantSaasService {
 
     const result = await preApproval.create({
       body: {
+        status: 'pending',
         reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
         auto_recurring: {
           frequency: freq.frequency,
