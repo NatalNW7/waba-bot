@@ -147,7 +147,11 @@ describe('TenantsService', () => {
 
       expect(result.tenant.id).toBe('tenant-new');
       expect(result.subscription?.initPoint).toBe('https://mp.com/pay');
-      expect(saasService.createSubscription).toHaveBeenCalledWith('tenant-new');
+      expect(saasService.createSubscription).toHaveBeenCalledWith(
+        'tenant-new',
+        undefined,
+        undefined,
+      );
     });
 
     it('should throw BadRequestException if email not verified', async () => {

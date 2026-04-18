@@ -12,13 +12,19 @@ import {
   EmailVerificationStep,
   PlanSelectionStep,
   ConfirmationStep,
+  PaymentStep,
   type BusinessInfo,
 } from "./components";
 
-type OnboardingStep = "business" | "email" | "plan" | "confirmation";
+type OnboardingStep =
+  | "business"
+  | "email"
+  | "plan"
+  | "payment"
+  | "confirmation";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-const STEPS: OnboardingStep[] = ["business", "email", "plan", "confirmation"];
+const STEPS: OnboardingStep[] = ["business", "email", "plan", "payment"];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -97,7 +103,10 @@ export default function OnboardingPage() {
   };
 
   // Single consolidated request for onboarding
-  const handleConfirmation = async () => {
+  const handlePaymentConfirm = async (
+    cardTokenId: string,
+    payerEmail: string,
+  ) => {
     if (!selectedPlan || !user) return;
 
     setIsSubmitting(true);
@@ -109,11 +118,12 @@ export default function OnboardingPage() {
         email: user.email,
         phone: sanitizePhone(businessInfo.phone),
         saasPlanId: selectedPlan.id,
+        cardTokenId,
+        payerEmail,
       });
 
-      if (result.subscription?.initPoint) {
-        window.location.href = result.subscription.initPoint;
-      }
+      // Subscription is created with status: authorized, no redirect needed
+      setStep("confirmation");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
       setIsSubmitting(false);
@@ -160,22 +170,55 @@ export default function OnboardingPage() {
               plans={plans}
               onPlanSelect={(plan) => {
                 setSelectedPlan(plan);
-                setStep("confirmation");
+                setStep("payment");
               }}
               onBack={() => setStep(isEmailVerified ? "business" : "email")}
             />
           )}
 
-          {step === "confirmation" && selectedPlan && user && (
-            <ConfirmationStep
+          {step === "payment" && selectedPlan && user && (
+            <PaymentStep
               businessInfo={businessInfo}
               selectedPlan={selectedPlan}
               email={user.email}
               isSubmitting={isSubmitting}
               error={error}
-              onConfirm={handleConfirmation}
+              onConfirm={handlePaymentConfirm}
               onBack={() => setStep("plan")}
             />
+          )}
+
+          {step === "confirmation" && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Sua assinatura foi criada!
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Sua conta foi ativada e o pagamento foi processado com sucesso.
+              </p>
+              <button
+                onClick={() => router.push("/profile")}
+                className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+              >
+                Acessar o Painel
+              </button>
+            </div>
           )}
         </div>
       </div>
