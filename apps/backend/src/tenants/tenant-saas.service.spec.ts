@@ -2,8 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TenantSaasService } from './tenant-saas.service';
 import { TenantRepository } from './tenant-repository.service';
 import { MercadoPagoService } from '../payments/mercadopago.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { PreApproval } from 'mercadopago';
+import { PreApproval, PreApprovalPlan } from 'mercadopago';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 jest.mock('mercadopago');
@@ -11,7 +12,12 @@ jest.mock('mercadopago');
 describe('TenantSaasService', () => {
   let service: TenantSaasService;
   let repo: TenantRepository;
-  let mpService: MercadoPagoService;
+  let prisma: PrismaService;
+
+  const configValues: Record<string, string> = {
+    MP_BACK_URL: 'http://localhost:8080/dashboard/settings/finance',
+    NODE_ENV: 'test',
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,16 +37,18 @@ describe('TenantSaasService', () => {
           },
         },
         {
+          provide: PrismaService,
+          useValue: {
+            saasPlan: {
+              findMany: jest.fn(),
+              update: jest.fn(),
+            },
+          },
+        },
+        {
           provide: ConfigService,
           useValue: {
-            get: jest.fn((key: string) => {
-              const config: Record<string, string> = {
-                MP_BACK_URL: 'http://localhost:8080/dashboard/settings/finance',
-                NODE_ENV: 'test',
-                MP_TEST_USER_EMAIL: 'test@testuser.com',
-              };
-              return config[key];
-            }),
+            get: jest.fn((key: string) => configValues[key]),
           },
         },
       ],
@@ -48,9 +56,93 @@ describe('TenantSaasService', () => {
 
     service = module.get<TenantSaasService>(TenantSaasService);
     repo = module.get<TenantRepository>(TenantRepository);
-    mpService = module.get<MercadoPagoService>(MercadoPagoService);
+    prisma = module.get<PrismaService>(PrismaService);
   });
 
+  // -------------------------------------------------------
+  // syncPlansWithMercadoPago
+  // -------------------------------------------------------
+  describe('syncPlansWithMercadoPago', () => {
+    it('should skip when all plans are already synced', async () => {
+      (prisma.saasPlan.findMany as jest.Mock).mockResolvedValue([]);
+
+      await service.syncPlansWithMercadoPago();
+
+      expect(prisma.saasPlan.findMany).toHaveBeenCalledWith({
+        where: { mpPlanId: null },
+      });
+      // No PreApprovalPlan calls should have been made
+      expect(PreApprovalPlan).not.toHaveBeenCalled();
+    });
+
+    it('should create MP plans for un-synced SaaS plans', async () => {
+      const unsyncedPlans = [
+        {
+          id: 'starter-monthly',
+          name: 'Starter',
+          price: 49,
+          interval: 'MONTHLY',
+          mpPlanId: null,
+        },
+      ];
+      (prisma.saasPlan.findMany as jest.Mock).mockResolvedValue(unsyncedPlans);
+
+      const mockCreate = jest.fn().mockResolvedValue({
+        id: 'mp-plan-abc',
+      });
+      (PreApprovalPlan as jest.Mock).mockImplementation(() => ({
+        create: mockCreate,
+      }));
+
+      await service.syncPlansWithMercadoPago();
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        body: {
+          reason: 'Assinatura SaaS - Starter (MONTHLY)',
+          auto_recurring: {
+            frequency: 1,
+            frequency_type: 'months',
+            transaction_amount: 49,
+            currency_id: 'BRL',
+          },
+          back_url: 'http://localhost:8080/dashboard/settings/finance',
+        },
+      });
+
+      expect(prisma.saasPlan.update).toHaveBeenCalledWith({
+        where: { id: 'starter-monthly' },
+        data: { mpPlanId: 'mp-plan-abc' },
+      });
+    });
+
+    it('should throw when MP_BACK_URL is not configured', async () => {
+      const unsyncedPlans = [
+        {
+          id: 'starter-monthly',
+          name: 'Starter',
+          price: 49,
+          interval: 'MONTHLY',
+          mpPlanId: null,
+        },
+      ];
+      (prisma.saasPlan.findMany as jest.Mock).mockResolvedValue(unsyncedPlans);
+
+      // Remove MP_BACK_URL from config
+      const configService = service['configService'] as any;
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'MP_BACK_URL') return undefined;
+        return configValues[key];
+      });
+
+      await expect(service.syncPlansWithMercadoPago()).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  // -------------------------------------------------------
+  // createSubscription
+  // -------------------------------------------------------
   describe('createSubscription', () => {
     it('should throw NotFoundException if tenant not found', async () => {
       jest.spyOn(repo, 'findUnique').mockResolvedValue(null);
@@ -60,12 +152,36 @@ describe('TenantSaasService', () => {
       );
     });
 
-
-    it('should create a subscription and return initPoint', async () => {
+    it('should throw BadRequestException if saasPlan has no mpPlanId', async () => {
       const mockTenant = {
         id: 't1',
         email: 't@t.com',
-        saasPlan: { name: 'Gold', price: 100, interval: 'MONTHLY' },
+        saasPlan: {
+          id: 'plan-1',
+          name: 'Gold',
+          price: 100,
+          interval: 'MONTHLY',
+          mpPlanId: null,
+        },
+      };
+      jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
+
+      await expect(service.createSubscription('t1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should create a subscription using preapproval_plan_id and return initPoint', async () => {
+      const mockTenant = {
+        id: 't1',
+        email: 't@t.com',
+        saasPlan: {
+          id: 'plan-1',
+          name: 'Gold',
+          price: 100,
+          interval: 'MONTHLY',
+          mpPlanId: 'mp-plan-xyz',
+        },
       };
       jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
 
@@ -81,7 +197,46 @@ describe('TenantSaasService', () => {
 
       expect(result.initPoint).toBe('http://mp.com/pay');
       expect(result.externalId).toBe('mp-sub-123');
-      expect(mockPreApprovalCreate).toHaveBeenCalled();
+      expect(mockPreApprovalCreate).toHaveBeenCalledWith({
+        body: {
+          preapproval_plan_id: 'mp-plan-xyz',
+          reason: 'Assinatura SaaS - Gold',
+          back_url: 'http://localhost:8080/dashboard/settings/finance',
+          external_reference: 't1',
+          status: 'pending',
+        },
+      });
+      // payer_email should NOT be present
+      const callBody = mockPreApprovalCreate.mock.calls[0][0].body;
+      expect(callBody).not.toHaveProperty('payer_email');
+      expect(callBody).not.toHaveProperty('auto_recurring');
+    });
+  });
+
+  // -------------------------------------------------------
+  // calculateNextBilling
+  // -------------------------------------------------------
+  describe('calculateNextBilling', () => {
+    it('should return 1 month ahead for MONTHLY', () => {
+      const result = service.calculateNextBilling('MONTHLY');
+      expect(result.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('should return 3 months ahead for QUARTERLY', () => {
+      const result = service.calculateNextBilling('QUARTERLY');
+      const threeMonths = new Date();
+      threeMonths.setMonth(threeMonths.getMonth() + 3);
+      // Allow 5-second tolerance
+      expect(Math.abs(result.getTime() - threeMonths.getTime())).toBeLessThan(
+        5000,
+      );
+    });
+
+    it('should return 1 year ahead for YEARLY', () => {
+      const result = service.calculateNextBilling('YEARLY');
+      const oneYear = new Date();
+      oneYear.setFullYear(oneYear.getFullYear() + 1);
+      expect(Math.abs(result.getTime() - oneYear.getTime())).toBeLessThan(5000);
     });
   });
 });
