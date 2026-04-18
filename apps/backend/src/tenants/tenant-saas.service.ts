@@ -2,30 +2,96 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MercadoPagoService } from '../payments/mercadopago.service';
 import { TenantRepository } from './tenant-repository.service';
-import { PreApproval } from 'mercadopago';
+import { PrismaService } from '../prisma/prisma.service';
+import { PreApproval, PreApprovalPlan } from 'mercadopago';
 import { PaymentInterval } from '@prisma/client';
 
 interface TenantWithSaasPlan {
   id: string;
   email: string;
   saasPlan: {
+    id: string;
     name: string;
     price: number | string;
     interval: PaymentInterval;
+    mpPlanId: string | null;
   };
 }
 
 @Injectable()
 export class TenantSaasService {
+  private readonly logger = new Logger(TenantSaasService.name);
+
   constructor(
     private readonly repo: TenantRepository,
     private readonly mpService: MercadoPagoService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Synchronize all SaaS plans with Mercado Pago.
+   * For each SaasPlan without an `mpPlanId`, creates a preapproval_plan
+   * via the Mercado Pago API and stores the returned ID.
+   */
+  async syncPlansWithMercadoPago(): Promise<void> {
+    const plans = await this.prisma.saasPlan.findMany({
+      where: { mpPlanId: null },
+    });
+
+    if (plans.length === 0) {
+      this.logger.log('All SaaS plans already synced with Mercado Pago.');
+      return;
+    }
+
+    const client = this.mpService.getPlatformClient();
+    const preApprovalPlan = new PreApprovalPlan(client);
+
+    const backUrl = this.configService.get<string>('MP_BACK_URL');
+    if (!backUrl) {
+      throw new BadRequestException(
+        'MP_BACK_URL não está configurada. Defina a variável de ambiente MP_BACK_URL.',
+      );
+    }
+
+    for (const plan of plans) {
+      const freq = this.getFrequencyConfig(plan.interval);
+
+      try {
+        const result = await preApprovalPlan.create({
+          body: {
+            reason: `Assinatura SaaS - ${plan.name} (${plan.interval})`,
+            auto_recurring: {
+              frequency: freq.frequency,
+              frequency_type: freq.frequencyType,
+              transaction_amount: Number(plan.price),
+              currency_id: 'BRL',
+            },
+            back_url: backUrl,
+          },
+        });
+
+        await this.prisma.saasPlan.update({
+          where: { id: plan.id },
+          data: { mpPlanId: result.id },
+        });
+
+        this.logger.log(
+          `Synced plan "${plan.name}" (${plan.interval}) → MP Plan ID: ${result.id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to sync plan "${plan.name}" (${plan.interval}): ${error.message}`,
+        );
+        throw error;
+      }
+    }
+  }
 
   async createSubscription(id: string) {
     const tenant = (await this.repo.findUnique({
@@ -37,14 +103,14 @@ export class TenantSaasService {
       throw new NotFoundException(`Tenant with ID ${id} not found.`);
     }
 
-    const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
+    if (!tenant.saasPlan.mpPlanId) {
+      throw new BadRequestException(
+        `SaaS plan "${tenant.saasPlan.name}" is not synced with Mercado Pago. Run syncPlansWithMercadoPago() first.`,
+      );
+    }
 
     const client = this.mpService.getPlatformClient();
     const preApproval = new PreApproval(client);
-
-    // Map PaymentInterval to Mercado Pago frequency
-    const freq = this.getFrequencyConfig(tenant.saasPlan.interval);
 
     const backUrl = this.configService.get<string>('MP_BACK_URL');
     if (!backUrl) {
@@ -55,19 +121,11 @@ export class TenantSaasService {
 
     const result = await preApproval.create({
       body: {
-        status: 'pending',
+        preapproval_plan_id: tenant.saasPlan.mpPlanId,
         reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
-        auto_recurring: {
-          frequency: freq.frequency,
-          frequency_type: freq.frequencyType,
-          transaction_amount: Number(tenant.saasPlan.price),
-          currency_id: 'BRL',
-        },
         back_url: backUrl,
-        payer_email: isProduction
-          ? tenant.email
-          : this.configService.get<string>('MP_TEST_USER_EMAIL'),
         external_reference: tenant.id,
+        status: 'pending',
       },
     });
 

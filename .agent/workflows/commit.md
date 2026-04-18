@@ -5,7 +5,8 @@ description: # Git Commit and Push (Conventional Commits): Stages changes, gener
 ## Steps
 
 1. **Pre-commit Check:** if there are changes into apps/backend/src/ or apps/frontend/, then run the `/clean` workflow to ensure there are no formatting or linting errors before committing.
-2. **Stage Changes:** Execute `git add .` to stage all current modifications.
+2. **Create a new branch:** Before commit and push, checkout to main, do the git pull and then create a new branch from main.
+   - **Stage Changes:** Execute `git add .` to stage all current modifications.
 3. **Analyze Diff:** Review the staged changes to identify the primary **Type** and **Scope**:
    - **feat:** A new feature (e.g., a new endpoint).
    - **fix:** A bug fix.
@@ -19,4 +20,12 @@ description: # Git Commit and Push (Conventional Commits): Stages changes, gener
    - _Example:_ `fix(prisma): resolve operating hours relation bug`
 5. **Execute Commit:** Run `git commit -m "[Generated Message]"`.
 6. **Push Changes:** Identify the current branch and run `git push origin [branch-name]`.
-7. **Final Confirmation:** Confirm the successful push and provide the user with the commit hash.
+7. **Open PR:** Create a PR like the example below: 
+## 🧩 O que foi feito
+Breve descrição da mudança.
+
+## 🎯 Por que isso foi feito
+Contexto / problema que resolve.
+
+## ⚠️ Impactos
+Mudanças breaking? Afeta outros serviços?.
