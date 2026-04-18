@@ -95,6 +95,7 @@ model SaasPlan {
   price       Decimal         @db.Decimal(10, 2)
   description String?
   interval    PaymentInterval @default(MONTHLY)
+  mpPlanId    String?         @map("mp_plan_id")
 
   tenants Tenant[] // Quem assina este plano?
 
