@@ -84,6 +84,6 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy frontend
-        run: flyctl deploy --remote-only --config apps/frontend/fly.toml
+        run: flyctl deploy --remote-only --config apps/frontend/fly.toml --build-arg NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY=${{ secrets.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

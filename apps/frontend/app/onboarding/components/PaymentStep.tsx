@@ -78,7 +78,8 @@ export function PaymentStep({
 
       {!process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY && (
         <div className="bg-destructive/10 text-destructive p-4 rounded-lg mb-4 font-medium">
-          ⚠️ Estamos com erro ao gerar pagamento, em breve voltaremos a funcionar normalmente.
+          ⚠️ Estamos com erro ao gerar pagamento, em breve voltaremos a
+          funcionar normalmente.
         </div>
       )}
 
@@ -102,7 +103,9 @@ export function PaymentStep({
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10 rounded-lg">
             <div className="flex flex-col items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-2"></div>
-              <p className="text-sm font-medium text-muted-foreground">Carregando formulário de pagamento seguro...</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Carregando formulário de pagamento seguro...
+              </p>
             </div>
           </div>
         )}
