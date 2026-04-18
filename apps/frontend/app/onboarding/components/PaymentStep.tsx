@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { type ISaasPlan } from "@repo/api-types";
 import { type BusinessInfo } from "./BusinessInfoStep";
 import { initMercadoPago, CardPayment } from "@mercadopago/sdk-react";
+
+if (typeof window !== "undefined") {
+  const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+  if (publicKey) {
+    initMercadoPago(publicKey, { locale: "pt-BR" });
+  } else {
+    console.error("Mercado Pago Public Key is not defined");
+  }
+}
 
 interface PaymentStepProps {
   businessInfo: BusinessInfo;
@@ -24,15 +33,7 @@ export function PaymentStep({
   onConfirm,
   onBack,
 }: PaymentStepProps) {
-  useEffect(() => {
-    // Initialize Mercado Pago with the public key
-    const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
-    if (publicKey) {
-      initMercadoPago(publicKey);
-    } else {
-      console.error("Mercado Pago Public Key is not defined");
-    }
-  }, []);
+  const [isBrickReady, setIsBrickReady] = useState(false);
 
   const initialization = {
     amount: Number(selectedPlan.price),
@@ -56,7 +57,7 @@ export function PaymentStep({
   };
 
   const onReady = async () => {
-    // Optional: Hide a loading spinner here when Brick is ready
+    setIsBrickReady(true);
   };
 
   return (
@@ -75,6 +76,12 @@ export function PaymentStep({
         </div>
       )}
 
+      {!process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY && (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-lg mb-4 font-medium">
+          ⚠️ Estamos com erro ao gerar pagamento, em breve voltaremos a funcionar normalmente.
+        </div>
+      )}
+
       <div className="mb-6 relative min-h-[400px]">
         {/* We add pointer-events-none and opacity to prevent double submission */}
         <div className={isSubmitting ? "pointer-events-none opacity-50" : ""}>
@@ -90,6 +97,15 @@ export function PaymentStep({
             }}
           />
         </div>
+
+        {!isBrickReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10 rounded-lg">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-2"></div>
+              <p className="text-sm font-medium text-muted-foreground">Carregando formulário de pagamento seguro...</p>
+            </div>
+          </div>
+        )}
 
         {isSubmitting && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
