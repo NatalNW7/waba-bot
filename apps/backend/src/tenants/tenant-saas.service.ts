@@ -104,9 +104,11 @@ export class TenantSaasService {
     }
 
     if (!tenant.saasPlan.mpPlanId) {
-      throw new BadRequestException(
-        `SaaS plan "${tenant.saasPlan.name}" is not synced with Mercado Pago. Run syncPlansWithMercadoPago() first.`,
+      this.logger.log(
+        'SaaS plan is not synced with Mercado Pago. Syncing now...',
       );
+      await this.syncPlansWithMercadoPago();
+      return this.createSubscription(id);
     }
 
     const client = this.mpService.getPlatformClient();

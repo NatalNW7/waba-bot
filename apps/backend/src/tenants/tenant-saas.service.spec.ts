@@ -152,8 +152,8 @@ describe('TenantSaasService', () => {
       );
     });
 
-    it('should throw BadRequestException if saasPlan has no mpPlanId', async () => {
-      const mockTenant = {
+    it('should sync plans and retry subscription if saasPlan has no mpPlanId', async () => {
+      const mockTenantWithoutPlan = {
         id: 't1',
         email: 't@t.com',
         saasPlan: {
@@ -164,11 +164,37 @@ describe('TenantSaasService', () => {
           mpPlanId: null,
         },
       };
-      jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
 
-      await expect(service.createSubscription('t1')).rejects.toThrow(
-        BadRequestException,
-      );
+      const mockTenantWithPlan = {
+        ...mockTenantWithoutPlan,
+        saasPlan: {
+          ...mockTenantWithoutPlan.saasPlan,
+          mpPlanId: 'mp-plan-xyz',
+        },
+      };
+
+      jest
+        .spyOn(repo, 'findUnique')
+        .mockResolvedValueOnce(mockTenantWithoutPlan as any)
+        .mockResolvedValueOnce(mockTenantWithPlan as any);
+
+      const syncSpy = jest
+        .spyOn(service, 'syncPlansWithMercadoPago')
+        .mockResolvedValue();
+
+      const mockPreApprovalCreate = jest.fn().mockResolvedValue({
+        init_point: 'http://mp.com/pay',
+        id: 'mp-sub-123',
+      });
+      (PreApproval as jest.Mock).mockImplementation(() => ({
+        create: mockPreApprovalCreate,
+      }));
+
+      const result = await service.createSubscription('t1');
+
+      expect(syncSpy).toHaveBeenCalled();
+      expect(result.initPoint).toBe('http://mp.com/pay');
+      expect(result.externalId).toBe('mp-sub-123');
     });
 
     it('should create a subscription using preapproval_plan_id and return initPoint', async () => {
