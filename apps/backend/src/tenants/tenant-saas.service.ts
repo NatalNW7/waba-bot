@@ -93,7 +93,11 @@ export class TenantSaasService {
     }
   }
 
-  async createSubscription(id: string) {
+  async createSubscription(
+    id: string,
+    cardTokenId?: string,
+    payerEmail?: string,
+  ) {
     const tenant = (await this.repo.findUnique({
       where: { id },
       include: { saasPlan: true },
@@ -108,7 +112,7 @@ export class TenantSaasService {
         'SaaS plan is not synced with Mercado Pago. Syncing now...',
       );
       await this.syncPlansWithMercadoPago();
-      return this.createSubscription(id);
+      return this.createSubscription(id, cardTokenId, payerEmail);
     }
 
     const client = this.mpService.getPlatformClient();
@@ -121,14 +125,21 @@ export class TenantSaasService {
       );
     }
 
+    const body: any = {
+      preapproval_plan_id: tenant.saasPlan.mpPlanId,
+      reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
+      back_url: backUrl,
+      external_reference: tenant.id,
+      status: cardTokenId ? 'authorized' : 'pending',
+    };
+
+    if (cardTokenId) {
+      body.card_token_id = cardTokenId;
+      body.payer_email = payerEmail || tenant.email;
+    }
+
     const result = await preApproval.create({
-      body: {
-        preapproval_plan_id: tenant.saasPlan.mpPlanId,
-        reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
-        back_url: backUrl,
-        external_reference: tenant.id,
-        status: 'pending',
-      },
+      body,
     });
 
     // Calculate and update next billing date based on plan interval

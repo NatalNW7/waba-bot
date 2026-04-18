@@ -197,7 +197,7 @@ describe('TenantSaasService', () => {
       expect(result.externalId).toBe('mp-sub-123');
     });
 
-    it('should create a subscription using preapproval_plan_id and return initPoint', async () => {
+    it('should create a subscription using preapproval_plan_id and return initPoint (without cardTokenId)', async () => {
       const mockTenant = {
         id: 't1',
         email: 't@t.com',
@@ -236,6 +236,49 @@ describe('TenantSaasService', () => {
       const callBody = mockPreApprovalCreate.mock.calls[0][0].body;
       expect(callBody).not.toHaveProperty('payer_email');
       expect(callBody).not.toHaveProperty('auto_recurring');
+    });
+
+    it('should create a subscription with card_token_id and status authorized when provided', async () => {
+      const mockTenant = {
+        id: 't2',
+        email: 't2@t.com',
+        saasPlan: {
+          id: 'plan-2',
+          name: 'Pro',
+          price: 200,
+          interval: 'MONTHLY',
+          mpPlanId: 'mp-plan-abc',
+        },
+      };
+      jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
+
+      const mockPreApprovalCreate = jest.fn().mockResolvedValue({
+        init_point: 'http://mp.com/pay2',
+        id: 'mp-sub-456',
+      });
+      (PreApproval as jest.Mock).mockImplementation(() => ({
+        create: mockPreApprovalCreate,
+      }));
+
+      const result = await service.createSubscription(
+        't2',
+        'token-123',
+        'payer@test.com',
+      );
+
+      expect(result.initPoint).toBe('http://mp.com/pay2');
+      expect(result.externalId).toBe('mp-sub-456');
+      expect(mockPreApprovalCreate).toHaveBeenCalledWith({
+        body: {
+          preapproval_plan_id: 'mp-plan-abc',
+          reason: 'Assinatura SaaS - Pro',
+          back_url: 'http://localhost:8080/dashboard/settings/finance',
+          external_reference: 't2',
+          status: 'authorized',
+          card_token_id: 'token-123',
+          payer_email: 'payer@test.com',
+        },
+      });
     });
   });
 

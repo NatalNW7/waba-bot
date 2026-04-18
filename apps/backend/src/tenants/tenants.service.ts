@@ -109,7 +109,11 @@ export class TenantsService {
     // Create subscription if requested (default: true)
     const shouldCreateSubscription = dto.createSubscription !== false;
     if (shouldCreateSubscription) {
-      const subscription = await this.saasService.createSubscription(tenant.id);
+      const subscription = await this.saasService.createSubscription(
+        tenant.id,
+        dto.cardTokenId,
+        dto.payerEmail,
+      );
       response.subscription = {
         initPoint: subscription.initPoint,
         externalId: subscription.externalId,
