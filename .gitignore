@@ -38,4 +38,6 @@ yarn.lock
 
 # --- Mercado Pago ---
 mp.info
-mcp-mercadopago-bridge.js
+scratch/
+mcp-mercadopago-proxy.js
+

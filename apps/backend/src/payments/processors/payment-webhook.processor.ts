@@ -3,10 +3,11 @@ import { Logger } from '@nestjs/common';
 import type { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MercadoPagoService } from '../mercadopago.service';
-import { Payment, PreApproval } from 'mercadopago';
+import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago';
 import {
   PaymentStatus,
   PaymentMethod,
+  PaymentType,
   SubscriptionStatus,
   PaymentInterval,
 } from '@prisma/client';
@@ -14,6 +15,22 @@ import { PaymentRepository } from '../payment-repository.service';
 import { InfinitePayService } from '../infinite-pay.service';
 import { InfinitePayWebhookPayload } from '../dto/infinite-pay.dto';
 import { AppointmentPaymentHandlerService } from '../../notifications/appointment-payment-handler.service';
+
+/**
+ * Payload parcial da resposta da API de Pagamentos do Mercado Pago.
+ * Campos que não existem nos tipos oficiais do SDK (ex: net_received_amount)
+ * são declarados aqui para evitar casts `as any`.
+ */
+interface MpPaymentData {
+  id?: string;
+  status?: string;
+  transaction_amount?: number;
+  external_reference?: string;
+  payment_method_id?: string;
+  operation_type?: string;
+  net_received_amount?: number;
+  fee_details?: Array<{ amount: number; type: string; fee_payer: string }>;
+}
 
 @Processor('payment-notifications')
 export class PaymentQueueProcessor {
@@ -49,6 +66,7 @@ export class PaymentQueueProcessor {
 
       switch (topic) {
         case 'payment':
+        case 'subscription_authorized_payment':
           await this.handlePaymentNotification(resourceId, client, targetId);
           break;
         case 'subscription_preapproval':
@@ -78,7 +96,7 @@ export class PaymentQueueProcessor {
 
   private async handlePaymentNotification(
     paymentId: string,
-    client: any,
+    client: MercadoPagoConfig,
     targetId: string,
   ) {
     try {
@@ -90,7 +108,15 @@ export class PaymentQueueProcessor {
         return;
       }
 
-      const externalRef = data.external_reference;
+      const paymentData = data as MpPaymentData;
+
+      // Filtrar validações de cartão (valor R$0 gerado pelo MP para testar o cartão)
+      if (paymentData.operation_type === 'card_validation') {
+        this.logger.log(
+          `Ignoring card_validation payment ${paymentId}`,
+        );
+        return;
+      }
 
       // 1. Check if payment already exists in our DB
       const existingPayments = await this.paymentRepo.findAll({
@@ -98,73 +124,40 @@ export class PaymentQueueProcessor {
       });
 
       if (existingPayments.length > 0) {
-        const paymentData = data as any;
-        await this.paymentRepo.update(existingPayments[0].id, {
-          status: this.mapStatus(data.status!),
-          netAmount: paymentData.net_received_amount,
-          fee: paymentData.fee_details?.[0]?.amount,
-        });
+        await this.updateExistingPayment(
+          existingPayments[0],
+          paymentData,
+          targetId,
+        );
         return;
       }
 
-      // 2. SaaS Payment (platform webhook, external_reference = tenantId)
-      if (targetId === 'platform' && externalRef) {
-        const tenant = await this.prisma.tenant.findUnique({
-          where: { id: externalRef },
-        });
+      // 2. Classify and process new payment
+      const paymentType = this.classifyPaymentType(paymentData, targetId);
 
-        if (tenant) {
-          const paymentData = data as any;
-          await this.paymentRepo.create({
-            externalId: paymentId,
-            amount: Number(data.transaction_amount || 0),
-            netAmount: paymentData.net_received_amount,
-            fee: paymentData.fee_details?.[0]?.amount,
-            status: this.mapStatus(data.status!),
-            type: 'SAAS_FEE',
-            method: this.mapPaymentMethod(data.payment_method_id ?? ''),
-            tenantId: tenant.id,
-          });
-
-          this.logger.log(`Created SAAS_FEE payment for tenant ${tenant.id}`);
-          return;
-        }
+      if (!paymentType) {
+        this.logger.warn(
+          `Ignoring unclassified payment ${paymentId} (operation_type: ${paymentData.operation_type})`,
+        );
+        return;
       }
 
-      // 3. Appointment payment (tenant webhook)
-      if (externalRef) {
-        const appointment = await this.prisma.appointment.findUnique({
-          where: { id: externalRef },
-        });
-
-        if (appointment) {
-          const paymentData = data as any;
-          const paymentStatus = this.mapStatus(data.status!);
-          const newPayment = await this.paymentRepo.create({
-            externalId: paymentId,
-            amount: Number(data.transaction_amount || 0),
-            netAmount: paymentData.net_received_amount,
-            fee: paymentData.fee_details?.[0]?.amount,
-            status: paymentStatus,
-            type: 'APPOINTMENT',
-            method: this.mapPaymentMethod(data.payment_method_id ?? ''),
-            tenantId: appointment.tenantId,
-            customerId: appointment.customerId,
-          });
-
-          if (!appointment.paymentId) {
-            await this.prisma.appointment.update({
-              where: { id: appointment.id },
-              data: { paymentId: newPayment.id },
-            });
-          }
-
-          // Update appointment status and send notifications
-          await this.appointmentPaymentHandler.handlePaymentResult(
-            appointment.id,
-            paymentStatus,
+      switch (paymentType) {
+        case PaymentType.SAAS_FEE:
+          await this.createSaasPayment(paymentData, paymentId, targetId);
+          break;
+        case PaymentType.APPOINTMENT:
+          await this.createAppointmentPayment(
+            paymentData,
+            paymentId,
+            targetId,
           );
-        }
+          break;
+        case PaymentType.SUBSCRIPTION:
+          this.logger.log(
+            `Subscription payment ${paymentId} from tenant ${targetId} — future handling`,
+          );
+          break;
       }
     } catch (error: unknown) {
       this.logger.error(
@@ -174,13 +167,188 @@ export class PaymentQueueProcessor {
     }
   }
 
+  /**
+   * Classifica o tipo de pagamento com base no payload do Mercado Pago.
+   * Usa `operation_type`, `targetId` e `external_reference` como critérios.
+   */
+  private classifyPaymentType(
+    data: MpPaymentData,
+    targetId: string,
+  ): PaymentType | null {
+    // SaaS: pagamento da plataforma com external_reference (tenantId)
+    if (targetId === 'platform' && data.external_reference) {
+      return PaymentType.SAAS_FEE;
+    }
+
+    // Assinatura de cliente com tenant (pagamento recorrente não-plataforma)
+    if (
+      data.operation_type === 'recurring_payment' &&
+      targetId !== 'platform'
+    ) {
+      return PaymentType.SUBSCRIPTION;
+    }
+
+    // Pagamento avulso de agendamento
+    if (data.external_reference) {
+      return PaymentType.APPOINTMENT;
+    }
+
+    return null; // Não classificável
+  }
+
+  /**
+   * Atualiza um pagamento já existente no banco de dados e gerencia
+   * o status do tenant quando o pagamento é SaaS.
+   */
+  private async updateExistingPayment(
+    existing: { id: string },
+    paymentData: MpPaymentData,
+    targetId: string,
+  ) {
+    const newStatus = this.mapStatus(paymentData.status!);
+    await this.paymentRepo.update(existing.id, {
+      status: newStatus,
+      netAmount: paymentData.net_received_amount,
+      fee: paymentData.fee_details?.[0]?.amount,
+    });
+
+    // Atualizar saasStatus do tenant quando o pagamento é SaaS
+    if (targetId === 'platform' && paymentData.external_reference) {
+      if (newStatus === PaymentStatus.FAILED) {
+        await this.prisma.tenant.update({
+          where: { id: paymentData.external_reference },
+          data: { saasStatus: SubscriptionStatus.PAST_DUE },
+        });
+        this.logger.warn(
+          `SaaS payment update failed for tenant ${paymentData.external_reference}, status set to PAST_DUE`,
+        );
+      } else if (newStatus === PaymentStatus.APPROVED) {
+        await this.prisma.tenant.update({
+          where: { id: paymentData.external_reference },
+          data: { saasStatus: SubscriptionStatus.ACTIVE },
+        });
+        this.logger.log(
+          `SaaS payment approved for tenant ${paymentData.external_reference}, status restored to ACTIVE`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Cria um novo pagamento do tipo SAAS_FEE e atualiza o status do tenant.
+   */
+  private async createSaasPayment(
+    paymentData: MpPaymentData,
+    paymentId: string,
+    targetId: string,
+  ) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: paymentData.external_reference! },
+    });
+
+    if (!tenant) {
+      this.logger.warn(
+        `Tenant ${paymentData.external_reference} not found for SaaS payment ${paymentId}`,
+      );
+      return;
+    }
+
+    const paymentStatus = this.mapStatus(paymentData.status!);
+    await this.paymentRepo.create({
+      externalId: paymentId,
+      amount: Number(paymentData.transaction_amount || 0),
+      netAmount: paymentData.net_received_amount,
+      fee: paymentData.fee_details?.[0]?.amount,
+      status: paymentStatus,
+      type: PaymentType.SAAS_FEE,
+      method: this.mapPaymentMethod(paymentData.payment_method_id ?? ''),
+      tenantId: tenant.id,
+    });
+
+    // Atualizar saasStatus com base no resultado do pagamento
+    if (paymentStatus === PaymentStatus.FAILED) {
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { saasStatus: SubscriptionStatus.PAST_DUE },
+      });
+      this.logger.warn(
+        `SaaS payment failed for tenant ${tenant.id}, status set to PAST_DUE`,
+      );
+    } else if (paymentStatus === PaymentStatus.APPROVED) {
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { saasStatus: SubscriptionStatus.ACTIVE },
+      });
+      this.logger.log(
+        `SaaS payment approved for tenant ${tenant.id}, status set to ACTIVE`,
+      );
+    }
+
+    this.logger.log(`Created SAAS_FEE payment for tenant ${tenant.id}`);
+  }
+
+  /**
+   * Cria um novo pagamento do tipo APPOINTMENT vinculado a um agendamento.
+   */
+  private async createAppointmentPayment(
+    paymentData: MpPaymentData,
+    paymentId: string,
+    targetId: string,
+  ) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id: paymentData.external_reference! },
+    });
+
+    if (!appointment) {
+      this.logger.warn(
+        `Appointment ${paymentData.external_reference} not found for payment ${paymentId}`,
+      );
+      return;
+    }
+
+    const paymentStatus = this.mapStatus(paymentData.status!);
+    const newPayment = await this.paymentRepo.create({
+      externalId: paymentId,
+      amount: Number(paymentData.transaction_amount || 0),
+      netAmount: paymentData.net_received_amount,
+      fee: paymentData.fee_details?.[0]?.amount,
+      status: paymentStatus,
+      type: PaymentType.APPOINTMENT,
+      method: this.mapPaymentMethod(paymentData.payment_method_id ?? ''),
+      tenantId: appointment.tenantId,
+      customerId: appointment.customerId,
+    });
+
+    if (!appointment.paymentId) {
+      await this.prisma.appointment.update({
+        where: { id: appointment.id },
+        data: { paymentId: newPayment.id },
+      });
+    }
+
+    // Update appointment status and send notifications
+    await this.appointmentPaymentHandler.handlePaymentResult(
+      appointment.id,
+      paymentStatus,
+    );
+  }
+
   private async handleSubscriptionNotification(
     preApprovalId: string,
-    client: any,
+    client: MercadoPagoConfig,
     targetId: string,
   ) {
     const preApproval = new PreApproval(client);
     const data = await preApproval.get({ id: preApprovalId });
+
+    // Monitorar semáforo de saúde da assinatura (campo não tipado pelo SDK)
+    const semaphore = (data as any).semaphore as string | undefined;
+    if (semaphore && semaphore !== 'green') {
+      this.logger.warn(
+        `Subscription ${preApprovalId} semaphore is "${semaphore}" — ` +
+          `status: ${data.status}, external_reference: ${data.external_reference}`,
+      );
+    }
 
     // CASE 1: SaaS subscription (platform) - Update Tenant
     if (targetId === 'platform') {
@@ -255,14 +423,14 @@ export class PaymentQueueProcessor {
     switch (mpStatus) {
       case 'authorized':
       case 'active':
-        return 'ACTIVE';
+        return SubscriptionStatus.ACTIVE;
       case 'paused':
       case 'pending':
-        return 'PAST_DUE';
+        return SubscriptionStatus.PAST_DUE;
       case 'cancelled':
-        return 'CANCELED';
+        return SubscriptionStatus.CANCELED;
       default:
-        return 'PAST_DUE';
+        return SubscriptionStatus.PAST_DUE;
     }
   }
 

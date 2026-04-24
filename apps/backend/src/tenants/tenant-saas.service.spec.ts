@@ -230,11 +230,12 @@ describe('TenantSaasService', () => {
           back_url: 'http://localhost:8080/dashboard/settings/finance',
           external_reference: 't1',
           status: 'pending',
+          payer_email: undefined,
         },
       });
-      // payer_email should NOT be present
+      // payer_email should always be present in the body (value comes from caller)
       const callBody = mockPreApprovalCreate.mock.calls[0][0].body;
-      expect(callBody).not.toHaveProperty('payer_email');
+      expect(callBody).toHaveProperty('payer_email');
       expect(callBody).not.toHaveProperty('auto_recurring');
     });
 
