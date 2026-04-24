@@ -131,11 +131,11 @@ export class TenantSaasService {
       back_url: backUrl,
       external_reference: tenant.id,
       status: cardTokenId ? 'authorized' : 'pending',
+      payer_email: payerEmail,
     };
 
     if (cardTokenId) {
       body.card_token_id = cardTokenId;
-      body.payer_email = payerEmail || tenant.email;
     }
 
     const result = await preApproval.create({
