@@ -138,9 +138,19 @@ export class TenantSaasService {
       body.card_token_id = cardTokenId;
     }
 
-    const result = await preApproval.create({
-      body,
-    });
+    let result;
+    try {
+      result = await preApproval.create({
+        body,
+      });
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create subscription for tenant ${id}: ${error.message}`,
+      );
+      throw new BadRequestException(
+        'Falha ao processar pagamento junto ao Mercado Pago. Verifique os dados do cartão.',
+      );
+    }
 
     // Calculate and update next billing date based on plan interval
     const nextBilling = this.calculateNextBilling(tenant.saasPlan.interval);

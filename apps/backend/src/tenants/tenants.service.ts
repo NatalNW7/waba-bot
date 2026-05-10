@@ -109,15 +109,25 @@ export class TenantsService {
     // Create subscription if requested (default: true)
     const shouldCreateSubscription = dto.createSubscription !== false;
     if (shouldCreateSubscription) {
-      const subscription = await this.saasService.createSubscription(
-        tenant.id,
-        dto.cardTokenId,
-        dto.payerEmail,
-      );
-      response.subscription = {
-        initPoint: subscription.initPoint,
-        externalId: subscription.externalId,
-      };
+      try {
+        const subscription = await this.saasService.createSubscription(
+          tenant.id,
+          dto.cardTokenId,
+          dto.payerEmail,
+        );
+        response.subscription = {
+          initPoint: subscription.initPoint,
+          externalId: subscription.externalId,
+        };
+      } catch (error) {
+        // Rollback: desvincula o tenant do user e deleta o tenant recém criado
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { tenantId: null },
+        });
+        await this.repo.delete(tenant.id);
+        throw error;
+      }
     }
 
     return response;
