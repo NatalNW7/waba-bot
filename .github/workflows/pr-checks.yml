@@ -58,11 +58,15 @@ jobs:
 
       - name: Build projects
         run: pnpm turbo build --affected
+  
+  security-gates:
+    name: Security Gates
+    uses: ./.github/workflows/security.yml
         
   all-checks-pass:
     name: Verify All Checks Passed
     runs-on: ubuntu-latest
-    needs: [lint-format, unit-test, build-verification]
+    needs: [lint-format, unit-test, build-verification, security-gates]
     if: always()
     steps:
       - name: Check if any checks failed
