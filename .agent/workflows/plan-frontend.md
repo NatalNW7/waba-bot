@@ -4,13 +4,10 @@ description: # Frontend Feature Implementation Planner: Specialized phased roadm
 
 ## Steps
 
-### Important: Start the plan with the .context/agents/frontend-specialist.md
-
 1. **Contract Alignment (SSOT):** - Analyze `apps/backend/docs/api-reference/api-reference.md`.
    - **New Step:** Check `packages/shared-types` or the backend DTOs to ensure the frontend has access to the exact interfaces it needs. If missing, Phase 1 must include "Type Exporting."
 
 2. **Context & Git Audit:**
-   - Run `git status` and apply `risk-assessment-rules.md`.
    - Check for uncommitted changes in `apps/frontend` specifically.
 
 3. **Phase Breakdown (Frontend Optimized):** - Divide into 4–10 logical phases. Suggested structure:

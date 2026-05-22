@@ -5,29 +5,10 @@ description: # Git Commit and Push (Conventional Commits): Stages changes, gener
 ## Steps
 
 1. **Pre-commit Check:** if there are changes into apps/backend/src/ or apps/frontend/, then run the `/clean` workflow to ensure there are no formatting or linting errors before committing.
-2. **Create a new branch:** Before committing and pushing, execute the git pull and then check if the current branch has not already been merged with main. If the current branch was merged, check out to main, do the git pull again, and then create a new branch from main.
-   - **Stage Changes:** Execute `git add .` to stage all current modifications.
-3. **Analyze Diff:** Review the staged changes to identify the primary **Type** and **Scope**:
-   - **feat:** A new feature (e.g., a new endpoint).
-   - **fix:** A bug fix.
-   - **docs:** Documentation only changes.
-   - **style:** Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc).
-   - **refactor:** A code change that neither fixes a bug nor adds a feature.
-   - **chore:** Updating build tasks, package manager configs, etc.
-   - **test:** Adding missing tests or correcting existing tests.
-4. **Draft Message:** Compose the message in the format: `<type>(<scope>): <description>`.
-   - _Example:_ `feat(api): add subscription endpoint`
-   - _Example:_ `fix(prisma): resolve operating hours relation bug`
+2. **Create a new branch from main:**
+  - If the branch is merged, checkout to main, execute the pull and then create a new branch.
+  - if you are in branch main, execute the pull and then create a new branch.
 5. **Execute Commit:** Run `git commit -m "[Generated Message]"`.
-6. **Push Changes:** Identify the current branch and run `git push origin [branch-name]`.
+6. **Push Changes:** Identify the current branch and run `git push [branch-name]`.
 7. **Open PR:**
    - Check if a PR already exists; if it does, skip the PR creation step.
-   - When create a PR, use the summary example below: 
-## 🧩 O que foi feito
-Breve descrição da mudança.
-
-## 🎯 Por que isso foi feito
-Contexto / problema que resolve.
-
-## ⚠️ Impactos
-Mudanças breaking? Afeta outros serviços?.

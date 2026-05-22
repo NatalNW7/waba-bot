@@ -5,6 +5,8 @@ description: When create or update a dto file or when create or update the schem
 
 # Swagger & Documentation Enforcement
 
+
+- **Run the workflow `/sync-db`**
 - **CLI Plugin:** Leverage the NestJS Swagger plugin. Use JSDoc `/** */` for descriptions.
 - **Descriptions:** Every DTO property and Controller method must have a human-readable description.
 - **Examples:** Provide a realistic `example` for every DTO field.
