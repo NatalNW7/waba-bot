@@ -5,10 +5,19 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
+
+  security-gates:
+    name: Security Gates
+    uses: ./.github/workflows/security.yml
+
   detect-changes:
     name: Detect Changed Paths
     runs-on: ubuntu-latest
+    needs: security-gates
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -39,7 +48,7 @@ jobs:
   deploy-backend:
     name: Deploy Backend to Fly.io
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs: [security-gates, detect-changes]
     if: needs.detect-changes.outputs.backend == 'true'
     concurrency: deploy-backend
     steps:
@@ -73,7 +82,7 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend to Fly.io
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs: [security-gates, detect-changes]
     if: needs.detect-changes.outputs.frontend == 'true'
     concurrency: deploy-frontend
     steps:
