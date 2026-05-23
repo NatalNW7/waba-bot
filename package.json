@@ -18,7 +18,7 @@
   "devDependencies": {
     "eslint-module-utils": "^2.12.1",
     "prettier": "^3.4.2",
-    "turbo": "^2.8.8"
+    "turbo": "^2.9.14"
   },
   "pnpm": {
     "overrides": {
