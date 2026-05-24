@@ -64,6 +64,7 @@ jobs:
   
   security-gates:
     name: Security Gates
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/security.yml
         
   all-checks-pass:
