@@ -76,18 +76,22 @@ export default function OnboardingPage() {
     const fetchPlans = async () => {
       try {
         const token = getAuthToken();
+        console.log("Fetching plans with token:", !!token);
         const response = await fetch(`${BACKEND_URL}/saas-plans`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
         });
+        console.log("Plans response status:", response.status);
         if (response.ok) {
-          const data = (await response.json()) as ISaasPlan[];
+          const data = await response.json();
+          console.log("Plans data:", data);
           setPlans(data);
+        } else {
+          console.log("Failed to fetch plans body:", await response.text());
         }
-      } catch {
-        console.error("Failed to fetch plans");
+      } catch (err) {
+        console.error("Failed to fetch plans", err);
       }
     };
     fetchPlans();

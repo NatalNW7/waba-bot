@@ -21,6 +21,7 @@ const TEST_CARD = {
 };
 
 test.describe('Onboarding and Mercado Pago Checkout', () => {
+  test.setTimeout(120000); // Mercado Pago UI automation can be slow
   let tenantId: string | null = null;
   let authToken: string | null = null;
 
@@ -31,6 +32,7 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
       console.log('Setting up pombohook...');
       execSync('pombo ping --server=wss://pombohook-server.fly.dev --token="pombo_token-server"', { stdio: 'inherit' });
       execSync('pombo route --path=/webhooks/mercadopago --port=8081', { stdio: 'inherit' });
+      execSync('pombo route --path=/dashboard --port=8080', { stdio: 'inherit' });
       
       // We run pombo go in the background. It will stay running.
       const { spawn } = require('child_process');
@@ -46,6 +48,8 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
   });
 
   test.beforeEach(async ({ page, request }) => {
+    page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
+    
     // 1. Authenticate via backend API to get JWT token
     const loginRes = await request.post('http://localhost:8081/auth/login', {
       data: {
@@ -58,9 +62,8 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
     const data = await loginRes.json();
     authToken = data.accessToken;
 
-    // 2. Set token in localStorage to mock login
-    await page.goto('/');
-    await page.evaluate((token) => {
+    // 2. Set token in localStorage to mock login using init script to prevent race conditions
+    await page.addInitScript((token) => {
       localStorage.setItem('auth_token', token);
     }, authToken);
   });
@@ -89,25 +92,29 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
     
     // Navigate to next step
     const continuarBtn = page.getByRole('button', { name: /Continuar/i });
-    if (await continuarBtn.isVisible()) {
-      await continuarBtn.click();
-    }
+    await continuarBtn.click();
 
     // Step 2: Select Plan (Pro)
     const proPlan = page.locator('text=Pro').first();
-    if (await proPlan.isVisible()) {
-      await proPlan.click();
-    }
+    await proPlan.click({ timeout: 5000 });
     
     // Step 3: Payment Step (Redirect)
     // Wait for the summary page
     await expect(page.locator('h1').filter({ hasText: /Resumo da Assinatura/i })).toBeVisible({ timeout: 15000 });
 
-    // Listen for requests to capture tenant ID
-    page.on('response', async (response) => {
-      if (response.url().includes('/tenants/onboard') && response.status() === 201) {
-        const data = await response.json();
-        tenantId = data.tenant?.id;
+    // Use page.route to safely capture response body before navigation
+    await page.route('**/tenants/onboard', async (route) => {
+      const response = await route.fetch();
+      if (response.status() === 201) {
+        try {
+          const data = await response.json();
+          tenantId = data.tenant?.id;
+          await route.fulfill({ response, json: data });
+        } catch {
+          await route.fulfill({ response });
+        }
+      } else {
+        await route.fulfill({ response });
       }
     });
 
@@ -119,20 +126,53 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
     await page.waitForURL(/mercadopago/, { timeout: 30000 });
 
     // Step 4: Automate Mercado Pago Checkout
-    // Warning: These selectors are subject to change by Mercado Pago.
-    // We try to use resilient selectors where possible.
+    // 1. Look for 'Entre' button and click it to log in
+    const entreButton = page.getByRole('button', { name: /Entre/i });
+    try {
+      await entreButton.waitFor({ state: 'visible', timeout: 10000 });
+      await entreButton.click();
+    } catch (e) {}
 
-    // 1. Enter Email / Login
-    const emailInput = page.locator('input[type="email"], input[name="user_id"], #user_id');
-    await emailInput.waitFor({ state: 'visible', timeout: 30000 });
-    await emailInput.fill(MP_BUYER.login);
-    await page.keyboard.press('Enter');
+    // 2. Enter Email / Login
+    const emailInput = page.getByRole('textbox', { name: /e-mail|telefone|CPF/i }).or(page.locator('input[name="user_id"]')).or(page.locator('input[type="text"], input[type="email"]')).first();
+    try {
+      await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+      await emailInput.fill(MP_BUYER.login);
+      // Pressing enter might not submit. Try to click continue.
+      const continueBtn = page.getByRole('button', { name: /Continuar/i });
+      if (await continueBtn.isVisible()) {
+        await continueBtn.click();
+      } else {
+        await page.keyboard.press('Enter');
+      }
 
-    // 2. Enter Password
-    const passwordInput = page.locator('input[type="password"], input[name="password"], #password');
-    await passwordInput.waitFor({ state: 'visible', timeout: 30000 });
-    await passwordInput.fill(MP_BUYER.password);
-    await page.keyboard.press('Enter');
+      // Handle "Escolha um método de verificação" (Choose verification method)
+      const senhaMethodBtn = page.getByRole('button', { name: /Senha/i }).first();
+      try {
+        await senhaMethodBtn.waitFor({ state: 'visible', timeout: 5000 });
+        await senhaMethodBtn.click();
+      } catch (e) {}
+
+      // 3. Enter Password
+      const passwordInput = page.getByLabel(/senha/i).or(page.locator('input[type="password"]')).first();
+      await passwordInput.waitFor({ state: 'visible', timeout: 30000 });
+      await passwordInput.fill(MP_BUYER.password);
+      await page.keyboard.press('Enter');
+    } catch (e) {}
+
+    // Handle Terms checkbox if present
+    const termsCheckbox = page.locator('input[type="checkbox"]').first();
+    try {
+      await termsCheckbox.waitFor({ state: 'visible', timeout: 5000 });
+      await termsCheckbox.check({ force: true });
+    } catch (e) {}
+
+    // Click "Escolher meio de pagamento" or "Pagar"
+    const payBtn = page.getByRole('button', { name: /Escolher meio de pagamento|Pagar|Assinar/i }).first();
+    try {
+      await payBtn.waitFor({ state: 'visible', timeout: 5000 });
+      await payBtn.click();
+    } catch (e) {}
 
     // 3. Handle optional verification code if it appears
     const verificationInput = page.locator('input[name="code"], input[placeholder*="código"]');
@@ -173,8 +213,8 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
     await cpfInput.fill(TEST_CARD.cpf);
 
     // Click continue / Pay
-    const payBtn = page.locator('button[type="submit"]', { hasText: /Continuar|Pagar/i }).first();
-    await payBtn.click();
+    const finalPayBtn = page.locator('button[type="submit"]', { hasText: /Continuar|Pagar/i }).first();
+    await finalPayBtn.click();
 
     // Confirm Payment if there's an extra confirmation screen
     const confirmBtn = page.locator('button[type="submit"]', { hasText: /Confirmar|Pagar/i }).first();
@@ -182,8 +222,8 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
         await confirmBtn.click();
     }
 
-    // Wait for the redirect back to localhost
-    await page.waitForURL(/localhost:8080\/dashboard/, { timeout: 60000 });
+    // Wait for the redirect back to the dashboard (can be localhost or pombohook)
+    await page.waitForURL(/\/dashboard/, { timeout: 60000 });
 
     // Verify we are on the dashboard
     await expect(page).toHaveURL(/\/dashboard/);

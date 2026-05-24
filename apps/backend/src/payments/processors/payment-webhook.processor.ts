@@ -345,12 +345,22 @@ export class PaymentQueueProcessor {
     // CASE 1: SaaS subscription (platform) - Update Tenant
     if (targetId === 'platform') {
       const externalRef = data.external_reference;
+      
+      let tenant: any = null;
 
       if (externalRef) {
-        const tenant = await this.prisma.tenant.findUnique({
+        tenant = await this.prisma.tenant.findUnique({
           where: { id: externalRef },
           include: { saasPlan: true },
         });
+      } else if (data.payer_email) {
+        // Fallback: When using Checkout Pro with PreApprovalPlan init_point, external_reference is missing.
+        // We match the subscription to the Tenant using the payer_email.
+        tenant = await this.prisma.tenant.findUnique({
+          where: { email: data.payer_email },
+          include: { saasPlan: true },
+        });
+      }
 
         if (tenant) {
           const newStatus = this.mapSaasStatus(data.status ?? 'pending');
@@ -373,7 +383,6 @@ export class PaymentQueueProcessor {
             `Updated SaaS status for tenant ${tenant.id}: ${newStatus}`,
           );
         }
-      }
       return;
     }
 

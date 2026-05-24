@@ -196,13 +196,20 @@ export function useAuth() {
  * Get the stored auth token (for server-side or API calls)
  */
 export function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-  const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
-
-  // Return null if token is expired
-  if (token && isTokenExpired(token)) {
-    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  if (typeof window === "undefined") {
+    console.log("getAuthToken: window is undefined");
     return null;
+  }
+  const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  console.log("getAuthToken: raw token from storage:", !!token);
+
+  if (token) {
+    const expired = isTokenExpired(token);
+    console.log("getAuthToken: isTokenExpired:", expired);
+    if (expired) {
+      localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+      return null;
+    }
   }
 
   return token;
