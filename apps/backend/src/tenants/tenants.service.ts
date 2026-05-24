@@ -185,7 +185,11 @@ export class TenantsService {
     return this.repo.update(id, updateTenantDto);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.prisma.user.updateMany({
+      where: { tenantId: id },
+      data: { tenantId: null }
+    });
     return this.repo.delete(id);
   }
 

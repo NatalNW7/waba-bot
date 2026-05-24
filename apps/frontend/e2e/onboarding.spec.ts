@@ -61,6 +61,19 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
     expect(loginRes.ok()).toBeTruthy();
     const data = await loginRes.json();
     authToken = data.accessToken;
+    
+    // Ensure the test user has no tenant before starting (Idempotency)
+    const existingTenantId = data.user?.tenantId;
+    if (existingTenantId) {
+      console.log(`[Idempotency] Test user already has tenant ${existingTenantId}. Cleaning up...`);
+      await request.delete(`http://localhost:8081/tenants/${existingTenantId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      // Clear local tenantId reference just in case
+      tenantId = null;
+    }
 
     // 2. Set token in localStorage to mock login using init script to prevent race conditions
     await page.addInitScript((token) => {
@@ -133,11 +146,17 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
       await entreButton.click();
     } catch (e) {}
 
-    // 2. Enter Email / Login
+    // 2. Enter Email / Login (if requested)
     const emailInput = page.getByRole('textbox', { name: /e-mail|telefone|CPF/i }).or(page.locator('input[name="user_id"]')).or(page.locator('input[type="text"], input[type="email"]')).first();
+    let emailVisible = false;
     try {
-      await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+      await emailInput.waitFor({ state: 'visible', timeout: 15000 });
+      emailVisible = true;
+    } catch (e) {}
+
+    if (emailVisible) {
       await emailInput.fill(MP_BUYER.login);
+      
       // Pressing enter might not submit. Try to click continue.
       const continueBtn = page.getByRole('button', { name: /Continuar/i });
       if (await continueBtn.isVisible()) {
@@ -150,15 +169,16 @@ test.describe('Onboarding and Mercado Pago Checkout', () => {
       const senhaMethodBtn = page.getByRole('button', { name: /Senha/i }).first();
       try {
         await senhaMethodBtn.waitFor({ state: 'visible', timeout: 5000 });
-        await senhaMethodBtn.click();
+        await senhaMethodBtn.click({ force: true, delay: 100 });
       } catch (e) {}
 
       // 3. Enter Password
-      const passwordInput = page.getByLabel(/senha/i).or(page.locator('input[type="password"]')).first();
+      // Critical step: this MUST NOT fail silently if email was entered.
+      const passwordInput = page.locator('input[type="password"]').first();
       await passwordInput.waitFor({ state: 'visible', timeout: 30000 });
       await passwordInput.fill(MP_BUYER.password);
       await page.keyboard.press('Enter');
-    } catch (e) {}
+    }
 
     // Handle Terms checkbox if present
     const termsCheckbox = page.locator('input[type="checkbox"]').first();
