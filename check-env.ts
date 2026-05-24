@@ -1,1 +1,0 @@
-import { config } from 'dotenv'; config({ path: 'apps/backend/.env' }); console.log('TOKEN:', process.env.MP_PLATFORM_ACCESS_TOKEN);

@@ -109,15 +109,23 @@ export class TenantsService {
     // Create subscription if requested (default: true)
     const shouldCreateSubscription = dto.createSubscription !== false;
     if (shouldCreateSubscription) {
-      const subscription = await this.saasService.createSubscription(
-        tenant.id,
-        dto.cardTokenId,
-        dto.payerEmail,
-      );
-      response.subscription = {
-        initPoint: subscription.initPoint,
-        externalId: subscription.externalId,
-      };
+      try {
+        const subscription = await this.saasService.createSubscription(
+          tenant.id,
+        );
+        response.subscription = {
+          initPoint: subscription.initPoint,
+          externalId: subscription.externalId,
+        };
+      } catch (error) {
+        // Rollback: desvincula o tenant do user e deleta o tenant recém criado
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { tenantId: null },
+        });
+        await this.repo.delete(tenant.id);
+        throw error;
+      }
     }
 
     return response;
@@ -177,11 +185,15 @@ export class TenantsService {
     return this.repo.update(id, updateTenantDto);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await this.prisma.user.updateMany({
+      where: { tenantId: id },
+      data: { tenantId: null }
+    });
     return this.repo.delete(id);
   }
 
-  async createSubscription(id: string) {
+  createSubscription(id: string) {
     return this.saasService.createSubscription(id);
   }
 
@@ -189,7 +201,7 @@ export class TenantsService {
     return this.mpAuthService.getMpAuthorizationUrl(tenantId);
   }
 
-  async exchangeMpCode(code: string, tenantId: string) {
+  exchangeMpCode(code: string, tenantId: string) {
     return this.mpAuthService.exchangeMpCode(code, tenantId);
   }
 }

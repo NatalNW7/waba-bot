@@ -37,4 +37,7 @@ yarn.lock
 /.nyc_output
 
 # --- Mercado Pago ---
-mp.info
+mp.info.md
+scratch/
+mcp-mercadopago-proxy.js
+

@@ -149,8 +149,6 @@ describe('TenantsService', () => {
       expect(result.subscription?.initPoint).toBe('https://mp.com/pay');
       expect(saasService.createSubscription).toHaveBeenCalledWith(
         'tenant-new',
-        undefined,
-        undefined,
       );
     });
 
