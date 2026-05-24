@@ -112,9 +112,7 @@ export class PaymentQueueProcessor {
 
       // Filtrar validações de cartão (valor R$0 gerado pelo MP para testar o cartão)
       if (paymentData.operation_type === 'card_validation') {
-        this.logger.log(
-          `Ignoring card_validation payment ${paymentId}`,
-        );
+        this.logger.log(`Ignoring card_validation payment ${paymentId}`);
         return;
       }
 
@@ -144,14 +142,10 @@ export class PaymentQueueProcessor {
 
       switch (paymentType) {
         case PaymentType.SAAS_FEE:
-          await this.createSaasPayment(paymentData, paymentId, targetId);
+          await this.createSaasPayment(paymentData, paymentId);
           break;
         case PaymentType.APPOINTMENT:
-          await this.createAppointmentPayment(
-            paymentData,
-            paymentId,
-            targetId,
-          );
+          await this.createAppointmentPayment(paymentData, paymentId);
           break;
         case PaymentType.SUBSCRIPTION:
           this.logger.log(
@@ -240,7 +234,6 @@ export class PaymentQueueProcessor {
   private async createSaasPayment(
     paymentData: MpPaymentData,
     paymentId: string,
-    targetId: string,
   ) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: paymentData.external_reference! },
@@ -293,7 +286,6 @@ export class PaymentQueueProcessor {
   private async createAppointmentPayment(
     paymentData: MpPaymentData,
     paymentId: string,
-    targetId: string,
   ) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: paymentData.external_reference! },

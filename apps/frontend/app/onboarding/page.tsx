@@ -103,10 +103,7 @@ export default function OnboardingPage() {
   };
 
   // Single consolidated request for onboarding
-  const handlePaymentConfirm = async (
-    cardTokenId: string,
-    payerEmail: string,
-  ) => {
+  const handlePaymentConfirm = async () => {
     if (!selectedPlan || !user) return;
 
     setIsSubmitting(true);
@@ -118,12 +115,14 @@ export default function OnboardingPage() {
         email: user.email,
         phone: sanitizePhone(businessInfo.phone),
         saasPlanId: selectedPlan.id,
-        cardTokenId,
-        payerEmail,
       });
 
-      // Subscription is created with status: authorized, no redirect needed
-      setStep("confirmation");
+      if (result.subscription?.initPoint) {
+        window.location.href = result.subscription.initPoint;
+      } else {
+        // Fallback in case of unexpected response
+        setStep("confirmation");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
       setIsSubmitting(false);

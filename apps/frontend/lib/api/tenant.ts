@@ -29,8 +29,6 @@ export interface OnboardTenantRequest {
   phone: string;
   saasPlanId: string;
   createSubscription?: boolean;
-  cardTokenId?: string;
-  payerEmail?: string;
 }
 
 export interface OnboardTenantResponse {

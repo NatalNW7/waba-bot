@@ -112,8 +112,6 @@ export class TenantsService {
       try {
         const subscription = await this.saasService.createSubscription(
           tenant.id,
-          dto.cardTokenId,
-          dto.payerEmail,
         );
         response.subscription = {
           initPoint: subscription.initPoint,
@@ -191,7 +189,7 @@ export class TenantsService {
     return this.repo.delete(id);
   }
 
-  async createSubscription(id: string) {
+  createSubscription(id: string) {
     return this.saasService.createSubscription(id);
   }
 
@@ -199,7 +197,7 @@ export class TenantsService {
     return this.mpAuthService.getMpAuthorizationUrl(tenantId);
   }
 
-  async exchangeMpCode(code: string, tenantId: string) {
+  exchangeMpCode(code: string, tenantId: string) {
     return this.mpAuthService.exchangeMpCode(code, tenantId);
   }
 }

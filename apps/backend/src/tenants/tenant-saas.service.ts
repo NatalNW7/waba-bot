@@ -93,11 +93,7 @@ export class TenantSaasService {
     }
   }
 
-  async createSubscription(
-    id: string,
-    cardTokenId?: string,
-    payerEmail?: string,
-  ) {
+  async createSubscription(id: string) {
     const tenant = (await this.repo.findUnique({
       where: { id },
       include: { saasPlan: true },
@@ -112,7 +108,7 @@ export class TenantSaasService {
         'SaaS plan is not synced with Mercado Pago. Syncing now...',
       );
       await this.syncPlansWithMercadoPago();
-      return this.createSubscription(id, cardTokenId, payerEmail);
+      return this.createSubscription(id);
     }
 
     const client = this.mpService.getPlatformClient();
@@ -130,13 +126,9 @@ export class TenantSaasService {
       reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
       back_url: backUrl,
       external_reference: tenant.id,
-      status: cardTokenId ? 'authorized' : 'pending',
-      payer_email: payerEmail,
+      status: 'pending',
+      payer_email: tenant.email,
     };
-
-    if (cardTokenId) {
-      body.card_token_id = cardTokenId;
-    }
 
     let result;
     try {
