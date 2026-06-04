@@ -26,9 +26,22 @@ export default defineConfig({
   },
   /* Configure projects for major browsers */
   projects: [
+    // Setup: authenticate MP buyer
+    // When auth file exists, this returns immediately.
+    // To renew expired cookies run:
+    //   FORCE_MP_AUTH=true pnpm exec playwright test --project=mp-auth --headed
+    {
+      name: "mp-auth",
+      testMatch: "e2e/mp-auth.setup.ts",
+    },
+    // Main tests: reuse MP buyer session
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "playwright/.auth/mp-buyer.json",
+      },
+      dependencies: ["mp-auth"],
     },
     /* Uncomment to test on Firefox and Safari */
     // {
