@@ -77,6 +77,16 @@ describe('PaymentQueueProcessor', () => {
   });
 
   describe('handleNotification', () => {
+    let originalFetch: typeof fetch;
+
+    beforeEach(() => {
+      originalFetch = global.fetch;
+    });
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
     // ─── Existing payment update (Fix #5: stronger assertions) ───
 
     it('should update existing payment with all fields and NOT change tenant status when approved', async () => {
