@@ -1,14 +1,15 @@
 # ====================================
 # Stage 1: Base
 # ====================================
-FROM node:22.22.0-slim AS base
+FROM node:22-alpine AS base
 
 ENV PNPM_HOME=/pnpm
 ENV PATH="${PNPM_HOME}:${PATH}"
 ENV CI=true
 
-# OpenSSL is required by Prisma engine binaries
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# OpenSSL and libc6-compat are required by Prisma engine binaries on Alpine
+RUN apk add --no-cache openssl libc6-compat
+
 RUN corepack enable
 
 # ====================================
