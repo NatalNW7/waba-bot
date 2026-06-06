@@ -93,11 +93,7 @@ export class TenantSaasService {
     }
   }
 
-  async createSubscription(
-    id: string,
-    cardTokenId?: string,
-    payerEmail?: string,
-  ) {
+  async createSubscription(id: string) {
     const tenant = (await this.repo.findUnique({
       where: { id },
       include: { saasPlan: true },
@@ -112,45 +108,29 @@ export class TenantSaasService {
         'SaaS plan is not synced with Mercado Pago. Syncing now...',
       );
       await this.syncPlansWithMercadoPago();
-      return this.createSubscription(id, cardTokenId, payerEmail);
+      return this.createSubscription(id);
     }
 
     const client = this.mpService.getPlatformClient();
-    const preApproval = new PreApproval(client);
-
-    const backUrl = this.configService.get<string>('MP_BACK_URL');
-    if (!backUrl) {
+    const planClient = new PreApprovalPlan(client);
+    let planData;
+    
+    try {
+      planData = await planClient.get({ preApprovalPlanId: tenant.saasPlan.mpPlanId! });
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to fetch plan for tenant ${id}: ${error.message}`,
+      );
       throw new BadRequestException(
-        'MP_BACK_URL não está configurada. Defina a variável de ambiente MP_BACK_URL.',
+        'Falha ao carregar o plano no Mercado Pago.',
       );
     }
 
-    const body: any = {
-      preapproval_plan_id: tenant.saasPlan.mpPlanId,
-      reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
-      back_url: backUrl,
-      external_reference: tenant.id,
-      status: cardTokenId ? 'authorized' : 'pending',
-    };
-
-    if (cardTokenId) {
-      body.card_token_id = cardTokenId;
-      body.payer_email = payerEmail || tenant.email;
-    }
-
-    const result = await preApproval.create({
-      body,
-    });
-
-    // Calculate and update next billing date based on plan interval
-    const nextBilling = this.calculateNextBilling(tenant.saasPlan.interval);
-    await this.repo.update(tenant.id, {
-      saasNextBilling: nextBilling,
-    });
-
+    // Since we are using Checkout Pro for the subscription, we don't have a PreApproval ID yet.
+    // The subscription will be created automatically when the user pays via the plan's init_point.
     return {
-      initPoint: result.init_point,
-      externalId: result.id,
+      initPoint: planData.init_point,
+      externalId: null, // Sub ID will be set by the webhook
     };
   }
 

@@ -76,18 +76,22 @@ export default function OnboardingPage() {
     const fetchPlans = async () => {
       try {
         const token = getAuthToken();
+        console.log("Fetching plans with token:", !!token);
         const response = await fetch(`${BACKEND_URL}/saas-plans`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
         });
+        console.log("Plans response status:", response.status);
         if (response.ok) {
-          const data = (await response.json()) as ISaasPlan[];
+          const data = await response.json();
+          console.log("Plans data:", data);
           setPlans(data);
+        } else {
+          console.log("Failed to fetch plans body:", await response.text());
         }
-      } catch {
-        console.error("Failed to fetch plans");
+      } catch (err) {
+        console.error("Failed to fetch plans", err);
       }
     };
     fetchPlans();
@@ -103,10 +107,7 @@ export default function OnboardingPage() {
   };
 
   // Single consolidated request for onboarding
-  const handlePaymentConfirm = async (
-    cardTokenId: string,
-    payerEmail: string,
-  ) => {
+  const handlePaymentConfirm = async () => {
     if (!selectedPlan || !user) return;
 
     setIsSubmitting(true);
@@ -118,12 +119,14 @@ export default function OnboardingPage() {
         email: user.email,
         phone: sanitizePhone(businessInfo.phone),
         saasPlanId: selectedPlan.id,
-        cardTokenId,
-        payerEmail,
       });
 
-      // Subscription is created with status: authorized, no redirect needed
-      setStep("confirmation");
+      if (result.subscription?.initPoint) {
+        window.location.href = result.subscription.initPoint;
+      } else {
+        // Fallback in case of unexpected response
+        setStep("confirmation");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
       setIsSubmitting(false);
