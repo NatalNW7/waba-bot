@@ -44,6 +44,16 @@ export class PaymentQueueProcessor {
     private readonly appointmentPaymentHandler: AppointmentPaymentHandlerService,
   ) {}
 
+  private formatError(error: unknown): string {
+    if (error instanceof Error) {
+      if ((error as any).response?.data) {
+        return `${error.message} - ${JSON.stringify((error as any).response.data)}`;
+      }
+      return error.message;
+    }
+    return JSON.stringify(error);
+  }
+
   @Process('handle-notification')
   async handleNotification(
     job: Job<{
@@ -66,8 +76,10 @@ export class PaymentQueueProcessor {
 
       switch (topic) {
         case 'payment':
-        case 'subscription_authorized_payment':
           await this.handlePaymentNotification(resourceId, client, targetId);
+          break;
+        case 'subscription_authorized_payment':
+          await this.handleAuthorizedPaymentNotification(resourceId, client, targetId);
           break;
         case 'subscription_preapproval':
           await this.handleSubscriptionNotification(
@@ -88,9 +100,53 @@ export class PaymentQueueProcessor {
       }
     } catch (error: unknown) {
       this.logger.error(
-        `Error processing job for ${resourceId}: ${error instanceof Error ? error.message : String(error)}`,
+        `Error processing job for ${resourceId}: ${this.formatError(error)}`,
       );
       throw error; // Re-throw to trigger Bull retry
+    }
+  }
+
+  private async handleAuthorizedPaymentNotification(
+    authorizedPaymentId: string,
+    client: MercadoPagoConfig,
+    targetId: string,
+  ) {
+    try {
+      const response = await fetch(
+        `https://api.mercadopago.com/preapproval/authorized_payment/${authorizedPaymentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${client.accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Could not fetch details for authorized payment ${authorizedPaymentId}: ${response.status} ${errorText}`,
+        );
+        return;
+      }
+
+      const data = await response.json();
+      const paymentId = data?.payment?.id;
+
+      if (!paymentId) {
+        this.logger.warn(
+          `No payment.id found in authorized payment ${authorizedPaymentId}`,
+        );
+        return;
+      }
+
+      this.logger.log(`Routing authorized payment ${authorizedPaymentId} -> payment ${paymentId}`);
+      // Delegate to the standard payment handler
+      await this.handlePaymentNotification(String(paymentId), client, targetId);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error handling authorized payment notification ${authorizedPaymentId}: ${this.formatError(error)}`,
+      );
+      throw error;
     }
   }
 
@@ -155,7 +211,7 @@ export class PaymentQueueProcessor {
       }
     } catch (error: unknown) {
       this.logger.error(
-        `Error handling payment notification ${paymentId}: ${error instanceof Error ? error.message : String(error)}`,
+        `Error handling payment notification ${paymentId}: ${this.formatError(error)}`,
       );
       throw error;
     }

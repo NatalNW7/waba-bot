@@ -337,17 +337,24 @@ describe('PaymentQueueProcessor', () => {
 
     // ─── Architectural: subscription_authorized_payment topic (#2) ───
 
-    it('should handle subscription_authorized_payment topic as a payment', async () => {
+    it('should fetch authorized payment details and delegate to handlePaymentNotification', async () => {
       const job = {
         data: {
           topic: 'subscription_authorized_payment',
-          resourceId: 'pay-sap',
+          resourceId: 'auth-pay-123',
           targetId: 'platform',
         },
       } as any;
 
+      // Mock fetch for the preapproval/authorized_payment endpoint
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ payment: { id: 999 } }),
+      });
+      global.fetch = mockFetch;
+
       const mockGet = jest.fn().mockResolvedValue({
-        id: 'pay-sap',
+        id: '999',
         status: 'approved',
         external_reference: 'tenant-456',
         transaction_amount: 5,
@@ -367,6 +374,11 @@ describe('PaymentQueueProcessor', () => {
 
       await processor.handleNotification(job);
 
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('preapproval/authorized_payment/auth-pay-123'),
+        expect.any(Object),
+      );
+
       expect(paymentRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'APPROVED', type: 'SAAS_FEE' }),
       );
@@ -374,6 +386,30 @@ describe('PaymentQueueProcessor', () => {
         where: { id: 'tenant-456' },
         data: { saasStatus: 'ACTIVE' },
       });
+    });
+
+    it('should log an error when authorized payment fetch fails', async () => {
+      const job = {
+        data: {
+          topic: 'subscription_authorized_payment',
+          resourceId: 'auth-pay-404',
+          targetId: 'platform',
+        },
+      } as any;
+
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: async () => 'Not found',
+      });
+      global.fetch = mockFetch;
+      const loggerSpy = jest.spyOn(processor['logger'], 'error');
+
+      await processor.handleNotification(job);
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Could not fetch details for authorized payment auth-pay-404: 404 Not found'),
+      );
     });
 
     // ─── Architectural: non-classifiable payment ───
