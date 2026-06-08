@@ -120,6 +120,7 @@ describe('WebhooksController', () => {
       const requestId = 'req-abc';
 
       const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+      // nosemgrep: javascript.lang.security.audit.hardcoded-hmac-key
       const hmac = crypto.createHmac('sha256', secret);
       hmac.update(manifest);
       const v1 = hmac.digest('hex');
