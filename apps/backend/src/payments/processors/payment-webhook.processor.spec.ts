@@ -418,7 +418,9 @@ describe('PaymentQueueProcessor', () => {
       await processor.handleNotification(job);
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Could not fetch details for authorized payment auth-pay-404: 404 Not found'),
+        expect.stringContaining(
+          'Could not fetch details for authorized payment auth-pay-404: 404 Not found',
+        ),
       );
     });
 
@@ -482,9 +484,7 @@ describe('PaymentQueueProcessor', () => {
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('semaphore'),
       );
-      expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('yellow'),
-      );
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('yellow'));
     });
 
     it('should log warning when subscription semaphore is red', async () => {
@@ -516,9 +516,7 @@ describe('PaymentQueueProcessor', () => {
 
       await processor.handleNotification(job);
 
-      expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('red'),
-      );
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('red'));
     });
 
     it('should NOT log semaphore warning when semaphore is green', async () => {
