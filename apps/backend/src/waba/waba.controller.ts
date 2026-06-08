@@ -50,7 +50,9 @@ export class WabaController {
 
     if (mode === 'subscribe' && token === verifyToken) {
       console.log('WEBHOOK VERIFIED');
-      res.status(200).type('text/plain').send(challenge);
+      // Sanitização estrita para satisfazer o taint tracking do CodeQL (previne XSS)
+      const sanitizedChallenge = challenge.replace(/[^0-9a-zA-Z_-]/g, '');
+      res.status(200).type('text/plain').send(sanitizedChallenge);
     } else {
       throw new ForbiddenException('Webhook verification failed');
     }
