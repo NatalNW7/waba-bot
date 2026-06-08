@@ -50,7 +50,7 @@ export class WabaController {
 
     if (mode === 'subscribe' && token === verifyToken) {
       console.log('WEBHOOK VERIFIED');
-      res.status(200).send(challenge);
+      res.status(200).type('text/plain').send(challenge);
     } else {
       throw new ForbiddenException('Webhook verification failed');
     }
