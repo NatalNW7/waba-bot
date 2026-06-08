@@ -1,6 +1,8 @@
-FROM node:22.22.0-slim AS base
+FROM node:22-alpine AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH="${PNPM_HOME}:${PATH}"
+
+RUN apk add --no-cache libc6-compat
 
 RUN corepack enable
 
@@ -42,13 +44,21 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm --filter @repo/api-types build
 RUN pnpm --filter @waba-bot/frontend build
 
-# --- Stage 3: Production runner ---
-FROM base AS runner
+# --- Stage 3: Production runner (minimal — no npm/yarn/corepack) ---
+FROM alpine:3.22 AS runner
+
+# Only runtime libs needed by Node.js
+RUN apk add --no-cache libc6-compat libstdc++ libgcc
+
 WORKDIR /app
 ENV NODE_ENV=production
 ENV TZ=America/Sao_Paulo
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+
+# Copy only the Node.js binary from the build stage
+COPY --from=base /usr/local/bin/node /usr/local/bin/node
+
+RUN addgroup -S -g 1001 nodejs
+RUN adduser -S -u 1001 -G nodejs nextjs
 USER nextjs
 
 # Copy Next.js standalone output

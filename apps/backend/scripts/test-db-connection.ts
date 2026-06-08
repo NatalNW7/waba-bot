@@ -41,7 +41,7 @@ async function testConnection() {
   const clientOptions: any = dbConfig || { connectionString: url };
   
   if (url.includes('supabase.co') || url.includes('neon.tech')) {
-    clientOptions.ssl = { rejectUnauthorized: false };
+    clientOptions.ssl = true;
   }
 
   const client = new Client(clientOptions);

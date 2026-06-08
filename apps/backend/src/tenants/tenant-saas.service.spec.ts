@@ -182,19 +182,19 @@ describe('TenantSaasService', () => {
         .spyOn(service, 'syncPlansWithMercadoPago')
         .mockResolvedValue();
 
-      const mockPreApprovalCreate = jest.fn().mockResolvedValue({
+      const mockPreApprovalPlanGet = jest.fn().mockResolvedValue({
         init_point: 'http://mp.com/pay',
-        id: 'mp-sub-123',
+        id: 'mp-plan-123',
       });
-      (PreApproval as jest.Mock).mockImplementation(() => ({
-        create: mockPreApprovalCreate,
+      (PreApprovalPlan as jest.Mock).mockImplementation(() => ({
+        get: mockPreApprovalPlanGet,
       }));
 
       const result = await service.createSubscription('t1');
 
       expect(syncSpy).toHaveBeenCalled();
       expect(result.initPoint).toBe('http://mp.com/pay');
-      expect(result.externalId).toBe('mp-sub-123');
+      expect(result.externalId).toBeNull();
     });
 
     it('should create a subscription with status pending', async () => {
@@ -211,31 +211,21 @@ describe('TenantSaasService', () => {
       };
       jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
 
-      const mockPreApprovalCreate = jest.fn().mockResolvedValue({
+      const mockPreApprovalPlanGet = jest.fn().mockResolvedValue({
         init_point: 'http://mp.com/pay',
-        id: 'mp-sub-123',
+        id: 'mp-plan-123',
       });
-      (PreApproval as jest.Mock).mockImplementation(() => ({
-        create: mockPreApprovalCreate,
+      (PreApprovalPlan as jest.Mock).mockImplementation(() => ({
+        get: mockPreApprovalPlanGet,
       }));
 
       const result = await service.createSubscription('t1');
 
       expect(result.initPoint).toBe('http://mp.com/pay');
-      expect(result.externalId).toBe('mp-sub-123');
-      expect(mockPreApprovalCreate).toHaveBeenCalledWith({
-        body: {
-          preapproval_plan_id: 'mp-plan-xyz',
-          reason: 'Assinatura SaaS - Gold',
-          back_url: 'http://localhost:8080/dashboard/settings/finance',
-          external_reference: 't1',
-          status: 'pending',
-          payer_email: 't@t.com',
-        },
+      expect(result.externalId).toBeNull();
+      expect(mockPreApprovalPlanGet).toHaveBeenCalledWith({
+        preApprovalPlanId: 'mp-plan-xyz',
       });
-      const callBody = mockPreApprovalCreate.mock.calls[0][0].body;
-      expect(callBody).toHaveProperty('payer_email');
-      expect(callBody).not.toHaveProperty('auto_recurring');
     });
   });
 

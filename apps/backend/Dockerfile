@@ -1,14 +1,15 @@
 # ====================================
 # Stage 1: Base
 # ====================================
-FROM node:22.22.0-slim AS base
+FROM node:22-alpine AS base
 
 ENV PNPM_HOME=/pnpm
 ENV PATH="${PNPM_HOME}:${PATH}"
 ENV CI=true
 
-# OpenSSL is required by Prisma engine binaries
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# OpenSSL and libc6-compat are required by Prisma engine binaries on Alpine
+RUN apk add --no-cache openssl libc6-compat
+
 RUN corepack enable
 
 # ====================================
@@ -55,15 +56,22 @@ RUN pnpm --filter @waba-bot/backend build
 RUN pnpm --filter @waba-bot/backend deploy --prod --legacy /prod/backend
 
 # ====================================
-# Stage 4: Production runner
+# Stage 4: Production runner (minimal — no npm/yarn/corepack)
 # ====================================
-FROM base AS runner
+FROM alpine:3.22 AS runner
+
+# Only runtime libs needed by Node.js and Prisma engine binaries
+RUN apk add --no-cache openssl libc6-compat libstdc++ libgcc
+
 WORKDIR /app
 ENV NODE_ENV=production
 ENV TZ=America/Sao_Paulo
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+# Copy only the Node.js binary from the build stage
+COPY --from=base /usr/local/bin/node /usr/local/bin/node
+
+RUN addgroup -S -g 1001 nodejs
+RUN adduser -S -u 1001 -G nodejs nestjs
 USER nestjs
 
 # Copy compiled application

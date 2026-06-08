@@ -79,7 +79,11 @@ export class PaymentQueueProcessor {
           await this.handlePaymentNotification(resourceId, client, targetId);
           break;
         case 'subscription_authorized_payment':
-          await this.handleAuthorizedPaymentNotification(resourceId, client, targetId);
+          await this.handleAuthorizedPaymentNotification(
+            resourceId,
+            client,
+            targetId,
+          );
           break;
         case 'subscription_preapproval':
           await this.handleSubscriptionNotification(
@@ -139,7 +143,9 @@ export class PaymentQueueProcessor {
         return;
       }
 
-      this.logger.log(`Routing authorized payment ${authorizedPaymentId} -> payment ${paymentId}`);
+      this.logger.log(
+        `Routing authorized payment ${authorizedPaymentId} -> payment ${paymentId}`,
+      );
       // Delegate to the standard payment handler
       await this.handlePaymentNotification(String(paymentId), client, targetId);
     } catch (error: unknown) {
@@ -401,7 +407,7 @@ export class PaymentQueueProcessor {
     // CASE 1: SaaS subscription (platform) - Update Tenant
     if (targetId === 'platform') {
       const externalRef = data.external_reference;
-      
+
       let tenant: any = null;
 
       if (externalRef) {
@@ -418,27 +424,25 @@ export class PaymentQueueProcessor {
         });
       }
 
-        if (tenant) {
-          const newStatus = this.mapSaasStatus(data.status ?? 'pending');
-          const nextBilling =
-            data.status === 'authorized'
-              ? this.calculateNextBilling(
-                  tenant.saasPlan?.interval || 'MONTHLY',
-                )
-              : tenant.saasNextBilling;
+      if (tenant) {
+        const newStatus = this.mapSaasStatus(data.status ?? 'pending');
+        const nextBilling =
+          data.status === 'authorized'
+            ? this.calculateNextBilling(tenant.saasPlan?.interval || 'MONTHLY')
+            : tenant.saasNextBilling;
 
-          await this.prisma.tenant.update({
-            where: { id: tenant.id },
-            data: {
-              saasStatus: newStatus,
-              saasNextBilling: nextBilling,
-            },
-          });
+        await this.prisma.tenant.update({
+          where: { id: tenant.id },
+          data: {
+            saasStatus: newStatus,
+            saasNextBilling: nextBilling,
+          },
+        });
 
-          this.logger.log(
-            `Updated SaaS status for tenant ${tenant.id}: ${newStatus}`,
-          );
-        }
+        this.logger.log(
+          `Updated SaaS status for tenant ${tenant.id}: ${newStatus}`,
+        );
+      }
       return;
     }
 

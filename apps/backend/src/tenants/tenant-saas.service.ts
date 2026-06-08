@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { MercadoPagoService } from '../payments/mercadopago.service';
 import { TenantRepository } from './tenant-repository.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { PreApproval, PreApprovalPlan } from 'mercadopago';
+import { PreApprovalPlan } from 'mercadopago';
 import { PaymentInterval } from '@prisma/client';
 
 interface TenantWithSaasPlan {
@@ -114,9 +114,11 @@ export class TenantSaasService {
     const client = this.mpService.getPlatformClient();
     const planClient = new PreApprovalPlan(client);
     let planData;
-    
+
     try {
-      planData = await planClient.get({ preApprovalPlanId: tenant.saasPlan.mpPlanId! });
+      planData = await planClient.get({
+        preApprovalPlanId: tenant.saasPlan.mpPlanId,
+      });
     } catch (error: any) {
       this.logger.error(
         `Failed to fetch plan for tenant ${id}: ${error.message}`,
