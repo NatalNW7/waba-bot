@@ -3,12 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { PgBossService } from './pgboss.service';
 
 jest.mock('pg-boss', () => {
-  return jest.fn().mockImplementation(() => ({
-    start: jest.fn().mockResolvedValue(undefined),
-    stop: jest.fn().mockResolvedValue(undefined),
-    send: jest.fn().mockResolvedValue('job-id-123'),
-    work: jest.fn().mockResolvedValue('worker-id-456'),
-  }));
+  return {
+    PgBoss: jest.fn().mockImplementation(() => ({
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: jest.fn().mockResolvedValue(undefined),
+      send: jest.fn().mockResolvedValue('job-id-123'),
+      work: jest.fn().mockResolvedValue('worker-id-456'),
+    })),
+  };
 });
 
 describe('PgBossService', () => {
