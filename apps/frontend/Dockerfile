@@ -47,8 +47,9 @@ RUN pnpm --filter @waba-bot/frontend build
 # --- Stage 3: Production runner (minimal — no npm/yarn/corepack) ---
 FROM alpine:3.22 AS runner
 
-# Only runtime libs needed by Node.js
-RUN apk add --no-cache libc6-compat libstdc++ libgcc
+# Upgrade base packages for security and install Node.js dependencies
+RUN apk upgrade --no-cache && \
+    apk add --no-cache libc6-compat libstdc++ libgcc
 
 WORKDIR /app
 ENV NODE_ENV=production

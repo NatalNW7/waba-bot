@@ -1,6 +1,4 @@
-import { Process, Processor } from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
-import type { Job } from 'bull';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MercadoPagoService } from '../mercadopago.service';
 import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago';
@@ -15,6 +13,7 @@ import { PaymentRepository } from '../payment-repository.service';
 import { InfinitePayService } from '../infinite-pay.service';
 import { InfinitePayWebhookPayload } from '../dto/infinite-pay.dto';
 import { AppointmentPaymentHandlerService } from '../../notifications/appointment-payment-handler.service';
+import { PgBossService } from '../../queue/pgboss.service';
 
 /**
  * Payload parcial da resposta da API de Pagamentos do Mercado Pago.
@@ -32,17 +31,35 @@ interface MpPaymentData {
   fee_details?: Array<{ amount: number; type: string; fee_payer: string }>;
 }
 
-@Processor('payment-notifications')
-export class PaymentQueueProcessor {
+interface PaymentNotificationPayload {
+  topic: string;
+  resourceId: string;
+  targetId: string;
+  payload?: any;
+}
+
+@Injectable()
+export class PaymentQueueProcessor implements OnModuleInit {
   private readonly logger = new Logger(PaymentQueueProcessor.name);
 
   constructor(
+    private readonly pgBoss: PgBossService,
     private readonly prisma: PrismaService,
     private readonly mpService: MercadoPagoService,
     private readonly paymentRepo: PaymentRepository,
     private readonly infinitePayService: InfinitePayService,
     private readonly appointmentPaymentHandler: AppointmentPaymentHandlerService,
   ) {}
+
+  async onModuleInit() {
+    await this.pgBoss.work<PaymentNotificationPayload>(
+      'payment-notifications',
+      async (jobs) => {
+        await this.handleNotification(jobs[0].data);
+      },
+    );
+    this.logger.log('Registered worker for queue: payment-notifications');
+  }
 
   private formatError(error: unknown): string {
     if (error instanceof Error) {
@@ -54,16 +71,8 @@ export class PaymentQueueProcessor {
     return JSON.stringify(error);
   }
 
-  @Process('handle-notification')
-  async handleNotification(
-    job: Job<{
-      topic: string;
-      resourceId: string;
-      targetId: string;
-      payload?: any;
-    }>,
-  ) {
-    const { topic, resourceId, targetId, payload } = job.data;
+  async handleNotification(data: PaymentNotificationPayload) {
+    const { topic, resourceId, targetId, payload } = data;
     this.logger.log(
       `Processing notification for ${targetId}: ${topic} - ${resourceId}`,
     );
@@ -106,7 +115,7 @@ export class PaymentQueueProcessor {
       this.logger.error(
         `Error processing job for ${resourceId}: ${this.formatError(error)}`,
       );
-      throw error; // Re-throw to trigger Bull retry
+      throw error; // Re-throw to trigger pgBoss retry
     }
   }
 

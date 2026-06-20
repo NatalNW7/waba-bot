@@ -6,23 +6,15 @@ import { MercadoPagoService } from './mercadopago.service';
 import { WebhooksController } from './webhooks.controller';
 import { InfinitePayWebhooksController } from './infinite-pay-webhooks.controller';
 import { MercadoPagoWebhooksService } from './mercadopago-webhooks.service';
-import { BullModule } from '@nestjs/bull';
 import { PaymentQueueProcessor } from './processors/payment-webhook.processor';
 import { PaymentRepository } from './payment-repository.service';
 import { PaymentPreferenceService } from './payment-preference.service';
 import { InfinitePayService } from './infinite-pay.service';
 import { NotificationModule } from '../notifications/notification.module';
-import { RedisModule } from '../redis/redis.module';
+import { PgBossModule } from '../queue/pgboss.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    RedisModule,
-    BullModule.registerQueue({
-      name: 'payment-notifications',
-    }),
-    NotificationModule,
-  ],
+  imports: [PrismaModule, PgBossModule, NotificationModule],
   controllers: [
     PaymentsController,
     WebhooksController,

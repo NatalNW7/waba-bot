@@ -1,14 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import type { Queue } from 'bull';
+import { PgBossService } from '../queue/pgboss.service';
 
 @Injectable()
 export class MercadoPagoWebhooksService {
   private readonly logger = new Logger(MercadoPagoWebhooksService.name);
 
-  constructor(
-    @InjectQueue('payment-notifications') private readonly paymentQueue: Queue,
-  ) {}
+  constructor(private readonly pgBoss: PgBossService) {}
 
   async handleNotification(
     topic: string,
@@ -19,20 +16,17 @@ export class MercadoPagoWebhooksService {
       `Queueing notification for ${targetId}: ${topic} - ${resourceId}`,
     );
 
-    await this.paymentQueue.add(
-      'handle-notification',
+    await this.pgBoss.send(
+      'payment-notifications',
       {
         topic,
         resourceId,
         targetId,
       },
       {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
-        },
-        removeOnComplete: true,
+        retryLimit: 3,
+        retryDelay: 5,
+        retryBackoff: true,
       },
     );
   }

@@ -1,4 +1,3 @@
-import { InjectQueue } from '@nestjs/bull';
 import {
   Body,
   Controller,
@@ -17,16 +16,16 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import type { Queue } from 'bull';
 import type { Response } from 'express';
 import { WebhookPayloadDto } from './dto/webhook-payload.dto';
 import { Public } from '../auth';
+import { PgBossService } from '../queue/pgboss.service';
 
 @ApiTags('WhatsApp Webhook')
 @Controller('webhook/whatsapp')
 export class WabaController {
   constructor(
-    @InjectQueue('waba-messages') private readonly wabaQueue: Queue,
+    private readonly pgBoss: PgBossService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -69,9 +68,7 @@ export class WabaController {
     description: 'Message received and queued successfully',
   })
   async handleMessage(@Body() body: WebhookPayloadDto) {
-    await this.wabaQueue.add('process-message', body, {
-      removeOnComplete: true,
-    });
+    await this.pgBoss.send('waba-messages', body);
     return { status: 'Message queued' };
   }
 }

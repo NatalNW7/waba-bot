@@ -6,6 +6,7 @@ import { Payment, PreApproval } from 'mercadopago';
 import { PaymentRepository } from '../payment-repository.service';
 import { InfinitePayService } from '../infinite-pay.service';
 import { AppointmentPaymentHandlerService } from '../../notifications/appointment-payment-handler.service';
+import { PgBossService } from '../../queue/pgboss.service';
 
 jest.mock('mercadopago');
 
@@ -20,6 +21,10 @@ describe('PaymentQueueProcessor', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentQueueProcessor,
+        {
+          provide: PgBossService,
+          useValue: { send: jest.fn(), work: jest.fn() },
+        },
         {
           provide: PrismaService,
           useValue: {
@@ -111,7 +116,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(paymentRepo, 'findAll')
         .mockResolvedValue([{ id: 'internal-1' }] as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.update).toHaveBeenCalledWith('internal-1', {
         status: 'APPROVED',
@@ -145,7 +150,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(prisma.subscription, 'findFirst')
         .mockResolvedValue({ id: 's-1' } as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(prisma.subscription.update).toHaveBeenCalledWith({
         where: { id: 's-1' },
@@ -177,7 +182,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(prisma.tenant, 'findUnique')
         .mockResolvedValue({ id: 'tenant-123' } as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'FAILED', type: 'SAAS_FEE' }),
@@ -207,7 +212,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(paymentRepo, 'findAll')
         .mockResolvedValue([{ id: 'existing-pay' }] as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.update).toHaveBeenCalledWith('existing-pay', {
         status: 'FAILED',
@@ -246,7 +251,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(prisma.tenant, 'findUnique')
         .mockResolvedValue({ id: 'tenant-123' } as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'APPROVED', type: 'SAAS_FEE' }),
@@ -276,7 +281,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(paymentRepo, 'findAll')
         .mockResolvedValue([{ id: 'existing-pay' }] as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.update).toHaveBeenCalledWith(
         'existing-pay',
@@ -312,7 +317,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(prisma.tenant, 'findUnique')
         .mockResolvedValue({ id: 'tenant-123' } as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'PENDING', type: 'SAAS_FEE' }),
@@ -339,7 +344,7 @@ describe('PaymentQueueProcessor', () => {
 
       jest.spyOn(paymentRepo, 'findAll').mockResolvedValue([]);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.create).not.toHaveBeenCalled();
       expect(prisma.tenant.update).not.toHaveBeenCalled();
@@ -382,7 +387,7 @@ describe('PaymentQueueProcessor', () => {
         .spyOn(prisma.tenant, 'findUnique')
         .mockResolvedValue({ id: 'tenant-456' } as any);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('preapproval/authorized_payment/auth-pay-123'),
@@ -415,7 +420,7 @@ describe('PaymentQueueProcessor', () => {
       global.fetch = mockFetch;
       const loggerSpy = jest.spyOn(processor['logger'], 'error');
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining(
@@ -446,7 +451,7 @@ describe('PaymentQueueProcessor', () => {
 
       jest.spyOn(paymentRepo, 'findAll').mockResolvedValue([]);
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(paymentRepo.create).not.toHaveBeenCalled();
       expect(prisma.tenant.update).not.toHaveBeenCalled();
@@ -479,7 +484,7 @@ describe('PaymentQueueProcessor', () => {
 
       const loggerSpy = jest.spyOn(processor['logger'], 'warn');
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('semaphore'),
@@ -514,7 +519,7 @@ describe('PaymentQueueProcessor', () => {
 
       const loggerSpy = jest.spyOn(processor['logger'], 'warn');
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('red'));
     });
@@ -546,7 +551,7 @@ describe('PaymentQueueProcessor', () => {
 
       const loggerSpy = jest.spyOn(processor['logger'], 'warn');
 
-      await processor.handleNotification(job);
+      await processor.handleNotification(job.data);
 
       // Should NOT have warned about semaphore when it's green
       const semaphoreCalls = loggerSpy.mock.calls.filter(

@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getQueueToken } from '@nestjs/bull';
 import { ConfigService } from '@nestjs/config';
 import { WabaController } from './waba.controller';
+import { PgBossService } from '../queue/pgboss.service';
 
 describe('WabaController', () => {
   let controller: WabaController;
 
-  const mockQueue = {
-    add: jest.fn(),
+  const mockPgBoss = {
+    send: jest.fn(),
   };
 
   const mockConfigService = {
@@ -19,8 +19,8 @@ describe('WabaController', () => {
       controllers: [WabaController],
       providers: [
         {
-          provide: getQueueToken('waba-messages'),
-          useValue: mockQueue,
+          provide: PgBossService,
+          useValue: mockPgBoss,
         },
         {
           provide: ConfigService,
