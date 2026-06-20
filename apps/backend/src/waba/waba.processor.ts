@@ -1,24 +1,28 @@
-import { Process, Processor } from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
-import type { Job } from 'bull';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { WebhookPayload } from './waba.interface';
 import { MessageRouterService } from './services/message-router.service';
 import { MessageFormatterService } from './services/message-formatter.service';
+import { PgBossService } from '../queue/pgboss.service';
 import WabaAPI from './waba.api';
 
-@Processor('waba-messages')
-export class WabaProcessor {
+@Injectable()
+export class WabaProcessor implements OnModuleInit {
   private readonly logger = new Logger(WabaProcessor.name);
 
   constructor(
+    private readonly pgBoss: PgBossService,
     private readonly messageRouter: MessageRouterService,
     private readonly messageFormatter: MessageFormatterService,
   ) {}
 
-  @Process('process-message')
-  async handleProcessMessage(job: Job<WebhookPayload>) {
-    const data = job.data;
+  async onModuleInit() {
+    await this.pgBoss.work<WebhookPayload>('waba-messages', async (jobs) => {
+      await this.handleProcessMessage(jobs[0].data);
+    });
+    this.logger.log('Registered worker for queue: waba-messages');
+  }
 
+  async handleProcessMessage(data: WebhookPayload) {
     try {
       this.logger.debug('Processing incoming WhatsApp message');
 
