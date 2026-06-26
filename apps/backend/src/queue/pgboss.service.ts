@@ -35,10 +35,13 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
     return this.boss.send(queueName, data, options);
   }
 
-  work<T extends object>(
+  async work<T extends object>(
     queueName: string,
     handler: WorkHandler<T>,
   ): Promise<string> {
+    // Garante que a fila exista antes de iniciar o worker. O pg-boss 12+ exige isso 
+    // se nenhum job tiver sido enviado para a fila previamente. É uma operação idempotente.
+    await this.boss.createQueue(queueName);
     return this.boss.work(queueName, handler);
   }
 }

@@ -6,6 +6,7 @@ class PgBoss {
   constructor() {}
   async start() {}
   async stop() {}
+  async createQueue() {}
   send() {
     return 'mock-job-id';
   }
