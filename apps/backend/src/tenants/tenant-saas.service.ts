@@ -103,26 +103,24 @@ export class TenantSaasService {
       throw new NotFoundException(`Tenant with ID ${id} not found.`);
     }
 
-    if (!tenant.saasPlan.mpPlanId) {
-      this.logger.log(
-        'SaaS plan is not synced with Mercado Pago. Syncing now...',
-      );
-      await this.syncPlansWithMercadoPago();
-      return this.createSubscription(id);
-    }
-
     const client = this.mpService.getPlatformClient();
     const preApprovalClient = new PreApproval(client);
+    const freq = this.getFrequencyConfig(tenant.saasPlan.interval);
     let subscription;
 
     try {
       subscription = await preApprovalClient.create({
         body: {
-          preapproval_plan_id: tenant.saasPlan.mpPlanId,
           reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
           external_reference: tenant.id,
           payer_email: tenant.email,
           back_url: this.configService.get<string>('MP_BACK_URL') || undefined,
+          auto_recurring: {
+            frequency: freq.frequency,
+            frequency_type: freq.frequencyType,
+            transaction_amount: Number(tenant.saasPlan.price),
+            currency_id: 'BRL',
+          },
         },
       });
     } catch (error: any) {

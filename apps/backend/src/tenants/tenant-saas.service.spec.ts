@@ -152,52 +152,7 @@ describe('TenantSaasService', () => {
       );
     });
 
-    it('should sync plans and retry subscription if saasPlan has no mpPlanId', async () => {
-      const mockTenantWithoutPlan = {
-        id: 't1',
-        email: 't@t.com',
-        saasPlan: {
-          id: 'plan-1',
-          name: 'Gold',
-          price: 100,
-          interval: 'MONTHLY',
-          mpPlanId: null,
-        },
-      };
-
-      const mockTenantWithPlan = {
-        ...mockTenantWithoutPlan,
-        saasPlan: {
-          ...mockTenantWithoutPlan.saasPlan,
-          mpPlanId: 'mp-plan-xyz',
-        },
-      };
-
-      jest
-        .spyOn(repo, 'findUnique')
-        .mockResolvedValueOnce(mockTenantWithoutPlan as any)
-        .mockResolvedValueOnce(mockTenantWithPlan as any);
-
-      const syncSpy = jest
-        .spyOn(service, 'syncPlansWithMercadoPago')
-        .mockResolvedValue();
-
-      const mockPreApprovalCreate = jest.fn().mockResolvedValue({
-        init_point: 'http://mp.com/pay',
-        id: 'sub-123',
-      });
-      (PreApproval as jest.Mock).mockImplementation(() => ({
-        create: mockPreApprovalCreate,
-      }));
-
-      const result = await service.createSubscription('t1');
-
-      expect(syncSpy).toHaveBeenCalled();
-      expect(result.initPoint).toBe('http://mp.com/pay');
-      expect(result.externalId).toBe('sub-123');
-    });
-
-    it('should create a subscription with status pending', async () => {
+    it('should create a subscription with status pending using auto_recurring', async () => {
       const mockTenant = {
         id: 't1',
         email: 't@t.com',
@@ -225,9 +180,15 @@ describe('TenantSaasService', () => {
       expect(result.externalId).toBe('sub-123');
       expect(mockPreApprovalCreate).toHaveBeenCalledWith({
         body: expect.objectContaining({
-          preapproval_plan_id: 'mp-plan-xyz',
+          reason: 'Assinatura SaaS - Gold',
           external_reference: 't1',
           payer_email: 't@t.com',
+          auto_recurring: {
+            frequency: 1,
+            frequency_type: 'months',
+            transaction_amount: 100,
+            currency_id: 'BRL',
+          },
         }),
       });
     });
