@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      SKIP_SECURITY_GATES:
-        description: 'Skip security gates step'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -19,7 +12,7 @@ jobs:
 
   security-gates:
     name: Security Gates
-    if: ${{ inputs.SKIP_SECURITY_GATES != true && inputs.SKIP_SECURITY_GATES != 'true' }}
+    if: ${{ vars.SKIP_SECURITY_GATES != 'true' && vars.SKIP_SECURITY_GATES != true }}
     uses: ./.github/workflows/security.yml
 
   detect-changes:
