@@ -126,7 +126,7 @@ export class PaymentQueueProcessor implements OnModuleInit {
   ) {
     try {
       const response = await fetch(
-        `https://api.mercadopago.com/preapproval/authorized_payment/${authorizedPaymentId}`,
+        `https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`,
         {
           headers: {
             Authorization: `Bearer ${client.accessToken}`,

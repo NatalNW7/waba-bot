@@ -182,19 +182,19 @@ describe('TenantSaasService', () => {
         .spyOn(service, 'syncPlansWithMercadoPago')
         .mockResolvedValue();
 
-      const mockPreApprovalPlanGet = jest.fn().mockResolvedValue({
+      const mockPreApprovalCreate = jest.fn().mockResolvedValue({
         init_point: 'http://mp.com/pay',
-        id: 'mp-plan-123',
+        id: 'sub-123',
       });
-      (PreApprovalPlan as jest.Mock).mockImplementation(() => ({
-        get: mockPreApprovalPlanGet,
+      (PreApproval as jest.Mock).mockImplementation(() => ({
+        create: mockPreApprovalCreate,
       }));
 
       const result = await service.createSubscription('t1');
 
       expect(syncSpy).toHaveBeenCalled();
       expect(result.initPoint).toBe('http://mp.com/pay');
-      expect(result.externalId).toBeNull();
+      expect(result.externalId).toBe('sub-123');
     });
 
     it('should create a subscription with status pending', async () => {
@@ -211,20 +211,24 @@ describe('TenantSaasService', () => {
       };
       jest.spyOn(repo, 'findUnique').mockResolvedValue(mockTenant as any);
 
-      const mockPreApprovalPlanGet = jest.fn().mockResolvedValue({
+      const mockPreApprovalCreate = jest.fn().mockResolvedValue({
         init_point: 'http://mp.com/pay',
-        id: 'mp-plan-123',
+        id: 'sub-123',
       });
-      (PreApprovalPlan as jest.Mock).mockImplementation(() => ({
-        get: mockPreApprovalPlanGet,
+      (PreApproval as jest.Mock).mockImplementation(() => ({
+        create: mockPreApprovalCreate,
       }));
 
       const result = await service.createSubscription('t1');
 
       expect(result.initPoint).toBe('http://mp.com/pay');
-      expect(result.externalId).toBeNull();
-      expect(mockPreApprovalPlanGet).toHaveBeenCalledWith({
-        preApprovalPlanId: 'mp-plan-xyz',
+      expect(result.externalId).toBe('sub-123');
+      expect(mockPreApprovalCreate).toHaveBeenCalledWith({
+        body: expect.objectContaining({
+          preapproval_plan_id: 'mp-plan-xyz',
+          external_reference: 't1',
+          payer_email: 't@t.com',
+        }),
       });
     });
   });
