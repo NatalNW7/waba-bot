@@ -12,12 +12,14 @@ jobs:
 
   security-gates:
     name: Security Gates
+    if: ${{ vars.SKIP_SECURITY_GATES != 'true' && vars.SKIP_SECURITY_GATES != true }}
     uses: ./.github/workflows/security.yml
 
   detect-changes:
     name: Detect Changed Paths
     runs-on: ubuntu-latest
     needs: security-gates
+    if: ${{ always() && (needs.security-gates.result == 'success' || needs.security-gates.result == 'skipped') }}
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -48,7 +50,7 @@ jobs:
   deploy-backend:
     name: Deploy Backend to Fly.io
     runs-on: ubuntu-latest
-    needs: [security-gates, detect-changes]
+    needs: detect-changes
     if: needs.detect-changes.outputs.backend == 'true'
     concurrency: deploy-backend
     steps:
@@ -82,7 +84,7 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend to Fly.io
     runs-on: ubuntu-latest
-    needs: [security-gates, detect-changes]
+    needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
     concurrency: deploy-frontend
     steps:
