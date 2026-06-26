@@ -9,6 +9,7 @@ jest.mock('pg-boss', () => {
       stop: jest.fn().mockResolvedValue(undefined),
       send: jest.fn().mockResolvedValue('job-id-123'),
       work: jest.fn().mockResolvedValue('worker-id-456'),
+      createQueue: jest.fn().mockResolvedValue(undefined),
     })),
   };
 });
@@ -76,6 +77,7 @@ describe('PgBossService', () => {
       const handler = jest.fn();
       const result = await service.work('test-queue', handler);
       expect(result).toBe('worker-id-456');
+      expect(service['boss'].createQueue).toHaveBeenCalledWith('test-queue');
       expect(service['boss'].work).toHaveBeenCalledWith(
         'test-queue',
         handler,
