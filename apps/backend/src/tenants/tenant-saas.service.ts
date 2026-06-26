@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { MercadoPagoService } from '../payments/mercadopago.service';
 import { TenantRepository } from './tenant-repository.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { PreApprovalPlan } from 'mercadopago';
+import { PreApprovalPlan, PreApproval } from 'mercadopago';
 import { PaymentInterval } from '@prisma/client';
 
 interface TenantWithSaasPlan {
@@ -112,27 +112,31 @@ export class TenantSaasService {
     }
 
     const client = this.mpService.getPlatformClient();
-    const planClient = new PreApprovalPlan(client);
-    let planData;
+    const preApprovalClient = new PreApproval(client);
+    let subscription;
 
     try {
-      planData = await planClient.get({
-        preApprovalPlanId: tenant.saasPlan.mpPlanId,
+      subscription = await preApprovalClient.create({
+        body: {
+          preapproval_plan_id: tenant.saasPlan.mpPlanId,
+          reason: `Assinatura SaaS - ${tenant.saasPlan.name}`,
+          external_reference: tenant.id,
+          payer_email: tenant.email,
+          back_url: this.configService.get<string>('MP_BACK_URL') || undefined,
+        },
       });
     } catch (error: any) {
       this.logger.error(
-        `Failed to fetch plan for tenant ${id}: ${error.message}`,
+        `Failed to create subscription for tenant ${id}: ${error.message}`,
       );
       throw new BadRequestException(
-        'Falha ao carregar o plano no Mercado Pago.',
+        'Falha ao criar a assinatura no Mercado Pago.',
       );
     }
 
-    // Since we are using Checkout Pro for the subscription, we don't have a PreApproval ID yet.
-    // The subscription will be created automatically when the user pays via the plan's init_point.
     return {
-      initPoint: planData.init_point,
-      externalId: null, // Sub ID will be set by the webhook
+      initPoint: subscription.init_point,
+      externalId: subscription.id,
     };
   }
 

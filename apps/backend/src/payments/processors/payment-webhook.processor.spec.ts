@@ -390,7 +390,7 @@ describe('PaymentQueueProcessor', () => {
       await processor.handleNotification(job.data);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('preapproval/authorized_payment/auth-pay-123'),
+        expect.stringContaining('authorized_payments/auth-pay-123'),
         expect.any(Object),
       );
 
