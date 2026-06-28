@@ -107,6 +107,9 @@ describe('TenantSaasService', () => {
           },
           back_url: 'http://localhost:8080/dashboard/settings/finance',
         },
+        requestOptions: {
+          idempotencyKey: expect.any(String),
+        },
       });
 
       expect(prisma.saasPlan.update).toHaveBeenCalledWith({
@@ -190,6 +193,9 @@ describe('TenantSaasService', () => {
             currency_id: 'BRL',
           },
         }),
+        requestOptions: {
+          idempotencyKey: expect.any(String),
+        },
       });
     });
   });

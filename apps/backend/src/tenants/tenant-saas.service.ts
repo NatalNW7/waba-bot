@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { MercadoPagoService } from '../payments/mercadopago.service';
 import { TenantRepository } from './tenant-repository.service';
@@ -74,6 +75,9 @@ export class TenantSaasService {
             },
             back_url: backUrl,
           },
+          requestOptions: {
+            idempotencyKey: randomUUID(),
+          },
         });
 
         await this.prisma.saasPlan.update({
@@ -121,6 +125,9 @@ export class TenantSaasService {
             transaction_amount: Number(tenant.saasPlan.price),
             currency_id: 'BRL',
           },
+        },
+        requestOptions: {
+          idempotencyKey: randomUUID(),
         },
       });
     } catch (error: any) {

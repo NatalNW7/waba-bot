@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { MercadoPagoService } from './mercadopago.service';
 import { Preference } from 'mercadopago';
@@ -110,6 +111,9 @@ export class PaymentPreferenceService {
         auto_return: 'approved',
         external_reference: appointment.id,
         notification_url: this.configService.get('MP_WEBHOOK_URL'),
+      },
+      requestOptions: {
+        idempotencyKey: randomUUID(),
       },
     });
 
